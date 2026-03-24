@@ -159,6 +159,13 @@ export function buildDelegationTable(agents: AvailableAgent[]): string {
   return rows.join("\n")
 }
 
+export function buildMemorySection(): string {
+  return `## Memory Integration
+
+Before delegating research to explore or librarian, delegate to a memory-retrieval subagent to surface relevant prior context: \`task(subagent_type="memory-retrieval", load_skills=["memory-mcp"], prompt="Recall and verify memory relevant to: <user's request>\\nProject: <projectPath> (<projectName>)", run_in_background=false)\`. Memory retrieval is memory-only: on memory miss, do not perform fallback repo discovery; return a concise no-memory result. Treat recalled memory as advisory until verified against current code.
+
+After completing significant work (architectural decisions, bug fixes with non-obvious cause, pattern discoveries), consider triggering memory capture: \`task(subagent_type="memory-store", load_skills=["memory-mcp"], prompt="Project: <projectPath> (<projectName>)\\nObservations:\\n- <list of insights>", run_in_background=false)\`. Only capture high-signal, non-obvious, actionable insights.`
+}
 
 export function buildCategorySkillsDelegationGuide(categories: AvailableCategory[], skills: AvailableSkill[]): string {
   if (categories.length === 0 && skills.length === 0) return ""

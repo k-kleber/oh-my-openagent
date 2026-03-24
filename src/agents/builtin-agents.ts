@@ -13,6 +13,8 @@ import { createAtlasAgent, atlasPromptMetadata } from "./atlas"
 import { createMomusAgent, momusPromptMetadata } from "./momus"
 import { createHephaestusAgent } from "./hephaestus"
 import { createSisyphusJuniorAgentWithOverrides } from "./sisyphus-junior"
+import { createMemoryRetrievalAgent } from "./memory-retrieval"
+import { createMemoryStoreAgent } from "./memory-store"
 import type { AvailableCategory } from "./dynamic-agent-prompt-builder"
 import {
   fetchAvailableModels,
@@ -43,6 +45,8 @@ const agentSources: Record<BuiltinAgentName, AgentSource> = {
   // because it needs OrchestratorContext, not just a model string
   atlas: createAtlasAgent as AgentFactory,
   "sisyphus-junior": createSisyphusJuniorAgentWithOverrides as unknown as AgentFactory,
+  "memory-retrieval": createMemoryRetrievalAgent,
+  "memory-store": createMemoryStoreAgent,
 }
 
 /**

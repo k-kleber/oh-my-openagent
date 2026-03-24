@@ -8,6 +8,11 @@ import {
   frontendUiUxSkill,
   gitMasterSkill,
   devBrowserSkill,
+  codeIntelligenceSkill,
+  fastcodeSkill,
+  memoryMcpSkill,
+  memoryCaptureSkill,
+  memoryRecallAndVerifySkill,
 } from "./skills/index"
 
 export interface CreateBuiltinSkillsOptions {
@@ -27,7 +32,17 @@ export function createBuiltinSkills(options: CreateBuiltinSkillsOptions = {}): B
     browserSkill = playwrightSkill
   }
 
-  const skills = [browserSkill, frontendUiUxSkill, gitMasterSkill, devBrowserSkill]
+  const skills = [
+    browserSkill,
+    codeIntelligenceSkill,
+    fastcodeSkill,
+    frontendUiUxSkill,
+    gitMasterSkill,
+    devBrowserSkill,
+    memoryMcpSkill,
+    memoryCaptureSkill,
+    memoryRecallAndVerifySkill,
+  ]
 
   if (!disabledSkills) {
     return skills

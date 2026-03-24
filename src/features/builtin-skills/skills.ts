@@ -13,6 +13,13 @@ import {
   memoryMcpSkill,
   memoryCaptureSkill,
   memoryRecallAndVerifySkill,
+  memoryAutoSkill,
+  memoryBootstrapCollectorSkill,
+  memoryProjectBootstrapSkill,
+  memoryInitSkill,
+  memoryPromoteSkill,
+  memoryPreCompactionSkill,
+  globalToolingPreferenceSkill,
 } from "./skills/index"
 
 export interface CreateBuiltinSkillsOptions {
@@ -36,12 +43,19 @@ export function createBuiltinSkills(options: CreateBuiltinSkillsOptions = {}): B
     browserSkill,
     codeIntelligenceSkill,
     fastcodeSkill,
+    globalToolingPreferenceSkill,
     frontendUiUxSkill,
     gitMasterSkill,
     devBrowserSkill,
     memoryMcpSkill,
     memoryCaptureSkill,
     memoryRecallAndVerifySkill,
+    memoryAutoSkill,
+    memoryBootstrapCollectorSkill,
+    memoryProjectBootstrapSkill,
+    memoryInitSkill,
+    memoryPromoteSkill,
+    memoryPreCompactionSkill,
   ]
 
   if (!disabledSkills) {

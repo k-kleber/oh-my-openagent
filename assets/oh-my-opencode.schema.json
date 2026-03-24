@@ -3324,7 +3324,22 @@
           "type": "boolean"
         },
         "preemptive_compaction": {
-          "type": "boolean"
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "threshold": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
         },
         "truncate_all_tool_outputs": {
           "type": "boolean"

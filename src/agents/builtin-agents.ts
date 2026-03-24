@@ -61,6 +61,18 @@ const agentMetadata: Partial<Record<BuiltinAgentName, AgentPromptMetadata>> = {
   metis: metisPromptMetadata,
   momus: momusPromptMetadata,
   atlas: atlasPromptMetadata,
+  "memory-retrieval": {
+    category: "utility",
+    cost: "FREE",
+    promptAlias: "Memory Retrieval",
+    triggers: [],
+  },
+  "memory-store": {
+    category: "utility",
+    cost: "FREE", 
+    promptAlias: "Memory Store",
+    triggers: [],
+  },
 }
 
 export async function createBuiltinAgents(

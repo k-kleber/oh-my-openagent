@@ -9,7 +9,15 @@ import { resolveCompactionModel } from "./shared/compaction-model-resolver"
 import { createPostCompactionDegradationMonitor } from "./preemptive-compaction-degradation-monitor"
 
 const PREEMPTIVE_COMPACTION_TIMEOUT_MS = 120_000
-const PREEMPTIVE_COMPACTION_THRESHOLD = 0.78
+const DEFAULT_COMPACTION_THRESHOLD = 0.90
+
+function resolveCompactionThreshold(pluginConfig: OhMyOpenCodeConfig): number {
+  const setting = pluginConfig.experimental?.preemptive_compaction
+  if (typeof setting === "object" && setting !== null && setting.threshold !== undefined) {
+    return setting.threshold
+  }
+  return DEFAULT_COMPACTION_THRESHOLD
+}
 
 declare function setTimeout(handler: () => void, timeout?: number): unknown
 declare function clearTimeout(timeoutID: unknown): void
@@ -66,6 +74,7 @@ export function createPreemptiveCompactionHook(
   pluginConfig: OhMyOpenCodeConfig,
   modelCacheState?: ContextLimitModelCacheState,
 ) {
+  const threshold = resolveCompactionThreshold(pluginConfig)
   const compactionInProgress = new Set<string>()
   const compactedSessions = new Set<string>()
   const tokenCache = new Map<string, CachedCompactionState>()
@@ -104,7 +113,16 @@ export function createPreemptiveCompactionHook(
 
     const totalInputTokens = (cached.tokens.input ?? 0) + (cached.tokens.cache?.read ?? 0)
     const usageRatio = totalInputTokens / actualLimit
-    if (usageRatio < PREEMPTIVE_COMPACTION_THRESHOLD || !cached.modelID) return
+    if (usageRatio < threshold || !cached.modelID) {
+      log("[preemptive-compaction] Skipping preemptive compaction", {
+        threshold,
+        usageRatio,
+        totalInputTokens,
+        actualLimit,
+        sessionID,
+      })
+      return
+    }
 
     compactionInProgress.add(sessionID)
 
@@ -115,6 +133,16 @@ export function createPreemptiveCompactionHook(
         cached.providerID,
         cached.modelID,
       )
+
+      log("[preemptive-compaction] Compaction triggered", {
+        threshold,
+        usageRatio,
+        totalInputTokens,
+        actualLimit,
+        sourceModel: cached.modelID,
+        compactionModel: targetModelID,
+        sessionID,
+      })
 
       await withTimeout(
         ctx.client.session.summarize({

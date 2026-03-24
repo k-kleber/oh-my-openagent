@@ -26,7 +26,10 @@ export async function resolveSubagentExecution(
     return { agentToUse: "", categoryModel: undefined, error: `Agent name cannot be empty.` }
   }
 
-  const agentName = args.subagent_type.trim()
+  const agentName = args.subagent_type.trim().replace(/^@+/, "")
+  if (!agentName) {
+    return { agentToUse: "", categoryModel: undefined, error: `Agent name cannot be empty.` }
+  }
 
   if (agentName.toLowerCase() === SISYPHUS_JUNIOR_AGENT.toLowerCase()) {
     return {

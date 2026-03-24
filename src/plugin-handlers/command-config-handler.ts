@@ -15,6 +15,8 @@ import {
   loadOpencodeProjectSkills,
   skillsToCommandDefinitionRecord,
 } from "../features/opencode-skill-loader";
+import { builtinToLoadedSkill } from "../features/opencode-skill-loader/merger/builtin-skill-converter";
+import { createBuiltinSkills } from "../features/builtin-skills";
 import type { PluginComponents } from "./plugin-components-loader";
 
 export async function applyCommandConfig(params: {
@@ -23,6 +25,14 @@ export async function applyCommandConfig(params: {
   ctx: { directory: string };
   pluginComponents: PluginComponents;
 }): Promise<void> {
+  const disabledSkillsSet = new Set<string>(params.pluginConfig.disabled_skills ?? []);
+  const builtinSkillCommands = skillsToCommandDefinitionRecord(
+    createBuiltinSkills({
+      browserProvider: params.pluginConfig.browser_automation_engine?.provider,
+      disabledSkills: disabledSkillsSet,
+    }).map(builtinToLoadedSkill),
+  );
+
   const builtinCommands = loadBuiltinCommands(params.pluginConfig.disabled_commands);
   const systemCommands = (params.config.command as Record<string, unknown>) ?? {};
 
@@ -56,6 +66,7 @@ export async function applyCommandConfig(params: {
 
   params.config.command = {
     ...builtinCommands,
+    ...builtinSkillCommands,
     ...skillsToCommandDefinitionRecord(configSourceSkills),
     ...userCommands,
     ...userSkills,

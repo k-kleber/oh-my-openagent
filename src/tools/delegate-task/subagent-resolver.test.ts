@@ -175,4 +175,19 @@ describe("resolveSubagentExecution", () => {
     ])
     cacheSpy.mockRestore()
   })
+
+  test("normalizes leading @ in subagent_type before matching callable agents", async () => {
+    //#given
+    const args = createBaseArgs({ subagent_type: "@oracle" })
+    const executorCtx = createExecutorContext(async () => ([
+      { name: "oracle", mode: "subagent", model: "openai/gpt-5.3-codex" },
+    ]))
+
+    //#when
+    const result = await resolveSubagentExecution(args, executorCtx, "sisyphus", "deep")
+
+    //#then
+    expect(result.error).toBeUndefined()
+    expect(result.agentToUse).toBe("oracle")
+  })
 })

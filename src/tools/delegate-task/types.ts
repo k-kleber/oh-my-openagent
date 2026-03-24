@@ -66,6 +66,7 @@ export interface DelegateTaskToolOptions {
   disabledSkills?: Set<string>
   availableCategories?: AvailableCategory[]
   availableSkills?: AvailableSkill[]
+  defaultSkillsBySubagent?: Record<string, string[]>
   agentOverrides?: AgentOverrides
   onSyncSessionCreated?: (event: SyncSessionCreatedEvent) => Promise<void>
   syncPollTimeoutMs?: number

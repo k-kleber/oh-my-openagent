@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test"
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test"
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { executeSlashCommand } from "./executor"
+import * as skillLoader from "../../features/opencode-skill-loader"
 
 const ENV_KEYS = [
   "CLAUDE_CONFIG_DIR",
@@ -191,5 +192,30 @@ describe("auto-slash command executor plugin dispatch", () => {
     expect(result.replacementText).toContain("Echo ship it and ship it.")
     expect(result.replacementText).not.toContain("$ARGUMENTS")
     expect(result.replacementText).not.toContain("${user_message}")
+  })
+})
+
+describe("auto-slash command executor builtin skill inclusion", () => {
+  it("resolves builtin memory skill even when discoverAllSkills returns none", async () => {
+    const spy = spyOn(skillLoader, "discoverAllSkills").mockResolvedValue([])
+    try {
+      const result = await executeSlashCommand(
+        {
+          command: "memory-mcp",
+          args: "",
+          raw: "/memory-mcp",
+        },
+        {
+          skills: undefined,
+          pluginsEnabled: true,
+        },
+      )
+
+      expect(result.success).toBe(true)
+      expect(result.replacementText).toContain("# /memory-mcp Command")
+      expect(result.replacementText).toContain("## Command Instructions")
+    } finally {
+      spy.mockRestore()
+    }
   })
 })

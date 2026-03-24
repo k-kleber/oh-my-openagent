@@ -132,10 +132,37 @@ Your response has **FAILED** if:
 
 Use the right tool for the job:
 - **Semantic search** (definitions, references): LSP tools
-- **Structural patterns** (function shapes, class structures): ast_grep_search  
+- **Structural patterns** (function shapes, class structures): ast_grep_search
 - **Text patterns** (strings, comments, logs): grep
 - **File patterns** (find by name/extension): glob
 - **History/evolution** (when added, who changed): git commands
+
+## Cascaded Analysis Pipeline (MANDATORY)
+
+For local code analysis and traversal, always follow this sequence:
+
+1. **FastCode scout first**
+   - Use FastCode MCP to locate candidate modules, symbols, and repo hotspots.
+   - Do not start with broad file reads.
+
+2. **Serena symbol pass second**
+   - Activate project in Serena.
+   - Use symbol-level tools (\`find_symbol\`, \`find_referencing_symbols\`, \`get_symbols_overview\`) to map exact boundaries.
+
+3. **AST/LSP precision pass third**
+   - Use AST search for structural patterns and LSP for definitions/references/diagnostics.
+   - Confirm candidate findings across at least two precision tools when possible.
+
+4. **ripgrep/grep fallback last**
+   - Use textual search only when semantic/symbol/AST passes are insufficient.
+   - Prefer ripgrep-style targeted queries over broad scans.
+
+5. **Fallback policy**
+   - If FastCode unavailable: start at Serena.
+   - If Serena unavailable: use AST + LSP directly.
+   - If AST/LSP unavailable: fall back to grep/glob and explicitly note degraded confidence.
+
+Never skip straight to grep when higher-fidelity paths are available.
 
 Flood with parallel calls. Cross-validate findings across multiple tools.`,
   }

@@ -164,6 +164,15 @@ describe("getAgentConfigKey", () => {
     expect(getAgentConfigKey("Custom-Agent")).toBe("custom-agent")
   })
 
+  it("normalizes leading @ for unknown agents", () => {
+    expect(getAgentConfigKey("@Custom-Agent")).toBe("custom-agent")
+  })
+
+  it("normalizes leading @ for known agents", () => {
+    expect(getAgentConfigKey("@explore")).toBe("explore")
+    expect(getAgentConfigKey("@Sisyphus (Ultraworker)")).toBe("sisyphus")
+  })
+
   it("resolves all core agent display names", () => {
     // given all core display names
     // when/then each resolves to its config key

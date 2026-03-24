@@ -65,16 +65,21 @@ export function createCallOmoAgent(
       const toolCtx = toolContext as ToolContextWithMetadata
       log(`[call_omo_agent] Starting with agent: ${args.subagent_type}, background: ${args.run_in_background}`)
 
+      const requestedAgent = args.subagent_type.trim().replace(/^@+/, "")
+      if (!requestedAgent) {
+        return `Error: Invalid agent type "${args.subagent_type}". Only ${ALLOWED_AGENTS.join(", ")} are allowed.`
+      }
+
       // Case-insensitive agent validation - allows "Explore", "EXPLORE", "explore" etc.
       if (
         !ALLOWED_AGENTS.some(
-          (name) => name.toLowerCase() === args.subagent_type.toLowerCase(),
+          (name) => name.toLowerCase() === requestedAgent.toLowerCase(),
         )
       ) {
         return `Error: Invalid agent type "${args.subagent_type}". Only ${ALLOWED_AGENTS.join(", ")} are allowed.`
       }
 
-      const normalizedAgent = args.subagent_type.toLowerCase() as AllowedAgentType
+      const normalizedAgent = requestedAgent.toLowerCase() as AllowedAgentType
       args = { ...args, subagent_type: normalizedAgent }
 
       // Check if agent is disabled

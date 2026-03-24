@@ -46,7 +46,7 @@ const REVERSE_DISPLAY_NAMES: Record<string, string> = Object.fromEntries(
  * "Atlas (Plan Executor)" → "atlas", "atlas" → "atlas", "unknown" → "unknown"
  */
 export function getAgentConfigKey(agentName: string): string {
-  const lower = agentName.toLowerCase()
+  const lower = agentName.toLowerCase().trim().replace(/^@+/, "")
   const reversed = REVERSE_DISPLAY_NAMES[lower]
   if (reversed !== undefined) return reversed
   if (AGENT_DISPLAY_NAMES[lower] !== undefined) return lower

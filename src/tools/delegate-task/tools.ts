@@ -45,6 +45,12 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
     })
 
   const availableSkills: AvailableSkill[] = options.availableSkills ?? []
+  const availableSkillNames = new Set(availableSkills.map((skill) => skill.name.toLowerCase()))
+
+  const defaultSkillsBySubagent: Record<string, string[]> = {
+    explore: ["code-intelligence", "global-tooling-preference", "fastcode"],
+    ...(options.defaultSkillsBySubagent ?? {}),
+  }
 
   const categoryList = categoryNames.map(name => {
     const userDesc = userCategories?.[name]?.description
@@ -138,6 +144,22 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
       }
       if (args.load_skills === null) {
         throw new Error(`Invalid arguments: load_skills=null is not allowed. Pass [] if no skills needed.`)
+      }
+
+      if (args.load_skills.length === 0 && args.subagent_type) {
+        const normalizedSubagent = args.subagent_type.trim().replace(/^@+/, "").toLowerCase()
+        const defaultSkills = defaultSkillsBySubagent[normalizedSubagent] ?? []
+        const injectedDefaults = defaultSkills.filter((skillName) =>
+          availableSkillNames.has(skillName.toLowerCase())
+        )
+
+        if (injectedDefaults.length > 0) {
+          args.load_skills = injectedDefaults
+          log("[task] injected default skills for subagent", {
+            subagent: normalizedSubagent,
+            injectedDefaults,
+          })
+        }
       }
 
       const runInBackground = args.run_in_background === true

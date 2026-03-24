@@ -70,6 +70,8 @@ export const AgentOverridesSchema = z.object({
   oracle: AgentOverrideConfigSchema.optional(),
   librarian: AgentOverrideConfigSchema.optional(),
   explore: AgentOverrideConfigSchema.optional(),
+  "memory-retrieval": AgentOverrideConfigSchema.optional(),
+  "memory-store": AgentOverrideConfigSchema.optional(),
   "multimodal-looker": AgentOverrideConfigSchema.optional(),
   atlas: AgentOverrideConfigSchema.optional(),
 })

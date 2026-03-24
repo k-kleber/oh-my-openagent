@@ -274,6 +274,91 @@ describe("sisyphus-task", () => {
   })
 
   describe("load_skills parsing", () => {
+    test("injects default explore cascade skills when subagent_type is explore and load_skills is empty", async () => {
+      //#given
+      const { createDelegateTask } = require("./tools")
+
+      const mockManager = {
+        launch: async () => ({
+          id: "task-default-explore",
+          status: "pending",
+          description: "Default skills test",
+          agent: "explore",
+          sessionID: "test-session",
+        }),
+      }
+
+      const mockClient = {
+        app: {
+          agents: async () => ({
+            data: [
+              {
+                name: "explore",
+                mode: "subagent",
+                model: { providerID: "anthropic", modelID: "claude-haiku-4-5" },
+              },
+            ],
+          }),
+        },
+        config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
+        provider: { list: async () => ({ data: { connected: ["openai"] } }) },
+        model: { list: async () => ({ data: [{ provider: "openai", id: "gpt-5.3-codex" }] }) },
+        session: {
+          create: async () => ({ data: { id: "test-session" } }),
+          prompt: async () => ({ data: {} }),
+          promptAsync: async () => ({ data: {} }),
+          messages: async () => ({ data: [] }),
+          status: async () => ({ data: {} }),
+        },
+      }
+
+      const tool = createDelegateTask({
+        manager: mockManager,
+        client: mockClient,
+        connectedProvidersOverride: TEST_CONNECTED_PROVIDERS,
+        availableModelsOverride: createTestAvailableModels(),
+        availableSkills: [
+          { name: "code-intelligence", description: "test" },
+          { name: "global-tooling-preference", description: "test" },
+          { name: "fastcode", description: "test" },
+        ],
+      })
+
+      const toolContext = {
+        sessionID: "parent-session",
+        messageID: "parent-message",
+        agent: "sisyphus",
+        abort: new AbortController().signal,
+      }
+
+      const resolveSkillContentSpy = spyOn(executor, "resolveSkillContent").mockResolvedValue({
+        content: "resolved skill content",
+        error: null,
+      })
+
+      const args: DelegateTaskArgs = {
+        description: "Explore with defaults",
+        prompt: "Find wiring",
+        subagent_type: "explore",
+        run_in_background: true,
+        load_skills: [],
+      }
+
+      //#when
+      await tool.execute(args, toolContext)
+
+      //#then
+      expect(args.load_skills).toEqual([
+        "code-intelligence",
+        "global-tooling-preference",
+        "fastcode",
+      ])
+      expect(resolveSkillContentSpy).toHaveBeenCalledWith(
+        ["code-intelligence", "global-tooling-preference", "fastcode"],
+        expect.any(Object),
+      )
+    }, { timeout: 10000 })
+
     test("parses valid JSON string into array before validation", async () => {
       //#given
       const { createDelegateTask } = require("./tools")

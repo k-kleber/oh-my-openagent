@@ -4,6 +4,8 @@ import {
   resolveFileReferencesInText,
 } from "../../shared"
 import { discoverAllSkills, type LoadedSkill, type LazyContentLoader } from "../../features/opencode-skill-loader"
+import { createBuiltinSkills } from "../../features/builtin-skills"
+import { builtinToLoadedSkill } from "../../features/opencode-skill-loader/merger/builtin-skill-converter"
 import { discoverCommandsSync } from "../../tools/slashcommand"
 import type { CommandInfo as DiscoveredCommandInfo, CommandMetadata } from "../../tools/slashcommand/types"
 import type { ParsedSlashCommand } from "./types"
@@ -51,8 +53,11 @@ async function discoverAllCommands(options?: ExecutorOptions): Promise<CommandIn
     enabledPluginsOverride: options?.enabledPluginsOverride,
   })
 
-  const skills = options?.skills ?? await discoverAllSkills()
-  const skillCommands = skills.map(skillToCommandInfo)
+  const discoveredSkills = options?.skills ?? await discoverAllSkills()
+  const builtinSkills = createBuiltinSkills().map(builtinToLoadedSkill)
+  const discoveredSkillNames = new Set(discoveredSkills.map((skill) => skill.name))
+  const uniqueBuiltinSkills = builtinSkills.filter((skill) => !discoveredSkillNames.has(skill.name))
+  const skillCommands = [...discoveredSkills, ...uniqueBuiltinSkills].map(skillToCommandInfo)
 
   const scopeOrder: DiscoveredCommandInfo["scope"][] = ["project", "user", "opencode-project", "opencode", "builtin", "plugin"]
   const grouped = new Map<string, DiscoveredCommandInfo[]>()

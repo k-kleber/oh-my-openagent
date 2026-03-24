@@ -66,6 +66,7 @@ export function createMemoryStoreAgent(model: string): AgentConfig {
     mode: MODE,
     model,
     temperature: 0.1,
+    skills: ["memory-mcp"],
     prompt: MEMORY_STORE_PROMPT,
   }
 }

@@ -59,6 +59,7 @@ export function createMemoryRetrievalAgent(model: string): AgentConfig {
     mode: MODE,
     model,
     temperature: 0.1,
+    skills: ["memory-mcp"],
     prompt: MEMORY_RETRIEVAL_PROMPT,
   }
 }

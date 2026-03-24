@@ -1,6 +1,7 @@
 import { createWebsearchConfig } from "./websearch"
 import { context7 } from "./context7"
 import { grep_app } from "./grep-app"
+import { serena } from "./serena"
 import type { OhMyOpenCodeConfig } from "../config/schema"
 
 export { McpNameSchema, type McpName } from "./types"
@@ -13,8 +14,18 @@ type RemoteMcpConfig = {
   oauth?: false
 }
 
+type LocalMcpConfig = {
+  type: "local"
+  command: string[]
+  enabled: boolean
+}
+
 export function createBuiltinMcps(disabledMcps: string[] = [], config?: OhMyOpenCodeConfig) {
-  const mcps: Record<string, RemoteMcpConfig> = {}
+  const mcps: Record<string, RemoteMcpConfig | LocalMcpConfig> = {}
+
+  if (!disabledMcps.includes("serena")) {
+    mcps.serena = serena
+  }
 
   if (!disabledMcps.includes("websearch")) {
     mcps.websearch = createWebsearchConfig(config?.websearch)

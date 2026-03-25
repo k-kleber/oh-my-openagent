@@ -121,6 +121,31 @@ describe("AGENT_MODEL_REQUIREMENTS", () => {
     expect(fifth.model).toBe("gpt-5-nano")
   })
 
+  test("researcher has valid fallbackChain with gemini-3.1-pro as primary", () => {
+    const researcher = AGENT_MODEL_REQUIREMENTS["researcher"]
+
+    expect(researcher).toBeDefined()
+    expect(researcher.fallbackChain).toBeArray()
+    expect(researcher.fallbackChain.length).toBeGreaterThan(0)
+
+    const primary = researcher.fallbackChain[0]
+    expect(primary.providers).toContain("google")
+    expect(primary.model).toBe("gemini-3.1-pro")
+    expect(primary.variant).toBe("high")
+  })
+
+  test("writer has valid fallbackChain with gemini-3-flash as primary", () => {
+    const writer = AGENT_MODEL_REQUIREMENTS["writer"]
+
+    expect(writer).toBeDefined()
+    expect(writer.fallbackChain).toBeArray()
+    expect(writer.fallbackChain.length).toBeGreaterThan(0)
+
+    const primary = writer.fallbackChain[0]
+    expect(primary.providers).toContain("google")
+    expect(primary.model).toBe("gemini-3-flash")
+  })
+
   test("multimodal-looker has valid fallbackChain with gpt-5.4 as primary", () => {
     // given - multimodal-looker agent requirement
     const multimodalLooker = AGENT_MODEL_REQUIREMENTS["multimodal-looker"]
@@ -259,14 +284,18 @@ describe("AGENT_MODEL_REQUIREMENTS", () => {
     expect(hephaestus.requiresModel).toBeUndefined()
   })
 
-  test("all 11 builtin agents have valid fallbackChain arrays", () => {
-    // #given - list of 11 agent names
+  test("all configured agent requirements have valid fallbackChain arrays", () => {
     const expectedAgents = [
       "sisyphus",
       "hephaestus",
+      "brainstormer",
+      "researcher",
+      "writer",
       "oracle",
       "librarian",
       "explore",
+      "memory-retrieval",
+      "memory-store",
       "multimodal-looker",
       "prometheus",
       "metis",
@@ -279,7 +308,7 @@ describe("AGENT_MODEL_REQUIREMENTS", () => {
     const definedAgents = Object.keys(AGENT_MODEL_REQUIREMENTS)
 
     // #then - all agents present with valid fallbackChain
-    expect(definedAgents).toHaveLength(11)
+    expect(definedAgents).toHaveLength(expectedAgents.length)
     for (const agent of expectedAgents) {
       const requirement = AGENT_MODEL_REQUIREMENTS[agent]
       expect(requirement).toBeDefined()

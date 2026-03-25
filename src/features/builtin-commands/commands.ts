@@ -5,7 +5,12 @@ import { RALPH_LOOP_TEMPLATE, ULW_LOOP_TEMPLATE, CANCEL_RALPH_TEMPLATE } from ".
 import { STOP_CONTINUATION_TEMPLATE } from "./templates/stop-continuation"
 import { REFACTOR_TEMPLATE } from "./templates/refactor"
 import { START_WORK_TEMPLATE } from "./templates/start-work"
+import { START_PLANNING_TEMPLATE } from "./templates/start-planning"
+import { START_WRITING_TEMPLATE } from "./templates/start-writing"
 import { HANDOFF_TEMPLATE } from "./templates/handoff"
+
+const START_PLANNING_INSTRUCTION = "Start deep planning handoff to Prometheus"
+const START_WRITING_INSTRUCTION = "Start collaborative writing handoff to Writer"
 
 const BUILTIN_COMMAND_DEFINITIONS: Record<BuiltinCommandName, Omit<CommandDefinition, "name">> = {
   "init-deep": {
@@ -71,6 +76,48 @@ Timestamp: $TIMESTAMP
 $ARGUMENTS
 </user-request>`,
     argumentHint: "[plan-name]",
+  },
+  "start-planning": {
+    description: "(builtin) Start deep planning handoff to Prometheus from brainstorm context",
+    agent: "prometheus",
+    template: `<command-instruction>
+${START_PLANNING_TEMPLATE}
+</command-instruction>
+
+<session-context>
+Session ID: $SESSION_ID
+Timestamp: $TIMESTAMP
+</session-context>
+
+<user-request>
+$ARGUMENTS
+</user-request>
+
+<planning-intent>
+${START_PLANNING_INSTRUCTION}
+</planning-intent>`,
+    argumentHint: "[topic-or-note]",
+  },
+  "start-writing": {
+    description: "(builtin) Start collaborative writing handoff to Writer",
+    agent: "writer",
+    template: `<command-instruction>
+${START_WRITING_TEMPLATE}
+</command-instruction>
+
+<session-context>
+Session ID: $SESSION_ID
+Timestamp: $TIMESTAMP
+</session-context>
+
+<user-request>
+$ARGUMENTS
+</user-request>
+
+<writing-intent>
+${START_WRITING_INSTRUCTION}
+</writing-intent>`,
+    argumentHint: "[topic-or-brief]",
   },
   "stop-continuation": {
     description: "(builtin) Stop all continuation mechanisms (ralph loop, todo continuation, boulder) for this session",

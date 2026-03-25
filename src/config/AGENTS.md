@@ -11,7 +11,7 @@
 ```
 config/schema/
 ├── oh-my-opencode-config.ts    # ROOT: OhMyOpenCodeConfigSchema (composes all below)
-├── agent-names.ts              # BuiltinAgentNameSchema (11), OverridableAgentNameSchema (14)
+├── agent-names.ts              # BuiltinAgentNameSchema (12), OverridableAgentNameSchema (15)
 ├── agent-overrides.ts          # AgentOverrideConfigSchema (21 fields per agent)
 ├── categories.ts               # 8 built-in + custom categories
 ├── hooks.ts                    # HookNameSchema (48 hooks)

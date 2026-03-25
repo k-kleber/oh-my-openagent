@@ -18,7 +18,10 @@ import {
   createDelegateTaskRetryHook,
   createTaskResumeInfoHook,
   createStartWorkHook,
+  createStartPlanningHook,
+  createStartWritingHook,
   createPrometheusMdOnlyHook,
+  createBrainstormerSisyphusMdOnlyHook,
   createSisyphusJuniorNotepadHook,
   createNoSisyphusGptHook,
   createNoHephaestusNonGptHook,
@@ -52,7 +55,10 @@ export type SessionHooks = {
   editErrorRecovery: ReturnType<typeof createEditErrorRecoveryHook> | null
   delegateTaskRetry: ReturnType<typeof createDelegateTaskRetryHook> | null
   startWork: ReturnType<typeof createStartWorkHook> | null
+  startPlanning: ReturnType<typeof createStartPlanningHook> | null
+  startWriting: ReturnType<typeof createStartWritingHook> | null
   prometheusMdOnly: ReturnType<typeof createPrometheusMdOnlyHook> | null
+  brainstormerSisyphusMdOnly: ReturnType<typeof createBrainstormerSisyphusMdOnlyHook> | null
   sisyphusJuniorNotepad: ReturnType<typeof createSisyphusJuniorNotepadHook> | null
   noSisyphusGpt: ReturnType<typeof createNoSisyphusGptHook> | null
   noHephaestusNonGpt: ReturnType<typeof createNoHephaestusNonGptHook> | null
@@ -219,8 +225,20 @@ export function createSessionHooks(args: {
     ? safeHook("start-work", () => createStartWorkHook(ctx))
     : null
 
+  const startPlanning = isHookEnabled("start-planning")
+    ? safeHook("start-planning", () => createStartPlanningHook(ctx))
+    : null
+
+  const startWriting = isHookEnabled("start-writing")
+    ? safeHook("start-writing", () => createStartWritingHook(ctx))
+    : null
+
   const prometheusMdOnly = isHookEnabled("prometheus-md-only")
     ? safeHook("prometheus-md-only", () => createPrometheusMdOnlyHook(ctx))
+    : null
+
+  const brainstormerSisyphusMdOnly = isHookEnabled("brainstormer-sisyphus-md-only")
+    ? safeHook("brainstormer-sisyphus-md-only", () => createBrainstormerSisyphusMdOnlyHook(ctx))
     : null
 
   const sisyphusJuniorNotepad = isHookEnabled("sisyphus-junior-notepad")
@@ -277,7 +295,10 @@ export function createSessionHooks(args: {
     editErrorRecovery,
     delegateTaskRetry,
     startWork,
+    startPlanning,
+    startWriting,
     prometheusMdOnly,
+    brainstormerSisyphusMdOnly,
     sisyphusJuniorNotepad,
     noSisyphusGpt,
     noHephaestusNonGpt,

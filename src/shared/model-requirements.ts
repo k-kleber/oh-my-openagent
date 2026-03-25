@@ -50,6 +50,64 @@ export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
     ],
     requiresProvider: ["openai", "github-copilot", "venice", "opencode"],
   },
+  brainstormer: {
+    fallbackChain: [
+      {
+        providers: ["google", "github-copilot", "opencode"],
+        model: "gemini-3-flash",
+      },
+      {
+        providers: ["google", "github-copilot", "opencode"],
+        model: "gemini-3.1-flash-lite-preview",
+      },
+      {
+        providers: ["openai", "github-copilot", "opencode"],
+        model: "gpt-5.4-mini",
+      },
+      {
+        providers: ["anthropic", "github-copilot", "opencode"],
+        model: "claude-haiku-4-5",
+      },
+      { providers: ["opencode"], model: "gpt-5-nano" },
+    ],
+  },
+  researcher: {
+    fallbackChain: [
+      {
+        providers: ["google", "github-copilot", "opencode"],
+        model: "gemini-3.1-pro",
+        variant: "high",
+      },
+      {
+        providers: ["google", "github-copilot", "opencode"],
+        model: "gemini-3-flash",
+      },
+      {
+        providers: ["anthropic", "github-copilot", "opencode"],
+        model: "claude-sonnet-4-6",
+      },
+      { providers: ["opencode-go"], model: "minimax-m2.5" },
+      { providers: ["opencode"], model: "gpt-5-nano" },
+    ],
+  },
+  writer: {
+    fallbackChain: [
+      {
+        providers: ["google", "github-copilot", "opencode"],
+        model: "gemini-3-flash",
+      },
+      {
+        providers: ["anthropic", "github-copilot", "opencode"],
+        model: "claude-sonnet-4-6",
+      },
+      {
+        providers: ["openai", "github-copilot", "opencode"],
+        model: "gpt-5.4-mini",
+      },
+      { providers: ["opencode-go"], model: "minimax-m2.5" },
+      { providers: ["opencode"], model: "gpt-5-nano" },
+    ],
+  },
   oracle: {
     fallbackChain: [
       {

@@ -12,6 +12,7 @@ Agent factories following `createXXXAgent(model) → AgentConfig` pattern. Each 
 |-------|-------|------|------|----------------|---------|
 | **Sisyphus** | claude-opus-4-6 max | 0.1 | all | k2p5 → kimi-k2.5 → gpt-5.4 medium → glm-5 → big-pickle | Main orchestrator, plans + delegates |
 | **Hephaestus** | gpt-5.3-codex medium | 0.1 | all | gpt-5.4 medium (copilot) | Autonomous deep worker |
+| **Brainstormer** | gemini-3-flash | 0.2 | primary | gemini-3.1-flash-lite → gpt-5.4-mini → haiku → gpt-5-nano | Fast ideation and lightweight strategy |
 | **Oracle** | gpt-5.4 high | 0.1 | subagent | gemini-3.1-pro high → claude-opus-4-6 max | Read-only consultation |
 | **Librarian** | gemini-3-flash | 0.1 | subagent | minimax-m2.5-free → big-pickle | External docs/code search |
 | **Explore** | grok-code-fast-1 | 0.1 | subagent | minimax-m2.5-free → claude-haiku-4-5 → gpt-5-nano | Contextual grep |

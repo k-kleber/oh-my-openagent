@@ -543,6 +543,51 @@ describe("Sisyphus-Junior agent override", () => {
       expect(result.data.agents?.momus?.category).toBe("quick")
     }
   })
+
+  test("schema accepts brainstormer agent override", () => {
+    // given
+    const config = {
+      agents: {
+        brainstormer: {
+          model: "google/gemini-3-flash",
+          temperature: 0.2,
+        },
+      },
+    }
+
+    // when
+    const result = OhMyOpenCodeConfigSchema.safeParse(config)
+
+    // then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.agents?.brainstormer?.model).toBe("google/gemini-3-flash")
+      expect(result.data.agents?.brainstormer?.temperature).toBe(0.2)
+    }
+  })
+
+  test("schema accepts researcher and writer agent overrides", () => {
+    const config = {
+      agents: {
+        researcher: {
+          model: "google/gemini-3.1-pro",
+          variant: "high",
+        },
+        writer: {
+          model: "google/gemini-3-flash",
+          temperature: 0.2,
+        },
+      },
+    }
+
+    const result = OhMyOpenCodeConfigSchema.safeParse(config)
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.agents?.researcher?.model).toBe("google/gemini-3.1-pro")
+      expect(result.data.agents?.writer?.model).toBe("google/gemini-3-flash")
+    }
+  })
 })
 
 describe("BrowserAutomationProviderSchema", () => {

@@ -92,6 +92,37 @@ export function applyToolConfig(params: {
       ...denyTodoTools,
     };
   }
+  const brainstormer = agentByKey(params.agentResult, "brainstormer");
+  if (brainstormer) {
+    brainstormer.permission = {
+      ...brainstormer.permission,
+      edit: "allow",
+      call_omo_agent: "allow",
+      task: "allow",
+      question: questionPermission,
+      ...denyTodoTools,
+    };
+  }
+  const researcher = agentByKey(params.agentResult, "researcher");
+  if (researcher) {
+    researcher.permission = {
+      ...researcher.permission,
+      call_omo_agent: "allow",
+      task: "allow",
+      question: questionPermission,
+      ...denyTodoTools,
+    };
+  }
+  const writer = agentByKey(params.agentResult, "writer");
+  if (writer) {
+    writer.permission = {
+      ...writer.permission,
+      call_omo_agent: "allow",
+      task: "allow",
+      question: questionPermission,
+      ...denyTodoTools,
+    };
+  }
   const prometheus = agentByKey(params.agentResult, "prometheus");
   if (prometheus) {
     prometheus.permission = {

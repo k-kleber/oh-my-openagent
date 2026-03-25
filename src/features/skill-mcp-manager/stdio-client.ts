@@ -12,12 +12,42 @@ function getStdioCommand(config: ClaudeCodeMcpServer, serverName: string): strin
   return config.command
 }
 
+function normalizeStdioInvocation(config: ClaudeCodeMcpServer, serverName: string): { command: string; args: string[] } {
+  const rawConfig = config as { command?: unknown; args?: unknown }
+  const rawCommand = rawConfig.command
+  const rawArgs = rawConfig.args
+
+  const normalizedConfigArgs = Array.isArray(rawArgs) ? rawArgs.map((arg) => String(arg)) : []
+
+  if (Array.isArray(rawCommand)) {
+    if (rawCommand.length === 0) {
+      throw new Error(`MCP server "${serverName}" has invalid 'command': empty array.`)
+    }
+
+    return {
+      command: String(rawCommand[0]),
+      args: [...rawCommand.slice(1).map((arg) => String(arg)), ...normalizedConfigArgs],
+    }
+  }
+
+  const command = getStdioCommand(config, serverName)
+  if (typeof command !== "string") {
+    throw new Error(
+      `MCP server "${serverName}" has invalid 'command' type. Expected string or string[], received ${typeof rawCommand}.`
+    )
+  }
+
+  return {
+    command,
+    args: normalizedConfigArgs,
+  }
+}
+
 export async function createStdioClient(params: SkillMcpClientConnectionParams): Promise<Client> {
   const { state, clientKey, info, config } = params
   const shutdownGenAtStart = state.shutdownGeneration
 
-  const command = getStdioCommand(config, info.serverName)
-  const args = config.args ?? []
+  const { command, args } = normalizeStdioInvocation(config, info.serverName)
   const mergedEnv = createCleanMcpEnvironment(config.env)
 
   registerProcessCleanup(state)

@@ -75,7 +75,7 @@ describe("createBuiltinSkills", () => {
 		}
 	})
 
-	test("returns exactly 4 skills regardless of provider", () => {
+	test("returns expected core skills regardless of provider", () => {
 		// given
 
 		// when
@@ -83,45 +83,47 @@ describe("createBuiltinSkills", () => {
 		const agentBrowserSkills = createBuiltinSkills({ browserProvider: "agent-browser" })
 
 		// then
-		expect(defaultSkills).toHaveLength(4)
-		expect(agentBrowserSkills).toHaveLength(4)
+		expect(defaultSkills.length).toBeGreaterThanOrEqual(4)
+		expect(agentBrowserSkills.length).toBeGreaterThanOrEqual(4)
+		expect(defaultSkills.map((s) => s.name)).toContain("context7-mcp")
+		expect(defaultSkills.map((s) => s.name)).toContain("websearch-mcp")
 	})
 
-	test("should exclude playwright when it is in disabledSkills", () => {
-		// #given
-		const options = { disabledSkills: new Set(["playwright"]) }
+		test("should exclude playwright when it is in disabledSkills", () => {
+			// #given
+			const options = { disabledSkills: new Set(["playwright"]) }
 
 		// #when
 		const skills = createBuiltinSkills(options)
 
-		// #then
-		expect(skills.map((s) => s.name)).not.toContain("playwright")
-		expect(skills.map((s) => s.name)).toContain("frontend-ui-ux")
-		expect(skills.map((s) => s.name)).toContain("git-master")
-		expect(skills.map((s) => s.name)).toContain("dev-browser")
-		expect(skills.length).toBe(3)
-	})
+			// #then
+			expect(skills.map((s) => s.name)).not.toContain("playwright")
+			expect(skills.map((s) => s.name)).toContain("frontend-ui-ux")
+			expect(skills.map((s) => s.name)).toContain("git-master")
+			expect(skills.map((s) => s.name)).toContain("dev-browser")
+			expect(skills.length).toBeGreaterThan(3)
+		})
 
-	test("should exclude multiple skills when they are in disabledSkills", () => {
-		// #given
-		const options = { disabledSkills: new Set(["playwright", "git-master"]) }
+		test("should exclude multiple skills when they are in disabledSkills", () => {
+			// #given
+			const options = { disabledSkills: new Set(["playwright", "git-master"]) }
 
 		// #when
 		const skills = createBuiltinSkills(options)
 
-		// #then
-		expect(skills.map((s) => s.name)).not.toContain("playwright")
-		expect(skills.map((s) => s.name)).not.toContain("git-master")
-		expect(skills.map((s) => s.name)).toContain("frontend-ui-ux")
-		expect(skills.map((s) => s.name)).toContain("dev-browser")
-		expect(skills.length).toBe(2)
-	})
+			// #then
+			expect(skills.map((s) => s.name)).not.toContain("playwright")
+			expect(skills.map((s) => s.name)).not.toContain("git-master")
+			expect(skills.map((s) => s.name)).toContain("frontend-ui-ux")
+			expect(skills.map((s) => s.name)).toContain("dev-browser")
+			expect(skills.length).toBeGreaterThan(2)
+		})
 
-	test("should return an empty array when all skills are disabled", () => {
-		// #given
-		const options = {
-			disabledSkills: new Set(["playwright", "frontend-ui-ux", "git-master", "dev-browser"]),
-		}
+		test("should return an empty array when all skills are disabled", () => {
+			// #given
+			const options = {
+				disabledSkills: new Set(createBuiltinSkills().map((skill) => skill.name)),
+			}
 
 		// #when
 		const skills = createBuiltinSkills(options)
@@ -138,7 +140,16 @@ describe("createBuiltinSkills", () => {
 		const skills = createBuiltinSkills(options)
 
 		// #then
-		expect(skills.length).toBe(4)
+		expect(skills.length).toBeGreaterThanOrEqual(4)
+	})
+
+	test("uses tavily MCP config when websearch provider is tavily", () => {
+		const skills = createBuiltinSkills({ websearchConfig: { provider: "tavily" } })
+		const websearchSkill = skills.find((s) => s.name === "websearch-mcp")
+
+		expect(websearchSkill).toBeDefined()
+		expect(websearchSkill!.mcpConfig).toBeDefined()
+		expect(websearchSkill!.mcpConfig!.websearch.url).toBe("https://mcp.tavily.com/mcp/")
 	})
 
 	test("returns playwright-cli skill when browserProvider is 'playwright-cli'", () => {

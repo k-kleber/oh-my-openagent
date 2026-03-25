@@ -1,5 +1,6 @@
 import type { BuiltinSkill } from "./types"
 import type { BrowserAutomationProvider } from "../../config/schema"
+import type { WebsearchConfig } from "../../config/schema"
 
 import {
   playwrightSkill,
@@ -20,15 +21,18 @@ import {
   memoryPromoteSkill,
   memoryPreCompactionSkill,
   globalToolingPreferenceSkill,
+  context7McpSkill,
+  createWebsearchMcpSkill,
 } from "./skills/index"
 
 export interface CreateBuiltinSkillsOptions {
   browserProvider?: BrowserAutomationProvider
   disabledSkills?: Set<string>
+  websearchConfig?: WebsearchConfig
 }
 
 export function createBuiltinSkills(options: CreateBuiltinSkillsOptions = {}): BuiltinSkill[] {
-  const { browserProvider = "playwright", disabledSkills } = options
+  const { browserProvider = "playwright", disabledSkills, websearchConfig } = options
 
   let browserSkill: BuiltinSkill
   if (browserProvider === "agent-browser") {
@@ -56,6 +60,8 @@ export function createBuiltinSkills(options: CreateBuiltinSkillsOptions = {}): B
     memoryInitSkill,
     memoryPromoteSkill,
     memoryPreCompactionSkill,
+    context7McpSkill,
+    createWebsearchMcpSkill(websearchConfig),
   ]
 
   if (!disabledSkills) {

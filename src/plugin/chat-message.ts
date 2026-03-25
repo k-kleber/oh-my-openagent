@@ -168,6 +168,12 @@ export function createChatMessageHandler(args: {
     if (hooks.startWork && isStartWorkHookOutput(output)) {
       await hooks.startWork["chat.message"]?.(input, output)
     }
+    if (hooks.startPlanning && isStartWorkHookOutput(output)) {
+      await hooks.startPlanning["chat.message"]?.(input, output)
+    }
+    if (hooks.startWriting && isStartWorkHookOutput(output)) {
+      await hooks.startWriting["chat.message"]?.(input, output)
+    }
 
     if (!hasConnectedProvidersCache()) {
       pluginContext.client.tui

@@ -34,9 +34,12 @@ export { createAutoSlashCommandHook } from "./auto-slash-command";
 export { createEditErrorRecoveryHook } from "./edit-error-recovery";
 
 export { createPrometheusMdOnlyHook } from "./prometheus-md-only";
+export { createBrainstormerSisyphusMdOnlyHook } from "./brainstormer-sisyphus-md-only";
 export { createSisyphusJuniorNotepadHook } from "./sisyphus-junior-notepad";
 export { createTaskResumeInfoHook } from "./task-resume-info";
 export { createStartWorkHook } from "./start-work";
+export { createStartPlanningHook } from "./start-planning";
+export { createStartWritingHook } from "./start-writing";
 export { createAtlasHook } from "./atlas";
 export { createDelegateTaskRetryHook } from "./delegate-task-retry";
 export { createQuestionLabelTruncatorHook } from "./question-label-truncator";

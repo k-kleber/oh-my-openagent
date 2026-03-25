@@ -60,6 +60,7 @@ export async function createSkillContext(args: {
   const builtinSkills = createBuiltinSkills({
     browserProvider,
     disabledSkills,
+    websearchConfig: pluginConfig.websearch,
   })
 
   const includeClaudeSkills = pluginConfig.claude_code?.skills !== false

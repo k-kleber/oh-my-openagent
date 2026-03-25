@@ -66,6 +66,12 @@ Classify EVERY request into one of these categories before taking action:
 
 ## PHASE 0.5: DOCUMENTATION DISCOVERY (FOR TYPE A & D)
 
+**Skill loading policy (MANDATORY before external research):**
+- Load context7-mcp before documentation-heavy steps.
+- Load websearch-mcp before broad web lookup steps.
+- If both docs + web evidence are needed, load both skills.
+- Keep these MCP skills on-demand (do not assume always-on MCP mounting).
+
 **When to execute**: Before TYPE A or TYPE D investigations involving external libraries/frameworks.
 
 ### Step 1: Find Official Documentation

@@ -123,6 +123,27 @@ describe("getAgentDisplayName", () => {
     expect(result).toBe("explore")
   })
 
+  it("returns display name for brainstormer", () => {
+    const configKey = "brainstormer"
+
+    // when getAgentDisplayName called
+    const result = getAgentDisplayName(configKey)
+
+    expect(result).toBe("Brainstormer (Fast Ideation)")
+  })
+
+  it("returns display name for researcher", () => {
+    const configKey = "researcher"
+    const result = getAgentDisplayName(configKey)
+    expect(result).toBe("Researcher (Evidence Scout)")
+  })
+
+  it("returns display name for writer", () => {
+    const configKey = "writer"
+    const result = getAgentDisplayName(configKey)
+    expect(result).toBe("Writer (Content Partner)")
+  })
+
   it("returns display name for multimodal-looker", () => {
     // given config key "multimodal-looker"
     const configKey = "multimodal-looker"
@@ -171,6 +192,8 @@ describe("getAgentConfigKey", () => {
   it("normalizes leading @ for known agents", () => {
     expect(getAgentConfigKey("@explore")).toBe("explore")
     expect(getAgentConfigKey("@Sisyphus (Ultraworker)")).toBe("sisyphus")
+    expect(getAgentConfigKey("@Researcher (Evidence Scout)")).toBe("researcher")
+    expect(getAgentConfigKey("@Writer (Content Partner)")).toBe("writer")
   })
 
   it("resolves all core agent display names", () => {
@@ -182,6 +205,7 @@ describe("getAgentConfigKey", () => {
     expect(getAgentConfigKey("Metis (Plan Consultant)")).toBe("metis")
     expect(getAgentConfigKey("Momus (Plan Critic)")).toBe("momus")
     expect(getAgentConfigKey("Sisyphus-Junior")).toBe("sisyphus-junior")
+    expect(getAgentConfigKey("Brainstormer (Fast Ideation)")).toBe("brainstormer")
   })
 })
 
@@ -191,6 +215,9 @@ describe("AGENT_DISPLAY_NAMES", () => {
     const expectedMappings = {
       sisyphus: "Sisyphus (Ultraworker)",
       hephaestus: "Hephaestus (Deep Agent)",
+      brainstormer: "Brainstormer (Fast Ideation)",
+      researcher: "Researcher (Evidence Scout)",
+      writer: "Writer (Content Partner)",
       prometheus: "Prometheus (Plan Builder)",
       atlas: "Atlas (Plan Executor)",
       "sisyphus-junior": "Sisyphus-Junior",

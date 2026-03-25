@@ -4,6 +4,36 @@ import { HANDOFF_TEMPLATE } from "./templates/handoff"
 import type { BuiltinCommandName } from "./types"
 
 describe("loadBuiltinCommands", () => {
+  test("should include start-writing command in loaded commands", () => {
+    const commands = loadBuiltinCommands([])
+
+    expect(commands["start-writing"]).toBeDefined()
+    expect(commands["start-writing"].name).toBe("start-writing")
+    expect(commands["start-writing"].agent).toBe("writer")
+  })
+
+  test("should exclude start-writing when disabled", () => {
+    const disabledCommands: BuiltinCommandName[] = ["start-writing"]
+    const commands = loadBuiltinCommands(disabledCommands)
+
+    expect(commands["start-writing"]).toBeUndefined()
+  })
+
+  test("should include start-planning command in loaded commands", () => {
+    const commands = loadBuiltinCommands([])
+
+    expect(commands["start-planning"]).toBeDefined()
+    expect(commands["start-planning"].name).toBe("start-planning")
+    expect(commands["start-planning"].agent).toBe("prometheus")
+  })
+
+  test("should exclude start-planning when disabled", () => {
+    const disabledCommands: BuiltinCommandName[] = ["start-planning"]
+    const commands = loadBuiltinCommands(disabledCommands)
+
+    expect(commands["start-planning"]).toBeUndefined()
+  })
+
   test("should include handoff command in loaded commands", () => {
     //#given
     const disabledCommands: BuiltinCommandName[] = []

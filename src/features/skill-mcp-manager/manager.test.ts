@@ -354,6 +354,25 @@ describe("SkillMcpManager", () => {
           /Hints[\s\S]*PATH[\s\S]*package exists/
         )
       })
+
+      it("supports command defined as array by normalizing first element as command", async () => {
+        // given
+        const info: SkillMcpClientInfo = {
+          serverName: "array-command-server",
+          skillName: "test-skill",
+          sessionID: "session-1",
+        }
+        const config = {
+          type: "stdio",
+          command: ["nonexistent-command-xyz", "--from-command-array"],
+          args: ["--from-args-field"],
+        } as unknown as ClaudeCodeMcpServer
+
+        // when / #then
+        await expect(manager.getOrCreateClient(info, config)).rejects.toThrow(
+          /Command: nonexistent-command-xyz --from-command-array --from-args-field/
+        )
+      })
     })
   })
 

@@ -12,6 +12,9 @@ import { createMetisAgent, metisPromptMetadata } from "./metis"
 import { createAtlasAgent, atlasPromptMetadata } from "./atlas"
 import { createMomusAgent, momusPromptMetadata } from "./momus"
 import { createHephaestusAgent } from "./hephaestus"
+import { createBrainstormerAgent, BRAINSTORMER_PROMPT_METADATA } from "./brainstormer"
+import { createResearcherAgent, RESEARCHER_PROMPT_METADATA } from "./researcher"
+import { createWriterAgent, WRITER_PROMPT_METADATA } from "./writer"
 import { createSisyphusJuniorAgentWithOverrides } from "./sisyphus-junior"
 import { createMemoryRetrievalAgent } from "./memory-retrieval"
 import { createMemoryStoreAgent } from "./memory-store"
@@ -27,6 +30,9 @@ import { buildAvailableSkills } from "./builtin-agents/available-skills"
 import { collectPendingBuiltinAgents } from "./builtin-agents/general-agents"
 import { maybeCreateSisyphusConfig } from "./builtin-agents/sisyphus-agent"
 import { maybeCreateHephaestusConfig } from "./builtin-agents/hephaestus-agent"
+import { maybeCreateBrainstormerConfig } from "./builtin-agents/brainstormer-agent"
+import { maybeCreateResearcherConfig } from "./builtin-agents/researcher-agent"
+import { maybeCreateWriterConfig } from "./builtin-agents/writer-agent"
 import { maybeCreateAtlasConfig } from "./builtin-agents/atlas-agent"
 import { buildCustomAgentMetadata, parseRegisteredAgentSummaries } from "./custom-agent-summaries"
 
@@ -35,6 +41,9 @@ type AgentSource = AgentFactory | AgentConfig
 const agentSources: Record<BuiltinAgentName, AgentSource> = {
   sisyphus: createSisyphusAgent,
   hephaestus: createHephaestusAgent,
+  brainstormer: createBrainstormerAgent,
+  researcher: createResearcherAgent,
+  writer: createWriterAgent,
   oracle: createOracleAgent,
   librarian: createLibrarianAgent,
   explore: createExploreAgent,
@@ -61,6 +70,9 @@ const agentMetadata: Partial<Record<BuiltinAgentName, AgentPromptMetadata>> = {
   metis: metisPromptMetadata,
   momus: momusPromptMetadata,
   atlas: atlasPromptMetadata,
+  brainstormer: BRAINSTORMER_PROMPT_METADATA,
+  researcher: RESEARCHER_PROMPT_METADATA,
+  writer: WRITER_PROMPT_METADATA,
   "memory-retrieval": {
     category: "utility",
     cost: "FREE",
@@ -189,6 +201,45 @@ export async function createBuiltinAgents(
   })
   if (hephaestusConfig) {
     result["hephaestus"] = hephaestusConfig
+  }
+
+  const brainstormerConfig = maybeCreateBrainstormerConfig({
+    disabledAgents,
+    agentOverrides,
+    availableModels,
+    systemDefaultModel,
+    isFirstRunNoCache,
+    mergedCategories,
+    directory,
+  })
+  if (brainstormerConfig) {
+    result["brainstormer"] = brainstormerConfig
+  }
+
+  const researcherConfig = maybeCreateResearcherConfig({
+    disabledAgents,
+    agentOverrides,
+    availableModels,
+    systemDefaultModel,
+    isFirstRunNoCache,
+    mergedCategories,
+    directory,
+  })
+  if (researcherConfig) {
+    result["researcher"] = researcherConfig
+  }
+
+  const writerConfig = maybeCreateWriterConfig({
+    disabledAgents,
+    agentOverrides,
+    availableModels,
+    systemDefaultModel,
+    isFirstRunNoCache,
+    mergedCategories,
+    directory,
+  })
+  if (writerConfig) {
+    result["writer"] = writerConfig
   }
 
   // Add pending agents after sisyphus and hephaestus to maintain order

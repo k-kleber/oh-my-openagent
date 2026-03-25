@@ -115,3 +115,55 @@ bun run build
 - [ ] Invocation/lookup behavior validated (`getAgentConfigKey`, subagent resolver)
 - [ ] Skills added in correct directory and discovered by loader
 - [ ] Tests + typecheck + build passing
+
+## 6) Brainstormer and deep-planning handoff
+
+The lightweight ideation primary agent is:
+
+- `brainstormer` (display: `Brainstormer (Fast Ideation)`)
+
+### Intent and model profile
+
+- Purpose: fast options and strategy sketches before deep planning.
+- Default fallback profile prioritizes lightweight models in `src/shared/model-requirements.ts`.
+
+### Delegation behavior
+
+- Brainstormer can use `call_omo_agent` for limited, optional checks (e.g., one narrow `explore`/`librarian` query when uncertain).
+- Keep fanout minimal by prompt policy; do not treat Brainstormer like a deep-research orchestrator.
+
+### File-write guardrails
+
+- Brainstormer is constrained by hook policy to markdown files under `.sisyphus/`.
+- Hook: `brainstormer-sisyphus-md-only`
+
+### Start deep planning from brainstorm output
+
+Use builtin command:
+
+- `/start-planning [topic-or-note]`
+
+This command:
+
+1. writes optional intake notes to `.sisyphus/drafts/start-planning-*.md`
+2. switches active session agent to Prometheus
+3. injects explicit handoff context for deep planning
+
+### Research and writing flow
+
+New integrated primary agents:
+
+- `researcher` (`Researcher (Evidence Scout)`)
+- `writer` (`Writer (Content Partner)`)
+
+Recommended default workflow:
+
+1. Use `researcher` for source gathering and evidence packets.
+2. Trigger `/start-writing [topic-or-brief]` to hand off to Writer.
+3. Writer runs conversational intake (audience, tone, format, constraints) before drafting.
+
+Why this workflow:
+
+- Faster than forcing a dedicated writing-planner every time.
+- Better UX for iterative writing, since intake happens naturally in conversation.
+- You can still escalate to Metis/Momus for a formal planning layer when the writing project is complex.

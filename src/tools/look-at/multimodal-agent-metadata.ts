@@ -137,13 +137,14 @@ export async function resolveMultimodalLookerAgentMetadata(
 
     const dynamicMetadata = await resolveDynamicAgentMetadata(ctx, visionCapableModels)
 
-    if (
-      registeredModelIsVisionCapable &&
-      isConfiguredVisionModel(registeredMetadata.agentModel, dynamicMetadata.agentModel)
-    ) {
+    if (registeredModelIsVisionCapable) {
       return {
         agentModel: registeredMetadata.agentModel,
-        agentVariant: registeredMetadata.agentVariant ?? dynamicMetadata.agentVariant,
+        agentVariant:
+          registeredMetadata.agentVariant ??
+          (isConfiguredVisionModel(registeredMetadata.agentModel, dynamicMetadata.agentModel)
+            ? dynamicMetadata.agentVariant
+            : undefined),
       }
     }
 

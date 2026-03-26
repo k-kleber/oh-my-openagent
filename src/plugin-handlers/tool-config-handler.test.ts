@@ -84,7 +84,7 @@ describe("applyToolConfig", () => {
     })
 
     describe("#when config explicitly denies question permission", () => {
-      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "prometheus"])(
+      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "debugger", "prometheus"])(
         "#then should deny question for %s even without CLI_RUN_MODE",
         (agentName) => {
           process.env.OPENCODE_CONFIG_CONTENT = JSON.stringify({
@@ -104,7 +104,7 @@ describe("applyToolConfig", () => {
     })
 
     describe("#when config does not deny question permission", () => {
-      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "prometheus"])(
+      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "debugger", "prometheus"])(
         "#then should allow question for %s in interactive mode",
         (agentName) => {
           process.env.OPENCODE_CONFIG_CONTENT = JSON.stringify({
@@ -124,7 +124,7 @@ describe("applyToolConfig", () => {
     })
 
     describe("#when CLI_RUN_MODE is true and config does not deny", () => {
-      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "prometheus"])(
+      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "debugger", "prometheus"])(
         "#then should deny question for %s via CLI_RUN_MODE",
         (agentName) => {
           process.env.OPENCODE_CONFIG_CONTENT = JSON.stringify({
@@ -144,7 +144,7 @@ describe("applyToolConfig", () => {
     })
 
     describe("#when config deny overrides CLI_RUN_MODE allow", () => {
-      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "prometheus"])(
+      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "debugger", "prometheus"])(
         "#then should deny question for %s when config says deny regardless of CLI_RUN_MODE",
         (agentName) => {
           process.env.OPENCODE_CONFIG_CONTENT = JSON.stringify({
@@ -217,7 +217,7 @@ describe("applyToolConfig", () => {
     })
 
     describe("#when question is in disabled_tools", () => {
-      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "prometheus"])(
+      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "debugger", "prometheus"])(
         "#then should deny question for %s agent",
         (agentName) => {
           const params = createParams({
@@ -236,7 +236,7 @@ describe("applyToolConfig", () => {
     })
 
     describe("#when question is in disabled_tools alongside other tools", () => {
-      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "prometheus"])(
+      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "debugger", "prometheus"])(
         "#then should deny question for %s agent",
         (agentName) => {
           const params = createParams({
@@ -255,7 +255,7 @@ describe("applyToolConfig", () => {
     })
 
     describe("#when disabled_tools does not include question", () => {
-      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "prometheus"])(
+      it.each(["sisyphus", "brainstormer", "researcher", "writer", "hephaestus", "debugger", "prometheus"])(
         "#then should allow question for %s agent",
         (agentName) => {
           const params = createParams({
@@ -271,6 +271,51 @@ describe("applyToolConfig", () => {
           expect(agent.permission.question).toBe("allow")
         },
       )
+    })
+  })
+
+  describe("#given brainstormer agent", () => {
+    describe("#when applying tool config", () => {
+      it("#then should enforce brainstormer write-limited permissions", () => {
+        const params = createParams({ agents: ["brainstormer"] })
+
+        applyToolConfig(params)
+
+        const agent = params.agentResult.brainstormer as {
+          permission: Record<string, unknown>
+        }
+
+        expect(agent.permission.write).toBe("allow")
+        expect(agent.permission.edit).toBe("deny")
+        expect(agent.permission.task).toBe("deny")
+        expect(agent.permission.bash).toBe("deny")
+        expect(agent.permission.interactive_bash).toBe("deny")
+        expect(agent.permission.apply_patch).toBe("deny")
+        expect(agent.permission.call_omo_agent).toBe("allow")
+      })
+    })
+  })
+
+  describe("#given debugger agent", () => {
+    describe("#when applying tool config", () => {
+      it("#then should enforce read-only debugger permissions", () => {
+        const params = createParams({ agents: ["debugger"] })
+
+        applyToolConfig(params)
+
+        const agent = params.agentResult.debugger as {
+          permission: Record<string, unknown>
+        }
+
+        expect(agent.permission.write).toBe("deny")
+        expect(agent.permission.edit).toBe("deny")
+        expect(agent.permission.apply_patch).toBe("deny")
+        expect(agent.permission.patch).toBe("deny")
+        expect(agent.permission.bash).toBe("deny")
+        expect(agent.permission.interactive_bash).toBe("deny")
+        expect(agent.permission.task).toBe("deny")
+        expect(agent.permission.call_omo_agent).toBe("allow")
+      })
     })
   })
 })

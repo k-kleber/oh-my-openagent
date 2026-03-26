@@ -144,6 +144,12 @@ describe("getAgentDisplayName", () => {
     expect(result).toBe("Writer (Content Partner)")
   })
 
+  it("returns display name for debugger", () => {
+    const configKey = "debugger"
+    const result = getAgentDisplayName(configKey)
+    expect(result).toBe("Debugger (Root Cause Hunter)")
+  })
+
   it("returns display name for multimodal-looker", () => {
     // given config key "multimodal-looker"
     const configKey = "multimodal-looker"
@@ -194,6 +200,7 @@ describe("getAgentConfigKey", () => {
     expect(getAgentConfigKey("@Sisyphus (Ultraworker)")).toBe("sisyphus")
     expect(getAgentConfigKey("@Researcher (Evidence Scout)")).toBe("researcher")
     expect(getAgentConfigKey("@Writer (Content Partner)")).toBe("writer")
+    expect(getAgentConfigKey("@Debugger (Root Cause Hunter)")).toBe("debugger")
   })
 
   it("resolves all core agent display names", () => {
@@ -206,6 +213,7 @@ describe("getAgentConfigKey", () => {
     expect(getAgentConfigKey("Momus (Plan Critic)")).toBe("momus")
     expect(getAgentConfigKey("Sisyphus-Junior")).toBe("sisyphus-junior")
     expect(getAgentConfigKey("Brainstormer (Fast Ideation)")).toBe("brainstormer")
+    expect(getAgentConfigKey("Debugger (Root Cause Hunter)")).toBe("debugger")
   })
 })
 
@@ -215,6 +223,7 @@ describe("AGENT_DISPLAY_NAMES", () => {
     const expectedMappings = {
       sisyphus: "Sisyphus (Ultraworker)",
       hephaestus: "Hephaestus (Deep Agent)",
+      debugger: "Debugger (Root Cause Hunter)",
       brainstormer: "Brainstormer (Fast Ideation)",
       researcher: "Researcher (Evidence Scout)",
       writer: "Writer (Content Partner)",

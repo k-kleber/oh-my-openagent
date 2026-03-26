@@ -72,6 +72,13 @@ Classify EVERY request into one of these categories before taking action:
 - If both docs + web evidence are needed, load both skills.
 - Keep these MCP skills on-demand (do not assume always-on MCP mounting).
 
+**Invocation policy (CRITICAL):**
+- After loading \'context7-mcp\', call Context7 via the \'skill_mcp\' tool.
+- Correct form:
+  - \'skill_mcp(mcp_name="context7", tool_name="resolve-library-id", arguments={"query":"...","libraryName":"..."})\'
+  - \'skill_mcp(mcp_name="context7", tool_name="query-docs", arguments={"libraryId":"/org/project","query":"..."})\'
+- Never call dotted skill names like \'context7-mcp.resolve-library-id\' (invalid).
+
 **When to execute**: Before TYPE A or TYPE D investigations involving external libraries/frameworks.
 
 ### Step 1: Find Official Documentation
@@ -108,7 +115,7 @@ webfetch(official_docs_base_url + "/docs/sitemap.xml")
 With sitemap knowledge, fetch the SPECIFIC documentation pages relevant to the query:
 \`\`\`
 webfetch(specific_doc_page_from_sitemap)
-context7_query-docs(libraryId: id, query: "specific topic")
+skill_mcp(mcp_name: "context7", tool_name: "query-docs", arguments: {libraryId: id, query: "specific topic"})
 \`\`\`
 
 **Skip Doc Discovery when**:
@@ -125,8 +132,8 @@ context7_query-docs(libraryId: id, query: "specific topic")
 
 **Execute Documentation Discovery FIRST (Phase 0.5)**, then:
 \`\`\`
-Tool 1: context7_resolve-library-id("library-name")
-        → then context7_query-docs(libraryId: id, query: "specific-topic")
+Tool 1: skill_mcp(mcp_name: "context7", tool_name: "resolve-library-id", arguments: {query: "user goal", libraryName: "library-name"})
+        → then skill_mcp(mcp_name: "context7", tool_name: "query-docs", arguments: {libraryId: id, query: "specific-topic"})
 Tool 2: webfetch(relevant_pages_from_sitemap)  // Targeted, not random
 Tool 3: grep_app_searchGitHub(query: "usage pattern", language: ["TypeScript"])
 \`\`\`
@@ -160,7 +167,7 @@ Step 4: Construct permalink
 Tool 1: gh repo clone owner/repo \${TMPDIR:-/tmp}/repo -- --depth 1
 Tool 2: grep_app_searchGitHub(query: "function_name", repo: "owner/repo")
 Tool 3: gh api repos/owner/repo/commits/HEAD --jq '.sha'
-Tool 4: context7_get-library-docs(id, topic: "relevant-api")
+Tool 4: skill_mcp(mcp_name: "context7", tool_name: "query-docs", arguments: {libraryId: id, query: "relevant-api"})
 \`\`\`
 
 ---
@@ -193,7 +200,7 @@ gh api repos/owner/repo/pulls/<number>/files
 **Execute Documentation Discovery FIRST (Phase 0.5)**, then execute in parallel (6+ calls):
 \`\`\`
 // Documentation (informed by sitemap discovery)
-Tool 1: context7_resolve-library-id → context7_query-docs
+Tool 1: skill_mcp(context7 resolve-library-id) → skill_mcp(context7 query-docs)
 Tool 2: webfetch(targeted_doc_pages_from_sitemap)
 
 // Code Search
@@ -247,7 +254,7 @@ https://github.com/tanstack/query/blob/abc123def/packages/react-query/src/useQue
 
 ### Primary Tools by Purpose
 
-- **Official Docs**: Use context7 — \`context7_resolve-library-id\` → \`context7_query-docs\`
+- **Official Docs**: Use context7 via skill_mcp — \`skill_mcp(mcp_name: "context7", tool_name: "resolve-library-id", ...)\` → \`skill_mcp(mcp_name: "context7", tool_name: "query-docs", ...)\`
 - **Find Docs URL**: Use websearch_exa — \`websearch_web_search_exa("library official documentation")\`
 - **Sitemap Discovery**: Use webfetch — \`webfetch(docs_url + "/sitemap.xml")\` to understand doc structure
 - **Read Doc Page**: Use webfetch — \`webfetch(specific_doc_page)\` for targeted documentation

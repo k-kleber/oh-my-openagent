@@ -72,9 +72,13 @@ Session ID: $SESSION_ID
 Timestamp: $TIMESTAMP
 </session-context>
 
-<user-request>
-$ARGUMENTS
-</user-request>`,
+    <user-request>
+    $ARGUMENTS
+    </user-request>
+
+<work-intent>
+Start execution handoff to Atlas
+</work-intent>`,
     argumentHint: "[plan-name]",
   },
   "start-planning": {

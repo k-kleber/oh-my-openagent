@@ -381,13 +381,7 @@ export function createEventHandler(args: {
               // Prefer the agent/model/provider from the assistant message payload.
               let agentName = agent ?? getSessionAgent(sessionID);
               if (!agentName && sessionID === getMainSessionID()) {
-                if (errorMessage.includes("claude-opus") || errorMessage.includes("opus")) {
-                  agentName = "sisyphus";
-                } else if (errorMessage.includes("gpt-5")) {
-                  agentName = "hephaestus";
-                } else {
-                  agentName = "sisyphus";
-                }
+                agentName = "sisyphus";
               }
 
               if (agentName) {
@@ -445,13 +439,7 @@ export function createEventHandler(args: {
           if (shouldRetryError(errorInfo)) {
             let agentName = getSessionAgent(sessionID);
             if (!agentName && sessionID === getMainSessionID()) {
-              if (retryMessage.includes("claude-opus") || retryMessage.includes("opus")) {
-                agentName = "sisyphus";
-              } else if (retryMessage.includes("gpt-5")) {
-                agentName = "hephaestus";
-              } else {
-                agentName = "sisyphus";
-              }
+              agentName = "sisyphus";
             }
 
             if (agentName) {
@@ -529,13 +517,7 @@ export function createEventHandler(args: {
           let agentName = getSessionAgent(sessionID);
 
           if (!agentName && sessionID === getMainSessionID()) {
-            if (errorMessage.includes("claude-opus") || errorMessage.includes("opus")) {
-              agentName = "sisyphus";
-            } else if (errorMessage.includes("gpt-5")) {
-              agentName = "hephaestus";
-            } else {
-              agentName = "sisyphus";
-            }
+            agentName = "sisyphus";
           }
 
           if (agentName) {

@@ -69,4 +69,46 @@ describe("start-planning hook", () => {
     const content = readFileSync(join(draftsDir, draftFile), "utf-8")
     expect(content).toContain("event-driven redesign")
   })
+
+  test("injects direct-plan policy without pre-plan clarification gate", async () => {
+    const hook = createStartPlanningHook(createMockPluginInput())
+    const output = {
+      parts: [
+        {
+          type: "text",
+          text: `<planning-intent>enabled</planning-intent>\n<session-context>Session ID: $SESSION_ID</session-context>\n<user-request>brainstorm_bumblebee_worktrunks</user-request>`,
+        },
+      ],
+    }
+
+    await hook["chat.message"]({ sessionID: "ses-plan-3" }, output)
+
+    const text = output.parts[0].text || ""
+    expect(text).toContain("Proceed with deep planning. Build a complete plan under .sisyphus/plans/ now.")
+    expect(text).toContain("Treat the provided handoff context as valid input and begin analysis immediately.")
+    expect(text).toContain("Clarifying questions are allowed only when they materially affect architecture/scope")
+    expect(text).toContain("Assumptions and Open Questions")
+  })
+
+  test("includes brainstorm source path when matching brainstorm draft exists", async () => {
+    const brainstormsDir = join(testDir, ".sisyphus", "drafts", "brainstorms")
+    mkdirSync(brainstormsDir, { recursive: true })
+    const brainstormPath = join(brainstormsDir, "brainstorm_bumblebee_worktrunks.md")
+    require("node:fs").writeFileSync(brainstormPath, "# brainstorm", "utf-8")
+
+    const hook = createStartPlanningHook(createMockPluginInput())
+    const output = {
+      parts: [
+        {
+          type: "text",
+          text: `<planning-intent>enabled</planning-intent>\n<session-context>Session ID: $SESSION_ID</session-context>\n<user-request>brainstorm_bumblebee_worktrunks</user-request>`,
+        },
+      ],
+    }
+
+    await hook["chat.message"]({ sessionID: "ses-plan-4" }, output)
+
+    const text = output.parts[0].text || ""
+    expect(text).toContain(`**Brainstorm Source**: ${brainstormPath}`)
+  })
 })

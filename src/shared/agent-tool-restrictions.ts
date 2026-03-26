@@ -23,6 +23,14 @@ const AGENT_RESTRICTIONS: Record<string, Record<string, boolean>> = {
     call_omo_agent: false,
   },
 
+  debugger: {
+    write: false,
+    edit: false,
+    task: false,
+    bash: false,
+    apply_patch: false,
+  },
+
   metis: {
     write: false,
     edit: false,

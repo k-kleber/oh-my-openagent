@@ -27,6 +27,23 @@ describe("loadBuiltinCommands", () => {
     expect(commands["start-planning"].agent).toBe("prometheus")
   })
 
+  test("start-planning template should require immediate first draft plan", () => {
+    const commands = loadBuiltinCommands([])
+    const template = commands["start-planning"].template
+
+    expect(template).toContain("Produce the first complete plan draft immediately under .sisyphus/plans/.")
+    expect(template).toContain("Treat all handoff context (topic, draft, brainstorm source) as valid input and begin analysis immediately.")
+    expect(template).toContain("Clarifying questions are allowed only when they materially change architecture/scope decisions")
+  })
+
+  test("should include work-intent marker in start-work template", () => {
+    const commands = loadBuiltinCommands([])
+
+    expect(commands["start-work"]).toBeDefined()
+    expect(commands["start-work"].template).toContain("<work-intent>")
+    expect(commands["start-work"].template).toContain("Start execution handoff to Atlas")
+  })
+
   test("should exclude start-planning when disabled", () => {
     const disabledCommands: BuiltinCommandName[] = ["start-planning"]
     const commands = loadBuiltinCommands(disabledCommands)

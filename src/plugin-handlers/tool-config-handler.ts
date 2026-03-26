@@ -92,13 +92,34 @@ export function applyToolConfig(params: {
       ...denyTodoTools,
     };
   }
+  const debuggerAgent = agentByKey(params.agentResult, "debugger");
+  if (debuggerAgent) {
+    debuggerAgent.permission = {
+      ...debuggerAgent.permission,
+      write: "deny",
+      edit: "deny",
+      apply_patch: "deny",
+      patch: "deny",
+      bash: "deny",
+      interactive_bash: "deny",
+      task: "deny",
+      question: questionPermission,
+      call_omo_agent: "allow",
+      ...denyTodoTools,
+    };
+  }
   const brainstormer = agentByKey(params.agentResult, "brainstormer");
   if (brainstormer) {
     brainstormer.permission = {
       ...brainstormer.permission,
-      edit: "allow",
+      write: "allow",
+      edit: "deny",
+      bash: "deny",
+      interactive_bash: "deny",
+      apply_patch: "deny",
+      patch: "deny",
+      task: "deny",
       call_omo_agent: "allow",
-      task: "allow",
       question: questionPermission,
       ...denyTodoTools,
     };

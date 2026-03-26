@@ -50,6 +50,17 @@ export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
     ],
     requiresProvider: ["openai", "github-copilot", "venice", "opencode"],
   },
+  debugger: {
+    fallbackChain: [
+      {
+        providers: ["openai", "venice", "opencode"],
+        model: "gpt-5.3-codex",
+        variant: "medium",
+      },
+      { providers: ["github-copilot"], model: "gpt-5.4", variant: "medium" },
+    ],
+    requiresProvider: ["openai", "github-copilot", "venice", "opencode"],
+  },
   brainstormer: {
     fallbackChain: [
       {

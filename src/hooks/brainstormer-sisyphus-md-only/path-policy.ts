@@ -1,6 +1,6 @@
 import { relative, resolve, isAbsolute } from "node:path"
 
-import { ALLOWED_EXTENSIONS } from "./constants"
+import { ALLOWED_BRAINSTORM_FILE_PATTERNS, ALLOWED_EXTENSIONS } from "./constants"
 
 export function isAllowedFile(filePath: string, workspaceRoot: string): boolean {
   const resolved = resolve(workspaceRoot, filePath)
@@ -10,7 +10,9 @@ export function isAllowedFile(filePath: string, workspaceRoot: string): boolean 
     return false
   }
 
-  if (!/\.sisyphus[/\\]/i.test(rel)) {
+  const normalizedRelativePath = rel.replace(/\\/g, "/")
+
+  if (!/\.sisyphus[/\\]/i.test(normalizedRelativePath)) {
     return false
   }
 
@@ -18,5 +20,9 @@ export function isAllowedFile(filePath: string, workspaceRoot: string): boolean 
     resolved.toLowerCase().endsWith(ext.toLowerCase()),
   )
 
-  return hasAllowedExtension
+  if (!hasAllowedExtension) {
+    return false
+  }
+
+  return ALLOWED_BRAINSTORM_FILE_PATTERNS.some((pattern) => pattern.test(normalizedRelativePath))
 }

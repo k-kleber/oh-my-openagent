@@ -664,6 +664,68 @@ describe("SkillMcpManager", () => {
       )
       expect(getOrCreateSpy).toHaveBeenCalledTimes(1)
     })
+
+    it("passes configured timeout to MCP tool calls", async () => {
+      // given
+      const info: SkillMcpClientInfo = {
+        serverName: "timeout-server",
+        skillName: "timeout-skill",
+        sessionID: "session-timeout-1",
+      }
+      const context: SkillMcpServerContext = {
+        config: {
+          url: "https://example.com/mcp",
+          timeout: 180000,
+        },
+        skillName: "timeout-skill",
+      }
+
+      const mockClient = {
+        callTool: mock(async () => ({ content: [{ type: "text", text: "ok" }] })),
+        close: mock(() => Promise.resolve()),
+      }
+
+      const getOrCreateSpy = spyOn(manager as any, "getOrCreateClientWithRetry")
+      getOrCreateSpy.mockResolvedValue(mockClient)
+
+      // when
+      const result = await manager.callTool(info, context, "reindex_repo", { repo_source: "." })
+
+      // then
+      expect(result).toEqual([{ type: "text", text: "ok" }])
+      const callArgs = mockClient.callTool.mock.calls[0]
+      expect(callArgs?.[2]).toEqual({ timeout: 180000 })
+    })
+
+    it("uses default timeout when MCP server timeout is missing", async () => {
+      // given
+      const info: SkillMcpClientInfo = {
+        serverName: "default-timeout-server",
+        skillName: "default-timeout-skill",
+        sessionID: "session-timeout-2",
+      }
+      const context: SkillMcpServerContext = {
+        config: {
+          url: "https://example.com/mcp",
+        },
+        skillName: "default-timeout-skill",
+      }
+
+      const mockClient = {
+        callTool: mock(async () => ({ content: [{ type: "text", text: "ok" }] })),
+        close: mock(() => Promise.resolve()),
+      }
+
+      const getOrCreateSpy = spyOn(manager as any, "getOrCreateClientWithRetry")
+      getOrCreateSpy.mockResolvedValue(mockClient)
+
+      // when
+      await manager.callTool(info, context, "list_indexed_repos", {})
+
+      // then
+      const callArgs = mockClient.callTool.mock.calls[0]
+      expect(callArgs?.[2]).toEqual({ timeout: 300000 })
+    })
   })
 
   describe("OAuth integration", () => {

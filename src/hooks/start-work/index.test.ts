@@ -12,7 +12,6 @@ import {
 import type { BoulderState } from "../../features/boulder-state"
 import * as sessionState from "../../features/claude-code-session-state"
 import * as worktreeDetector from "./worktree-detector"
-import * as worktreeDetector from "./worktree-detector"
 
 describe("start-work hook", () => {
   let testDir: string
@@ -60,6 +59,23 @@ describe("start-work hook", () => {
 
       // then - output should be unchanged
       expect(output.parts[0].text).toBe("Just a regular message")
+    })
+
+    test("should ignore start-planning payload with planning-intent and no work-intent", async () => {
+      const hook = createStartWorkHook(createMockPluginInput())
+      const output = {
+        parts: [
+          {
+            type: "text",
+            text: `<session-context>Session ID: ses_abc</session-context>\n<planning-intent>Start deep planning handoff to Prometheus</planning-intent>\n<user-request>brainstorm_bumblebee_worktrunks</user-request>`,
+          },
+        ],
+      }
+
+      await hook["chat.message"]({ sessionID: "session-plan" }, output)
+
+      expect(output.parts[0].text).not.toContain("## Plan Not Found")
+      expect(output.parts[0].text).not.toContain("---")
     })
 
     test("should detect start-work command via session-context tag", async () => {

@@ -76,6 +76,9 @@ export function createStartWorkHook(ctx: PluginInput) {
           .trim() || ""
 
       if (!promptText.includes("<session-context>")) return
+      const hasWorkIntent = promptText.includes("<work-intent>")
+      const hasOtherIntent = promptText.includes("<planning-intent>") || promptText.includes("<writing-intent>")
+      if (!hasWorkIntent && hasOtherIntent) return
 
       log(`[${HOOK_NAME}] Processing start-work command`, { sessionID: input.sessionID })
       updateSessionAgent(input.sessionID, "atlas")

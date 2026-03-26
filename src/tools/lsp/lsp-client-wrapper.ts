@@ -76,6 +76,76 @@ export function findWorkspaceRoot(filePath: string): string {
   return canonicalize(dirname(resolve(filePath)))
 }
 
+function findCompileCommandsInAncestors(startPath: string): string | null {
+  let dir = resolve(startPath)
+
+  if (!existsSync(dir) || !isDirectoryPath(dir)) {
+    dir = dirname(dir)
+  }
+
+  let prevDir = ""
+  while (dir !== prevDir) {
+    const direct = join(dir, "compile_commands.json")
+    if (existsSync(direct)) {
+      return dir
+    }
+
+    const buildDir = join(dir, "build", "compile_commands.json")
+    if (existsSync(buildDir)) {
+      return join(dir, "build")
+    }
+
+    prevDir = dir
+    dir = dirname(dir)
+  }
+
+  return null
+}
+
+export function findCompileCommandsDir(filePath: string, workspaceRoot: string): string | null {
+  const fromFileAncestors = findCompileCommandsInAncestors(filePath)
+  if (fromFileAncestors) {
+    return fromFileAncestors
+  }
+
+  const directAtRoot = join(workspaceRoot, "compile_commands.json")
+  if (existsSync(directAtRoot)) {
+    return workspaceRoot
+  }
+
+  const buildAtRoot = join(workspaceRoot, "build", "compile_commands.json")
+  if (existsSync(buildAtRoot)) {
+    return join(workspaceRoot, "build")
+  }
+
+  return null
+}
+
+function hasCompileCommandsDirFlag(command: string[]): boolean {
+  for (let i = 0; i < command.length; i++) {
+    const arg = command[i]
+    if (arg === "--compile-commands-dir") {
+      return true
+    }
+    if (arg.startsWith("--compile-commands-dir=")) {
+      return true
+    }
+  }
+  return false
+}
+
+function maybeInjectCompileCommandsDir(serverId: string, command: string[], compileCommandsDir: string | null): string[] {
+  if (serverId !== "clangd") {
+    return command
+  }
+
+  if (!compileCommandsDir || hasCompileCommandsDirFlag(command)) {
+    return command
+  }
+
+  return [...command, `--compile-commands-dir=${compileCommandsDir}`]
+}
+
 export function formatServerLookupError(result: Exclude<ServerLookupResult, { status: "found" }>): string {
   if (result.status === "not_installed") {
     const { server, installHint } = result
@@ -128,12 +198,18 @@ export async function withLspClient<T>(filePath: string, fn: (client: LSPClient)
     throw new Error(formatServerLookupError(result))
   }
 
-  const server = result.server
   const root = findWorkspaceRoot(absPath)
+  const compileCommandsDir = findCompileCommandsDir(absPath, root)
+  const server = {
+    ...result.server,
+    command: maybeInjectCompileCommandsDir(result.server.id, result.server.command, compileCommandsDir),
+  }
   log("[LSP] Resolved workspace root", {
     filePath: absPath,
     serverId: server.id,
     workspaceRoot: root,
+    compileCommandsDir,
+    command: server.command,
   })
   const client = await lspManager.getClient(root, server)
 

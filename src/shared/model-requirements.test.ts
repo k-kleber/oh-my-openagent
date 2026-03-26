@@ -284,10 +284,23 @@ describe("AGENT_MODEL_REQUIREMENTS", () => {
     expect(hephaestus.requiresModel).toBeUndefined()
   })
 
+  test("debugger supports openai, github-copilot, venice, and opencode providers", () => {
+    const debuggerRequirement = AGENT_MODEL_REQUIREMENTS["debugger"]
+
+    expect(debuggerRequirement).toBeDefined()
+    expect(debuggerRequirement.requiresProvider).toEqual(["openai", "github-copilot", "venice", "opencode"])
+
+    const primary = debuggerRequirement.fallbackChain[0]
+    expect(primary.model).toBe("gpt-5.3-codex")
+    expect(primary.variant).toBe("medium")
+    expect(primary.providers).toEqual(["openai", "venice", "opencode"])
+  })
+
   test("all configured agent requirements have valid fallbackChain arrays", () => {
     const expectedAgents = [
       "sisyphus",
       "hephaestus",
+      "debugger",
       "brainstormer",
       "researcher",
       "writer",

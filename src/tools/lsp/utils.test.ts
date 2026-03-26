@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs"
 import { dirname, join } from "path"
 import os from "os"
 
-import { findWorkspaceRoot } from "./lsp-client-wrapper"
+import { findCompileCommandsDir, findWorkspaceRoot } from "./lsp-client-wrapper"
 
 describe("lsp utils", () => {
   describe("findWorkspaceRoot", () => {
@@ -110,6 +110,60 @@ describe("lsp utils", () => {
         writeFileSync(file, "int file() { return 0; }")
 
         expect(findWorkspaceRoot(file)).toBe(dirname(file))
+      } finally {
+        rmSync(tmp, { recursive: true, force: true })
+      }
+    })
+  })
+
+  describe("findCompileCommandsDir", () => {
+    it("returns nearest ancestor compile_commands.json directory", () => {
+      const tmp = mkdtempSync(join(os.tmpdir(), "omo-lsp-compile-dir-nearest-"))
+      try {
+        const repo = join(tmp, "repo")
+        const nested = join(repo, "src", "pkg")
+        mkdirSync(nested, { recursive: true })
+
+        writeFileSync(join(repo, "compile_commands.json"), "[]")
+        const file = join(nested, "main.cpp")
+        writeFileSync(file, "int main() { return 0; }")
+
+        expect(findCompileCommandsDir(file, repo)).toBe(repo)
+      } finally {
+        rmSync(tmp, { recursive: true, force: true })
+      }
+    })
+
+    it("falls back to workspace build/compile_commands.json", () => {
+      const tmp = mkdtempSync(join(os.tmpdir(), "omo-lsp-compile-dir-build-"))
+      try {
+        const repo = join(tmp, "repo")
+        const buildDir = join(repo, "build")
+        const nested = join(repo, "src")
+        mkdirSync(buildDir, { recursive: true })
+        mkdirSync(nested, { recursive: true })
+
+        writeFileSync(join(buildDir, "compile_commands.json"), "[]")
+        const file = join(nested, "main.cpp")
+        writeFileSync(file, "int main() { return 0; }")
+
+        expect(findCompileCommandsDir(file, repo)).toBe(buildDir)
+      } finally {
+        rmSync(tmp, { recursive: true, force: true })
+      }
+    })
+
+    it("returns null when compile database cannot be found", () => {
+      const tmp = mkdtempSync(join(os.tmpdir(), "omo-lsp-compile-dir-none-"))
+      try {
+        const repo = join(tmp, "repo")
+        const nested = join(repo, "src")
+        mkdirSync(nested, { recursive: true })
+
+        const file = join(nested, "main.cpp")
+        writeFileSync(file, "int main() { return 0; }")
+
+        expect(findCompileCommandsDir(file, repo)).toBeNull()
       } finally {
         rmSync(tmp, { recursive: true, force: true })
       }

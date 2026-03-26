@@ -86,6 +86,34 @@ describe("createToolExecuteBeforeHandler", () => {
     expect(called).toBe(false)
   })
 
+  test("runs brainstormer md-only hook during pre-tool chain", async () => {
+    let called = false
+    const ctx = {
+      client: {
+        session: {
+          messages: async () => ({ data: [] }),
+        },
+      },
+    }
+
+    const hooks = {
+      brainstormerSisyphusMdOnly: {
+        "tool.execute.before": async () => {
+          called = true
+        },
+      },
+    }
+
+    const handler = createToolExecuteBeforeHandler({ ctx, hooks })
+
+    await handler(
+      { tool: "Write", sessionID: "ses_b", callID: "call_b" },
+      { args: { filePath: ".sisyphus/drafts/brainstorm-test.md" } },
+    )
+
+    expect(called).toBe(true)
+  })
+
   describe("task tool subagent_type normalization", () => {
     const emptyHooks = {}
 

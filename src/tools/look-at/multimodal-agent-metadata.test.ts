@@ -94,7 +94,41 @@ describe("resolveMultimodalLookerAgentMetadata", () => {
     })
   })
 
-  test("prefers connected vision-capable provider models before the hardcoded fallback chain", async () => {
+  test("keeps configured multimodal-looker model when it is vision-capable", async () => {
+    // given
+    setVisionCapableModelsCache(new Map([
+      [
+        "openai/gpt-5.4",
+        { providerID: "openai", modelID: "gpt-5.4" },
+      ],
+      [
+        "rundao/public/qwen3.5-397b",
+        { providerID: "rundao", modelID: "public/qwen3.5-397b" },
+      ],
+    ]))
+    spyOn(modelAvailability, "fetchAvailableModels").mockResolvedValue(
+      new Set(["openai/gpt-5.4", "rundao/public/qwen3.5-397b"]),
+    )
+    spyOn(connectedProvidersCache, "readConnectedProvidersCache").mockReturnValue(["openai", "rundao"])
+    const ctx = createPluginInput([
+      {
+        name: "multimodal-looker",
+        model: { providerID: "openai", modelID: "gpt-5.4" },
+        variant: "medium",
+      },
+    ])
+
+    // when
+    const result = await resolveMultimodalLookerAgentMetadata(ctx)
+
+    // then
+    expect(result).toEqual({
+      agentModel: { providerID: "openai", modelID: "gpt-5.4" },
+      agentVariant: "medium",
+    })
+  })
+
+  test("uses dynamic vision model when configured multimodal-looker model is not vision-capable", async () => {
     // given
     setVisionCapableModelsCache(new Map([
       [

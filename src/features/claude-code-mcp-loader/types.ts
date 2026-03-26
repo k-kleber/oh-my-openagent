@@ -7,6 +7,7 @@ export interface ClaudeCodeMcpServer {
   args?: string[]
   env?: Record<string, string>
   headers?: Record<string, string>
+  timeout?: number
   oauth?: {
     clientId?: string
     scopes?: string[]
@@ -29,6 +30,7 @@ export interface McpRemoteConfig {
   type: "remote"
   url: string
   headers?: Record<string, string>
+  timeout?: number
   enabled?: boolean
 }
 

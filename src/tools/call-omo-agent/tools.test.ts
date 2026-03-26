@@ -1,6 +1,14 @@
 const { beforeEach, describe, test, expect, mock } = require("bun:test")
 const { createCallOmoAgent } = require("./tools")
 
+function createMockClientWithAgents(agents) {
+  return {
+    app: {
+      agents: mock(() => Promise.resolve({ data: agents })),
+    },
+  }
+}
+
 describe("createCallOmoAgent", () => {
   const assertCanSpawnMock = mock(() => Promise.resolve(undefined))
   const reserveCommitMock = mock(() => 1)
@@ -184,6 +192,93 @@ describe("createCallOmoAgent", () => {
 
     //#then
     expect(result).toContain("background_task.maxDepth=3")
+  })
+
+  test("blocks primary runtime agents", async () => {
+    //#given
+    const toolDef = createCallOmoAgent(
+      {
+        ...mockCtx,
+        client: createMockClientWithAgents([
+          { name: "explore", mode: "subagent" },
+          { name: "oracle", mode: "primary" },
+        ]),
+      },
+      mockBackgroundManager,
+      [],
+    )
+    const executeFunc = toolDef.execute as Function
+
+    //#when
+    const result = await executeFunc(
+      {
+        description: "Test",
+        prompt: "Test prompt",
+        subagent_type: "oracle",
+        run_in_background: true,
+      },
+      { sessionID: "test", messageID: "msg", agent: "test", abort: new AbortController().signal },
+    )
+
+    //#then
+    expect(result).toContain("Cannot call non-subagent agent \"oracle\"")
+  })
+
+  test("blocks all-mode runtime agents", async () => {
+    //#given
+    const toolDef = createCallOmoAgent(
+      {
+        ...mockCtx,
+        client: createMockClientWithAgents([
+          { name: "explore", mode: "subagent" },
+          { name: "hephaestus", mode: "all" },
+        ]),
+      },
+      mockBackgroundManager,
+      [],
+    )
+    const executeFunc = toolDef.execute as Function
+
+    //#when
+    const result = await executeFunc(
+      {
+        description: "Test",
+        prompt: "Test prompt",
+        subagent_type: "hephaestus",
+        run_in_background: true,
+      },
+      { sessionID: "test", messageID: "msg", agent: "test", abort: new AbortController().signal },
+    )
+
+    //#then
+    expect(result).toContain("Cannot call non-subagent agent \"hephaestus\"")
+  })
+
+  test("allows subagent runtime agents", async () => {
+    //#given
+    const toolDef = createCallOmoAgent(
+      {
+        ...mockCtx,
+        client: createMockClientWithAgents([{ name: "explore", mode: "subagent" }]),
+      },
+      mockBackgroundManager,
+      [],
+    )
+    const executeFunc = toolDef.execute as Function
+
+    //#when
+    const result = await executeFunc(
+      {
+        description: "Test",
+        prompt: "Test prompt",
+        subagent_type: "explore",
+        run_in_background: true,
+      },
+      { sessionID: "test", messageID: "msg", agent: "test", abort: new AbortController().signal },
+    )
+
+    //#then
+    expect(result).not.toContain("Cannot call non-subagent agent")
   })
 })
 

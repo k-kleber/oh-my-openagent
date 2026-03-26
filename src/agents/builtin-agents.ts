@@ -12,6 +12,7 @@ import { createMetisAgent, metisPromptMetadata } from "./metis"
 import { createAtlasAgent, atlasPromptMetadata } from "./atlas"
 import { createMomusAgent, momusPromptMetadata } from "./momus"
 import { createHephaestusAgent } from "./hephaestus"
+import { createDebuggerAgent, DEBUGGER_PROMPT_METADATA } from "./debugger"
 import { createBrainstormerAgent, BRAINSTORMER_PROMPT_METADATA } from "./brainstormer"
 import { createResearcherAgent, RESEARCHER_PROMPT_METADATA } from "./researcher"
 import { createWriterAgent, WRITER_PROMPT_METADATA } from "./writer"
@@ -30,6 +31,7 @@ import { buildAvailableSkills } from "./builtin-agents/available-skills"
 import { collectPendingBuiltinAgents } from "./builtin-agents/general-agents"
 import { maybeCreateSisyphusConfig } from "./builtin-agents/sisyphus-agent"
 import { maybeCreateHephaestusConfig } from "./builtin-agents/hephaestus-agent"
+import { maybeCreateDebuggerConfig } from "./builtin-agents/debugger-agent"
 import { maybeCreateBrainstormerConfig } from "./builtin-agents/brainstormer-agent"
 import { maybeCreateResearcherConfig } from "./builtin-agents/researcher-agent"
 import { maybeCreateWriterConfig } from "./builtin-agents/writer-agent"
@@ -41,6 +43,7 @@ type AgentSource = AgentFactory | AgentConfig
 const agentSources: Record<BuiltinAgentName, AgentSource> = {
   sisyphus: createSisyphusAgent,
   hephaestus: createHephaestusAgent,
+  debugger: createDebuggerAgent,
   brainstormer: createBrainstormerAgent,
   researcher: createResearcherAgent,
   writer: createWriterAgent,
@@ -70,6 +73,7 @@ const agentMetadata: Partial<Record<BuiltinAgentName, AgentPromptMetadata>> = {
   metis: metisPromptMetadata,
   momus: momusPromptMetadata,
   atlas: atlasPromptMetadata,
+  debugger: DEBUGGER_PROMPT_METADATA,
   brainstormer: BRAINSTORMER_PROMPT_METADATA,
   researcher: RESEARCHER_PROMPT_METADATA,
   writer: WRITER_PROMPT_METADATA,
@@ -201,6 +205,19 @@ export async function createBuiltinAgents(
   })
   if (hephaestusConfig) {
     result["hephaestus"] = hephaestusConfig
+  }
+
+  const debuggerConfig = maybeCreateDebuggerConfig({
+    disabledAgents,
+    agentOverrides,
+    availableModels,
+    systemDefaultModel,
+    isFirstRunNoCache,
+    mergedCategories,
+    directory,
+  })
+  if (debuggerConfig) {
+    result["debugger"] = debuggerConfig
   }
 
   const brainstormerConfig = maybeCreateBrainstormerConfig({

@@ -59,6 +59,9 @@ When escalating, provide:
 
 ## Boundaries
 - Do not perform code edits.
+- If file output is required, only create a new brainstorm handoff markdown file under
+  .sisyphus/drafts/brainstorm*.md (or .sisyphus/drafts/brainstorms/brainstorm*.md).
+- Never overwrite existing brainstorm files.
 - Do not run long exhaustive investigations.
 - Keep responses concise, practical, and decision-oriented.`
 

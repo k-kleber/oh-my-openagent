@@ -6,8 +6,10 @@ import type { CategoriesConfig, AgentOverrides } from "../../config/schema"
 import type { FallbackEntry } from "../../shared/model-requirements"
 import { AGENT_MODEL_REQUIREMENTS } from "../../shared/model-requirements"
 import { getAgentConfigKey } from "../../shared/agent-display-names"
+import { getAgentDisplayName } from "../../shared/agent-display-names"
 import { normalizeFallbackModels } from "../../shared/model-resolver"
 import { buildFallbackChainFromModels } from "../../shared/fallback-chain-from-models"
+import { normalizeSDKResponse } from "../../shared/normalize-sdk-response"
 import { log } from "../../shared"
 import { executeBackground } from "./background-executor"
 import { executeSync } from "./sync-executor"
@@ -85,6 +87,29 @@ export function createCallOmoAgent(
       // Check if agent is disabled
       if (disabledAgents.some((disabled) => disabled.toLowerCase() === normalizedAgent)) {
         return `Error: Agent "${normalizedAgent}" is disabled via disabled_agents configuration. Remove it from disabled_agents in your oh-my-opencode.json to use it.`
+      }
+
+      if (typeof ctx.client?.app?.agents === "function") {
+        try {
+          type AgentInfo = { name: string; mode?: "subagent" | "primary" | "all" }
+          const agentsResult = await ctx.client.app.agents()
+          const agents = normalizeSDKResponse(agentsResult, [] as AgentInfo[], {
+            preferResponseOnMissingData: true,
+          })
+
+          const requestedDisplayName = getAgentDisplayName(normalizedAgent)
+          const runtimeAgent = agents.find((agent) => {
+            const name = agent.name.toLowerCase()
+            return name === normalizedAgent || name === requestedDisplayName.toLowerCase()
+          })
+
+          if (runtimeAgent && runtimeAgent.mode !== "subagent") {
+            return `Error: Cannot call non-subagent agent "${runtimeAgent.name}" via call_omo_agent. This tool only supports subagent-mode agents. Use workflow commands (e.g., /start-work, /start-planning, /start-writing) to switch primary agents.`
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          return `Error: Failed to validate agent mode for "${normalizedAgent}": ${message}`
+        }
       }
 
       const fallbackChain = resolveFallbackChainForCallOmoAgent({

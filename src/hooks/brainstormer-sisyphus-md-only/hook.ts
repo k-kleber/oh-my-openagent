@@ -1,4 +1,6 @@
 import type { PluginInput } from "@opencode-ai/plugin"
+import { existsSync } from "node:fs"
+import { resolve } from "node:path"
 import { getSessionAgent } from "../../features/claude-code-session-state"
 import { getAgentConfigKey } from "../../shared/agent-display-names"
 import { log } from "../../shared/logger"
@@ -22,6 +24,15 @@ export function createBrainstormerSisyphusMdOnlyHook(ctx: PluginInput) {
         return
       }
 
+      const normalizedTool = input.tool.toLowerCase()
+
+      if (normalizedTool === "edit" || normalizedTool === "apply_patch" || normalizedTool === "patch") {
+        throw new Error(
+          `[${HOOK_NAME}] Brainstormer may only create brainstorm handoff files via Write. ` +
+            `Tool not allowed: ${input.tool}`,
+        )
+      }
+
       const filePath = (output.args.filePath ?? output.args.path ?? output.args.file) as
         | string
         | undefined
@@ -35,8 +46,17 @@ export function createBrainstormerSisyphusMdOnlyHook(ctx: PluginInput) {
           agent: agentName,
         })
         throw new Error(
-          `[${HOOK_NAME}] Brainstormer may only modify markdown files under .sisyphus/. ` +
+          `[${HOOK_NAME}] Brainstormer may only write brainstorm handoff files at `.concat(
+            `.sisyphus/drafts/brainstorm*.md or .sisyphus/drafts/brainstorms/brainstorm*.md. `,
             `Attempted: ${filePath}`,
+          ),
+        )
+      }
+
+      const absolutePath = resolve(ctx.directory, filePath)
+      if (existsSync(absolutePath)) {
+        throw new Error(
+          `[${HOOK_NAME}] Brainstormer may only create new brainstorm handoff files. Existing file detected: ${filePath}`,
         )
       }
     },

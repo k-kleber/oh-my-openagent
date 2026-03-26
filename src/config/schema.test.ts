@@ -566,6 +566,25 @@ describe("Sisyphus-Junior agent override", () => {
     }
   })
 
+  test("schema accepts debugger agent override", () => {
+    const config = {
+      agents: {
+        debugger: {
+          model: "openai/gpt-5.3-codex",
+          temperature: 0.1,
+        },
+      },
+    }
+
+    const result = OhMyOpenCodeConfigSchema.safeParse(config)
+
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.agents?.debugger?.model).toBe("openai/gpt-5.3-codex")
+      expect(result.data.agents?.debugger?.temperature).toBe(0.1)
+    }
+  })
+
   test("schema accepts researcher and writer agent overrides", () => {
     const config = {
       agents: {

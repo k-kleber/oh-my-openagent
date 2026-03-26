@@ -62,6 +62,7 @@ export const AgentOverridesSchema = z.object({
   hephaestus: AgentOverrideConfigSchema.extend({
     allow_non_gpt_model: z.boolean().optional(),
   }).optional(),
+  debugger: AgentOverrideConfigSchema.optional(),
   brainstormer: AgentOverrideConfigSchema.optional(),
   researcher: AgentOverrideConfigSchema.optional(),
   writer: AgentOverrideConfigSchema.optional(),

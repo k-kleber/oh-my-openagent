@@ -51,6 +51,7 @@ export function collectPendingBuiltinAgents(input: {
 
     if (agentName === "sisyphus") continue
     if (agentName === "hephaestus") continue
+    if (agentName === "debugger") continue
     if (agentName === "brainstormer") continue
     if (agentName === "researcher") continue
     if (agentName === "writer") continue

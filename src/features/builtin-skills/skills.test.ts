@@ -87,6 +87,28 @@ describe("createBuiltinSkills", () => {
 		expect(agentBrowserSkills.length).toBeGreaterThanOrEqual(4)
 		expect(defaultSkills.map((s) => s.name)).toContain("context7-mcp")
 		expect(defaultSkills.map((s) => s.name)).toContain("websearch-mcp")
+		expect(defaultSkills.map((s) => s.name)).toContain("code-intelligence-init")
+	})
+
+	test("memory-init template includes code-intelligence handoff guidance", () => {
+		const skills = createBuiltinSkills()
+		const memoryInit = skills.find((s) => s.name === "memory-init")
+
+		expect(memoryInit).toBeDefined()
+		expect(memoryInit!.template).toContain("Verify code-intelligence readiness")
+		expect(memoryInit!.template).toContain("code-intelligence-init")
+		expect(memoryInit!.mcpConfig).toBeDefined()
+		expect(memoryInit!.mcpConfig).toHaveProperty("fastcode")
+	})
+
+	test("code-intelligence-init template includes FastCode API/CLI fallback", () => {
+		const skills = createBuiltinSkills()
+		const initSkill = skills.find((s) => s.name === "code-intelligence-init")
+
+		expect(initSkill).toBeDefined()
+		expect(initSkill!.template).toContain("api.py --host 0.0.0.0 --port 8000")
+		expect(initSkill!.template).toContain("/load-and-index")
+		expect(initSkill!.template).toContain("main.py index --repo-path .")
 	})
 
 		test("should exclude playwright when it is in disabledSkills", () => {

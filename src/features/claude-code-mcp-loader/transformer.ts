@@ -30,6 +30,10 @@ export function transformMcpServer(
       config.headers = expanded.headers
     }
 
+    if (typeof expanded.timeout === "number" && Number.isFinite(expanded.timeout) && expanded.timeout > 0) {
+      ;(config as McpRemoteConfig & { timeout?: number }).timeout = expanded.timeout
+    }
+
     return config
   }
 

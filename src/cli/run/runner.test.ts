@@ -67,7 +67,7 @@ describe("resolveRunAgent", () => {
     const agent = resolveRunAgent({ message: "test" }, config, {})
 
     // then
-    expect(agent).toBe("Hephaestus (Deep Agent)")
+    expect(agent).toBe("Brainstormer (Fast Ideation)")
   })
 
   it("maps display-name style default_run_agent values to canonical display names", () => {

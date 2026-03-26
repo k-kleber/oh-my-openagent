@@ -6,6 +6,7 @@
 export const AGENT_DISPLAY_NAMES: Record<string, string> = {
   sisyphus: "Sisyphus (Ultraworker)",
   hephaestus: "Hephaestus (Deep Agent)",
+  debugger: "Debugger (Root Cause Hunter)",
   brainstormer: "Brainstormer (Fast Ideation)",
   researcher: "Researcher (Evidence Scout)",
   writer: "Writer (Content Partner)",

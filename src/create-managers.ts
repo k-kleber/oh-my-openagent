@@ -7,6 +7,7 @@ import { BackgroundManager } from "./features/background-agent"
 import { SkillMcpManager } from "./features/skill-mcp-manager"
 import { initTaskToastManager } from "./features/task-toast-manager"
 import { TmuxSessionManager } from "./features/tmux-subagent"
+import { initLspSpawnToastNotifier } from "./tools/lsp/spawn-toast-notifier"
 import { createConfigHandler } from "./plugin-handlers"
 import { log } from "./shared"
 
@@ -63,6 +64,7 @@ export function createManagers(args: {
   )
 
   initTaskToastManager(ctx.client)
+  initLspSpawnToastNotifier(ctx)
 
   const skillMcpManager = new SkillMcpManager()
 

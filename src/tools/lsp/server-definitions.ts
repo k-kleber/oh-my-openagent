@@ -64,7 +64,10 @@ export const BUILTIN_SERVERS: Record<string, Omit<LSPServerConfig, "id">> = {
   fsharp: { command: ["fsautocomplete"], extensions: [".fs", ".fsi", ".fsx", ".fsscript"] },
   "sourcekit-lsp": { command: ["sourcekit-lsp"], extensions: [".swift", ".objc", ".objcpp"] },
   rust: { command: ["rust-analyzer"], extensions: [".rs"] },
-  clangd: { command: ["clangd", "--background-index", "--clang-tidy"], extensions: [".c", ".cpp", ".cc", ".cxx", ".c++", ".h", ".hpp", ".hh", ".hxx", ".h++"] },
+  clangd: {
+    command: ["clangd", "--background-index", "--clang-tidy", "--pch-storage=disk"],
+    extensions: [".c", ".cpp", ".cc", ".cxx", ".c++", ".h", ".hpp", ".hh", ".hxx", ".h++"],
+  },
   svelte: { command: ["svelteserver", "--stdio"], extensions: [".svelte"] },
   astro: { command: ["astro-ls", "--stdio"], extensions: [".astro"] },
   bash: { command: ["bash-language-server", "start"], extensions: [".sh", ".bash", ".zsh", ".ksh"] },

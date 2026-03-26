@@ -10,6 +10,12 @@ interface ManagedClient {
   isInitializing: boolean;
   initializingSince?: number;
 }
+
+type LspSpawnNotification = {
+  serverId: string;
+  root: string;
+}
+
 class LSPServerManager {
   private static instance: LSPServerManager;
   private clients = new Map<string, ManagedClient>();
@@ -17,6 +23,7 @@ class LSPServerManager {
   private readonly IDLE_TIMEOUT = 5 * 60 * 1000;
   private readonly INIT_TIMEOUT = 60 * 1000;
   private cleanupHandle: LspProcessCleanupHandle | null = null;
+  private spawnNotifier?: (notification: LspSpawnNotification) => void;
   private constructor() {
     this.startCleanupTimer();
     this.registerProcessCleanup();
@@ -45,6 +52,10 @@ class LSPServerManager {
 
   private getKey(root: string, serverId: string): string {
     return `${root}::${serverId}`;
+  }
+
+  setSpawnNotifier(notifier?: (notification: LspSpawnNotification) => void): void {
+    this.spawnNotifier = notifier;
   }
 
   private startCleanupTimer(): void {
@@ -110,6 +121,10 @@ class LSPServerManager {
     }
 
     const client = new LSPClient(root, server);
+    this.spawnNotifier?.({
+      serverId: server.id,
+      root,
+    });
     const initPromise = (async () => {
       await client.start();
       await client.initialize();

@@ -1,10 +1,11 @@
-import { extname, resolve } from "path"
+import { dirname, extname, join, resolve } from "path"
 import { fileURLToPath } from "node:url"
-import { existsSync, statSync } from "fs"
+import { existsSync, realpathSync, statSync } from "fs"
 
 import { LSPClient, lspManager } from "./client"
 import { findServerForExtension } from "./config"
 import type { ServerLookupResult } from "./types"
+import { log } from "../../shared/logger"
 
 export function isDirectoryPath(filePath: string): boolean {
   if (!existsSync(filePath)) {
@@ -21,23 +22,58 @@ export function findWorkspaceRoot(filePath: string): string {
   let dir = resolve(filePath)
 
   if (!existsSync(dir) || !isDirectoryPath(dir)) {
-    dir = require("path").dirname(dir)
+    dir = dirname(dir)
   }
 
-  const markers = [".git", "package.json", "pyproject.toml", "Cargo.toml", "go.mod", "pom.xml", "build.gradle"]
+  const highPriorityMarkers = ["compile_commands.json", ".clangd", ".catkin_tools", ".catkin_workspace"]
+  const genericWorkspaceMarkers = [".git", "package.json", "pyproject.toml", "Cargo.toml", "go.mod", "pom.xml", "build.gradle"]
+  const cmakeFallbackMarker = "CMakeLists.txt"
+
+  const canonicalize = (path: string): string => {
+    try {
+      return realpathSync.native(path)
+    } catch {
+      return path
+    }
+  }
+
+  let genericWorkspaceCandidate: string | null = null
+  let cmakeWorkspaceCandidate: string | null = null
 
   let prevDir = ""
   while (dir !== prevDir) {
-    for (const marker of markers) {
-      if (existsSync(require("path").join(dir, marker))) {
-        return dir
+    for (const marker of highPriorityMarkers) {
+      if (existsSync(join(dir, marker))) {
+        return canonicalize(dir)
       }
     }
+
+    if (!genericWorkspaceCandidate) {
+      for (const marker of genericWorkspaceMarkers) {
+        if (existsSync(join(dir, marker))) {
+          genericWorkspaceCandidate = dir
+          break
+        }
+      }
+    }
+
+    if (!cmakeWorkspaceCandidate && existsSync(join(dir, cmakeFallbackMarker))) {
+      cmakeWorkspaceCandidate = dir
+    }
+
     prevDir = dir
-    dir = require("path").dirname(dir)
+    dir = dirname(dir)
   }
 
-  return require("path").dirname(resolve(filePath))
+  if (genericWorkspaceCandidate) {
+    return canonicalize(genericWorkspaceCandidate)
+  }
+
+  if (cmakeWorkspaceCandidate) {
+    return canonicalize(cmakeWorkspaceCandidate)
+  }
+
+  return canonicalize(dirname(resolve(filePath)))
 }
 
 export function formatServerLookupError(result: Exclude<ServerLookupResult, { status: "found" }>): string {
@@ -94,6 +130,11 @@ export async function withLspClient<T>(filePath: string, fn: (client: LSPClient)
 
   const server = result.server
   const root = findWorkspaceRoot(absPath)
+  log("[LSP] Resolved workspace root", {
+    filePath: absPath,
+    serverId: server.id,
+    workspaceRoot: root,
+  })
   const client = await lspManager.getClient(root, server)
 
   try {

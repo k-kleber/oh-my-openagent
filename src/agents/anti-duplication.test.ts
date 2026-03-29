@@ -54,6 +54,14 @@ describe("buildAntiDuplicationSection", () => {
     expect(result).toContain("background_output")
   })
 
+  it("#given no arguments #when building #then requires collecting all required task ids for parallel fanout", () => {
+    const result = buildAntiDuplicationSection()
+
+    expect(result).toContain("all required task_ids")
+    expect(result).toContain("for each required task_id")
+    expect(result).toContain("parallel fanout")
+  })
+
   it("#given no arguments #when building #then explains why this matters", () => {
     //#given: no special configuration
 

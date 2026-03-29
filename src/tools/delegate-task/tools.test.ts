@@ -134,6 +134,16 @@ describe("sisyphus-task", () => {
       // when / #then
       expect(promptAppend).toContain("GOAL-ORIENTED")
       expect(promptAppend).toContain("autonomous")
+      expect(promptAppend).toContain("VERY COMPLEX subtasks only")
+    })
+
+    test("focused category has mid-complexity prompt", () => {
+      // given
+      const promptAppend = CATEGORY_PROMPT_APPENDS["focused"]
+
+      // when / #then
+      expect(promptAppend).toContain("MID-COMPLEXITY")
+      expect(promptAppend).toContain("More thorough than quick, lighter than deep")
     })
   })
 
@@ -156,6 +166,15 @@ describe("sisyphus-task", () => {
       // then
       expect(description).toBeDefined()
       expect(description).toContain("high effort")
+    })
+
+    test("focused category exists and has description", () => {
+      // given / #when
+      const description = CATEGORY_DESCRIPTIONS["focused"]
+
+      // then
+      expect(description).toBeDefined()
+      expect(description).toContain("Mid-complexity")
     })
   })
 
@@ -320,6 +339,9 @@ describe("sisyphus-task", () => {
         availableSkills: [
           { name: "code-intelligence", description: "test" },
           { name: "global-tooling-preference", description: "test" },
+          { name: "tool-doc-ripgrep", description: "test" },
+          { name: "tool-doc-fd", description: "test" },
+          { name: "tool-doc-sd", description: "test" },
           { name: "fastcode", description: "test" },
         ],
       })
@@ -351,10 +373,118 @@ describe("sisyphus-task", () => {
       expect(args.load_skills).toEqual([
         "code-intelligence",
         "global-tooling-preference",
+        "tool-doc-ripgrep",
+        "tool-doc-fd",
+        "tool-doc-sd",
         "fastcode",
       ])
       expect(resolveSkillContentSpy).toHaveBeenCalledWith(
-        ["code-intelligence", "global-tooling-preference", "fastcode"],
+        [
+          "code-intelligence",
+          "global-tooling-preference",
+          "tool-doc-ripgrep",
+          "tool-doc-fd",
+          "tool-doc-sd",
+          "fastcode",
+        ],
+        expect.any(Object),
+      )
+    }, { timeout: 10000 })
+
+    test("injects default librarian mcp skills when subagent_type is librarian and load_skills is empty", async () => {
+      //#given
+      const { createDelegateTask } = require("./tools")
+
+      const mockManager = {
+        launch: async () => ({
+          id: "task-default-librarian",
+          status: "pending",
+          description: "Default librarian skills test",
+          agent: "librarian",
+          sessionID: "test-session",
+        }),
+      }
+
+      const mockClient = {
+        app: {
+          agents: async () => ({
+            data: [
+              {
+                name: "librarian",
+                mode: "subagent",
+                model: { providerID: "google", modelID: "gemini-3-flash" },
+              },
+            ],
+          }),
+        },
+        config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
+        provider: { list: async () => ({ data: { connected: ["openai"] } }) },
+        model: { list: async () => ({ data: [{ provider: "openai", id: "gpt-5.3-codex" }] }) },
+        session: {
+          create: async () => ({ data: { id: "test-session" } }),
+          prompt: async () => ({ data: {} }),
+          promptAsync: async () => ({ data: {} }),
+          messages: async () => ({ data: [] }),
+          status: async () => ({ data: {} }),
+        },
+      }
+
+      const tool = createDelegateTask({
+        manager: mockManager,
+        client: mockClient,
+        connectedProvidersOverride: TEST_CONNECTED_PROVIDERS,
+        availableModelsOverride: createTestAvailableModels(),
+        availableSkills: [
+          { name: "global-tooling-preference", description: "test" },
+          { name: "context7-mcp", description: "test" },
+          { name: "websearch-mcp", description: "test" },
+          { name: "tool-doc-ripgrep", description: "test" },
+          { name: "tool-doc-fd", description: "test" },
+          { name: "tool-doc-sd", description: "test" },
+        ],
+      })
+
+      const toolContext = {
+        sessionID: "parent-session",
+        messageID: "parent-message",
+        agent: "sisyphus",
+        abort: new AbortController().signal,
+      }
+
+      const resolveSkillContentSpy = spyOn(executor, "resolveSkillContent").mockResolvedValue({
+        content: "resolved skill content",
+        error: null,
+      })
+
+      const args: DelegateTaskArgs = {
+        description: "Librarian with defaults",
+        prompt: "Find official docs",
+        subagent_type: "librarian",
+        run_in_background: true,
+        load_skills: [],
+      }
+
+      //#when
+      await tool.execute(args, toolContext)
+
+      //#then
+      expect(args.load_skills).toEqual([
+        "global-tooling-preference",
+        "context7-mcp",
+        "websearch-mcp",
+        "tool-doc-ripgrep",
+        "tool-doc-fd",
+        "tool-doc-sd",
+      ])
+      expect(resolveSkillContentSpy).toHaveBeenCalledWith(
+        [
+          "global-tooling-preference",
+          "context7-mcp",
+          "websearch-mcp",
+          "tool-doc-ripgrep",
+          "tool-doc-fd",
+          "tool-doc-sd",
+        ],
         expect.any(Object),
       )
     }, { timeout: 10000 })

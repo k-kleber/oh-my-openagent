@@ -29,6 +29,7 @@ export async function applyCommandConfig(params: {
   const builtinSkillCommands = skillsToCommandDefinitionRecord(
     createBuiltinSkills({
       browserProvider: params.pluginConfig.browser_automation_engine?.provider,
+      websearchConfig: params.pluginConfig.websearch,
       disabledSkills: disabledSkillsSet,
     }).map(builtinToLoadedSkill),
   );

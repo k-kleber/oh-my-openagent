@@ -165,6 +165,87 @@ bunDescribe("sendSyncPrompt", () => {
     bunExpect(promptArgs.body.tools.call_omo_agent).toBe(true)
   })
 
+  bunTest("keeps explicit subagent identity for direct subagent delegation even with custom model", async () => {
+    //#given
+    const { sendSyncPrompt } = require("./sync-prompt-sender")
+
+    let promptArgs: any
+    const promptAsync = bunMock(async (input: any) => {
+      promptArgs = input
+      return { data: {} }
+    })
+
+    const mockClient = {
+      session: {
+        promptAsync,
+      },
+    }
+
+    const input = {
+      sessionID: "test-session",
+      agentToUse: "explore",
+      args: {
+        description: "test task",
+        prompt: "test prompt",
+        run_in_background: false,
+        load_skills: [],
+      },
+      systemContent: "skill content",
+      categoryModel: { providerID: "openai", modelID: "gpt-5.3-codex" },
+      toastManager: null,
+      taskId: undefined,
+    }
+
+    //#when
+    await sendSyncPrompt(mockClient, input)
+
+    //#then
+    bunExpect(promptAsync).toHaveBeenCalled()
+    bunExpect(promptArgs.body.agent).toBe("explore")
+    bunExpect(promptArgs.body.model).toEqual({ providerID: "openai", modelID: "gpt-5.3-codex" })
+  })
+
+  bunTest("omits explicit agent only for category-based delegation when custom model is present", async () => {
+    //#given
+    const { sendSyncPrompt } = require("./sync-prompt-sender")
+
+    let promptArgs: any
+    const promptAsync = bunMock(async (input: any) => {
+      promptArgs = input
+      return { data: {} }
+    })
+
+    const mockClient = {
+      session: {
+        promptAsync,
+      },
+    }
+
+    const input = {
+      sessionID: "test-session",
+      agentToUse: "sisyphus-junior",
+      args: {
+        description: "test task",
+        prompt: "test prompt",
+        category: "quick",
+        run_in_background: false,
+        load_skills: [],
+      },
+      systemContent: "category append",
+      categoryModel: { providerID: "openai", modelID: "gpt-5.3-codex" },
+      toastManager: null,
+      taskId: undefined,
+    }
+
+    //#when
+    await sendSyncPrompt(mockClient, input)
+
+    //#then
+    bunExpect(promptAsync).toHaveBeenCalled()
+    bunExpect(promptArgs.body.agent).toBeUndefined()
+    bunExpect(promptArgs.body.model).toEqual({ providerID: "openai", modelID: "gpt-5.3-codex" })
+  })
+
   bunTest("retries with promptSync for oracle when promptAsync fails with unexpected EOF", async () => {
     //#given
     const { sendSyncPrompt } = require("./sync-prompt-sender")

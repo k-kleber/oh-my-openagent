@@ -68,6 +68,45 @@ const mockContext: ToolContext = {
 }
 
 describe("skill tool - synchronous description", () => {
+  it("uses configured tavily provider in dynamically discovered websearch-mcp skill", async () => {
+    // given
+    const tool = createSkillTool({
+      websearchConfig: { provider: "tavily" },
+      disabledSkills: new Set<string>(),
+      directory: "/test",
+    })
+
+    // when
+    const result = await tool.execute({ name: "websearch-mcp" }, mockContext)
+
+    // then
+    expect(result).toContain("## Skill: websearch-mcp")
+    expect(result).toContain("## Active provider")
+    expect(result).toContain("- tavily")
+  })
+
+  it("prefers configured discovered builtin over pre-provided builtin skill", async () => {
+    // given
+    const providedBuiltin = createMockSkill("websearch-mcp")
+    providedBuiltin.scope = "builtin"
+    providedBuiltin.definition.template = "## Active provider\n\n- exa"
+
+    const tool = createSkillTool({
+      websearchConfig: { provider: "tavily" },
+      skills: [providedBuiltin],
+      disabledSkills: new Set<string>(),
+      directory: "/test",
+    })
+
+    // when
+    const result = await tool.execute({ name: "websearch-mcp" }, mockContext)
+
+    // then
+    expect(result).toContain("## Active provider")
+    expect(result).toContain("- tavily")
+    expect(result).not.toContain("- exa")
+  })
+
   it("includes available_items immediately when skills are pre-provided", () => {
     // given
     const loadedSkills = [createMockSkill("test-skill")]
@@ -580,4 +619,3 @@ describe("skill tool - dynamic description cache invalidation", () => {
     expect(desc).toContain("skill")
   })
 })
-

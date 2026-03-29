@@ -1,6 +1,6 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { BuiltinAgentName, AgentOverrides, AgentFactory, AgentPromptMetadata } from "./types"
-import type { CategoriesConfig, GitMasterConfig } from "../config/schema"
+import type { CategoriesConfig, GitMasterConfig, WebsearchConfig } from "../config/schema"
 import type { LoadedSkill } from "../features/opencode-skill-loader/types"
 import type { BrowserAutomationProvider } from "../config/schema"
 import { createSisyphusAgent } from "./sisyphus"
@@ -101,6 +101,7 @@ export async function createBuiltinAgents(
   discoveredSkills: LoadedSkill[] = [],
   customAgentSummaries?: unknown,
   browserProvider?: BrowserAutomationProvider,
+  websearchConfig?: WebsearchConfig,
   uiSelectedModel?: string,
   disabledSkills?: Set<string>,
   useTaskSystem = false,
@@ -132,7 +133,7 @@ export async function createBuiltinAgents(
     description: categories?.[name]?.description ?? CATEGORY_DESCRIPTIONS[name] ?? "General tasks",
   }))
 
-  const availableSkills = buildAvailableSkills(discoveredSkills, browserProvider, disabledSkills)
+  const availableSkills = buildAvailableSkills(discoveredSkills, browserProvider, disabledSkills, websearchConfig)
 
   // Collect general agents first (for availableAgents), but don't add to result yet
   const { pendingAgentConfigs, availableAgents } = collectPendingBuiltinAgents({

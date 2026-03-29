@@ -497,14 +497,14 @@ describe("CATEGORY_MODEL_REQUIREMENTS", () => {
     expect(third.providers[0]).toBe("anthropic")
   })
 
-  test("all 8 categories have valid fallbackChain arrays", () => {
-    // given - list of 8 category names
+  test("all 9 categories have valid fallbackChain arrays", () => {
     const expectedCategories = [
       "visual-engineering",
       "ultrabrain",
       "deep",
       "artistry",
       "quick",
+      "focused",
       "unspecified-low",
       "unspecified-high",
       "writing",
@@ -514,7 +514,7 @@ describe("CATEGORY_MODEL_REQUIREMENTS", () => {
     const definedCategories = Object.keys(CATEGORY_MODEL_REQUIREMENTS)
 
     // then - all categories present with valid fallbackChain
-    expect(definedCategories).toHaveLength(8)
+    expect(definedCategories).toHaveLength(9)
     for (const category of expectedCategories) {
       const requirement = CATEGORY_MODEL_REQUIREMENTS[category]
       expect(requirement).toBeDefined()

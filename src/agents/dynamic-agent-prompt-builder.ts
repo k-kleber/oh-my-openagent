@@ -280,6 +280,7 @@ task(category="quick", load_skills=[], prompt="Redesign the sidebar layout with 
 |---|---|
 | UI, styling, animations, layout, design | \`visual-engineering\` |
 | Hard logic, architecture decisions, algorithms | \`ultrabrain\` |
+| Mid-complexity bounded implementation (1-3 modules) | \`focused\` |
 | Autonomous research + end-to-end implementation | \`deep\` |
 | Single-file typo, trivial config change | \`quick\` |
 
@@ -488,6 +489,16 @@ export function buildAntiDuplicationSection(): string {
 
 Once you delegate exploration to explore/librarian agents, **DO NOT perform the same search yourself**.
 
+### Dependency Gate (MANDATORY)
+
+If your next step depends on delegated explore/librarian results, you MUST pause and wait.
+
+- Do **not** continue implementation or analysis that uses those results before collecting them.
+- If you launched multiple background tasks, do **not** continue dependent work until all required task_ids are collected.
+- Do **not** "fill the gap" with your own overlapping grep/read attempts.
+- If no genuinely independent work exists, **end your response immediately** and wait for completion notification.
+- Resume only after collecting results via \`background_output(task_id="...")\`.
+
 ### What this means:
 
 **FORBIDDEN:**
@@ -506,8 +517,10 @@ When you need the delegated results but they're not ready:
 
 1. **End your response** — do NOT continue with work that depends on those results
 2. **Wait for the completion notification** — the system will trigger your next turn
-3. **Then** collect results via \`background_output(task_id="...")\`
-4. **Do NOT** impatiently re-search the same topics while waiting
+3. **Then** collect results via \`background_output(task_id="...")\` for each required task_id
+4. **For parallel fanout**, wait until all required tasks are complete and collected before dependent reasoning
+5. **Do NOT** impatiently re-search the same topics while waiting
+6. **Do NOT** proceed with inferred/assumed findings — no dependency bypassing
 
 ### Why This Matters:
 

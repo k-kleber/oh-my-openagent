@@ -10,6 +10,39 @@ interface SkillMcpToolOptions {
   getSessionID: () => string
 }
 
+const SERENA_MUTATION_TOOL_PATTERN =
+  /(^|_)(create|write|edit|delete|replace|insert|rename)(_|$)/i
+
+const SERENA_EXPLICIT_MUTATION_TOOLS = new Set([
+  "execute_shell_command",
+  "serena_execute_shell_command",
+])
+
+const SERENA_READ_ONLY_AGENTS = new Set([
+  "explore",
+  "librarian",
+  "oracle",
+  "momus",
+  "metis",
+  "prometheus",
+  "plan",
+  "planning",
+])
+
+function shouldBlockSerenaMutationForAgent(args: SkillMcpArgs, agentName: string | undefined): boolean {
+  if (!agentName || args.mcp_name.toLowerCase() !== "serena") return false
+  if (!args.tool_name) return false
+
+  const normalizedAgent = agentName.toLowerCase()
+  if (!SERENA_READ_ONLY_AGENTS.has(normalizedAgent)) return false
+
+  const normalizedToolName = args.tool_name.toLowerCase()
+  return (
+    SERENA_EXPLICIT_MUTATION_TOOLS.has(normalizedToolName) ||
+    SERENA_MUTATION_TOOL_PATTERN.test(normalizedToolName)
+  )
+}
+
 type OperationType = { type: "tool" | "resource" | "prompt"; name: string }
 
 function validateOperationParams(args: SkillMcpArgs): OperationType {
@@ -136,8 +169,16 @@ export function createSkillMcpTool(options: SkillMcpToolOptions): ToolDefinition
         .optional()
         .describe("Regex pattern to filter output lines (only matching lines returned)"),
     },
-    async execute(args: SkillMcpArgs) {
+    async execute(args: SkillMcpArgs, toolContext?: { agent?: string }) {
       const operation = validateOperationParams(args)
+
+      if (operation.type === "tool" && shouldBlockSerenaMutationForAgent(args, toolContext?.agent)) {
+        throw new Error(
+          `Blocked Serena mutation tool "${operation.name}" for read-only agent "${toolContext?.agent}". ` +
+            `Use Serena read-only config (read_only: true + excluded_tools) or run this through a writer agent like sisyphus.`,
+        )
+      }
+
       const skills = getLoadedSkills()
       const found = findMcpServer(args.mcp_name, skills)
 

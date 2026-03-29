@@ -184,6 +184,31 @@ EXPECTED OUTPUT:
 If your prompt lacks this structure, REWRITE IT before delegating.
 </Caller_Warning>`
 
+export const FOCUSED_CATEGORY_PROMPT_APPEND = `<Category_Context>
+You are working on MID-COMPLEXITY implementation tasks.
+
+Execution mindset:
+- More thorough than quick, lighter than deep
+- Handle 1-3 related modules with clear boundaries
+- Prioritize practical implementation over exhaustive research
+- Keep momentum and ship verifiable outcomes
+
+Use this category for:
+- Small-to-medium feature increments
+- Multi-file bug fixes that are not architecture-heavy
+- Refactors with limited blast radius
+
+Do NOT use this category for:
+- Trivial one-file edits (use quick)
+- Very complex, high-uncertainty, cross-system tasks (use deep)
+
+Approach:
+1. Do targeted context gathering (avoid over-exploration)
+2. Implement with existing codebase patterns
+3. Run focused verification on touched areas
+4. Report concrete outcomes and residual risks
+</Category_Context>`
+
 export const UNSPECIFIED_LOW_CATEGORY_PROMPT_APPEND = `<Category_Context>
 You are working on tasks that don't fit specific categories but require moderate effort.
 
@@ -251,6 +276,9 @@ ANTI-AI-SLOP RULES (NON-NEGOTIABLE):
 export const DEEP_CATEGORY_PROMPT_APPEND = `<Category_Context>
 You are working on GOAL-ORIENTED AUTONOMOUS tasks.
 
+IMPORTANT: This category is for VERY COMPLEX subtasks only.
+If the task is medium complexity or bounded to a few files, use \`focused\` instead.
+
 **CRITICAL - AUTONOMOUS EXECUTION MINDSET (NON-NEGOTIABLE)**:
 You are NOT an interactive assistant. You are an autonomous problem-solver.
 
@@ -291,6 +319,7 @@ export const DEFAULT_CATEGORIES: Record<string, CategoryConfig> = {
   deep: { model: "openai/gpt-5.3-codex", variant: "medium" },
   artistry: { model: "google/gemini-3.1-pro", variant: "high" },
   quick: { model: "openai/gpt-5.4-mini" },
+  focused: { model: "google/gemini-3-flash" },
   "unspecified-low": { model: "anthropic/claude-sonnet-4-6" },
   "unspecified-high": { model: "anthropic/claude-opus-4-6", variant: "max" },
   writing: { model: "kimi-for-coding/k2p5" },
@@ -302,6 +331,7 @@ export const CATEGORY_PROMPT_APPENDS: Record<string, string> = {
   deep: DEEP_CATEGORY_PROMPT_APPEND,
   artistry: ARTISTRY_CATEGORY_PROMPT_APPEND,
   quick: QUICK_CATEGORY_PROMPT_APPEND,
+  focused: FOCUSED_CATEGORY_PROMPT_APPEND,
   "unspecified-low": UNSPECIFIED_LOW_CATEGORY_PROMPT_APPEND,
   "unspecified-high": UNSPECIFIED_HIGH_CATEGORY_PROMPT_APPEND,
   writing: WRITING_CATEGORY_PROMPT_APPEND,
@@ -310,9 +340,10 @@ export const CATEGORY_PROMPT_APPENDS: Record<string, string> = {
 export const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   "visual-engineering": "Frontend, UI/UX, design, styling, animation",
   ultrabrain: "Use ONLY for genuinely hard, logic-heavy tasks. Give clear goals only, not step-by-step instructions.",
-  deep: "Goal-oriented autonomous problem-solving. Thorough research before action. For hairy problems requiring deep understanding.",
+  deep: "VERY complex subtasks only. Goal-oriented autonomous problem-solving with thorough research before action.",
   artistry: "Complex problem-solving with unconventional, creative approaches - beyond standard patterns",
   quick: "Trivial tasks - single file changes, typo fixes, simple modifications",
+  focused: "Mid-complexity implementation tasks (between quick and deep), typically 1-3 related modules",
   "unspecified-low": "Tasks that don't fit other categories, low effort required",
   "unspecified-high": "Tasks that don't fit other categories, high effort required",
   writing: "Documentation, prose, technical writing",

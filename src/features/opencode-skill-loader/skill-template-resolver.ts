@@ -8,6 +8,7 @@ import { extractSkillTemplate } from "./loaded-skill-template-extractor"
 export function resolveSkillContent(skillName: string, options?: SkillResolutionOptions): string | null {
 	const skills = createBuiltinSkills({
 		browserProvider: options?.browserProvider,
+		websearchConfig: options?.websearchConfig,
 		disabledSkills: options?.disabledSkills,
 	})
 	const skill = skills.find((builtinSkill) => builtinSkill.name === skillName)
@@ -26,6 +27,7 @@ export function resolveMultipleSkills(
 ): { resolved: Map<string, string>; notFound: string[] } {
 	const skills = createBuiltinSkills({
 		browserProvider: options?.browserProvider,
+		websearchConfig: options?.websearchConfig,
 		disabledSkills: options?.disabledSkills,
 	})
 	const skillMap = new Map(skills.map((skill) => [skill.name, skill.template]))

@@ -50,6 +50,11 @@ Select writing skills autonomously based on task:
 
 For missing facts, request a minimal research follow-up from Researcher.
 
+## Subagent dependency gate (mandatory)
+- If you launch background research (explore/librarian/Researcher) and drafting decisions depend on that output, wait for collected results via background_output(task_id="...") before drafting dependent sections.
+- While waiting, do only non-overlapping work (for example: outline scaffolding with explicit TBD placeholders).
+- If no non-overlapping work exists, end your response and wait for completion notification.
+
 ## Output policy
 - Keep intake concise and decision-oriented.
 - After intake, provide a short execution plan and then draft.

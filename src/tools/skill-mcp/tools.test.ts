@@ -139,6 +139,97 @@ describe("skill_mcp tool", () => {
     })
   })
 
+  describe("serena mutation guard", () => {
+    it("blocks serena mutation tools for read-only agents", async () => {
+      // given
+      loadedSkills = [
+        createMockSkillWithMcp("code-intelligence", {
+          serena: { command: "uvx", args: ["serena-mcp-server"] },
+        }),
+      ]
+
+      const tool = createSkillMcpTool({
+        manager,
+        getLoadedSkills: () => loadedSkills,
+        getSessionID: () => sessionID,
+      })
+
+      // when / #then
+      await expect(
+        tool.execute(
+          {
+            mcp_name: "serena",
+            tool_name: "replace_symbol_body",
+            arguments: {},
+          },
+          { ...mockContext, agent: "explore" },
+        ),
+      ).rejects.toThrow(/Blocked Serena mutation tool/)
+    })
+
+    it("allows serena read tools for read-only agents", async () => {
+      // given
+      loadedSkills = [
+        createMockSkillWithMcp("code-intelligence", {
+          serena: { command: "uvx", args: ["serena-mcp-server"] },
+        }),
+      ]
+
+      const callToolMock = mock(async () => ({ content: [{ type: "text", text: "ok" }] }))
+      manager.callTool = callToolMock as unknown as SkillMcpManager["callTool"]
+
+      const tool = createSkillMcpTool({
+        manager,
+        getLoadedSkills: () => loadedSkills,
+        getSessionID: () => sessionID,
+      })
+
+      // when
+      await tool.execute(
+        {
+          mcp_name: "serena",
+          tool_name: "find_symbol",
+          arguments: {},
+        },
+        { ...mockContext, agent: "explore" },
+      )
+
+      // then
+      expect(callToolMock).toHaveBeenCalledTimes(1)
+    })
+
+    it("allows serena mutation tools for writer agents", async () => {
+      // given
+      loadedSkills = [
+        createMockSkillWithMcp("code-intelligence", {
+          serena: { command: "uvx", args: ["serena-mcp-server"] },
+        }),
+      ]
+
+      const callToolMock = mock(async () => ({ content: [{ type: "text", text: "ok" }] }))
+      manager.callTool = callToolMock as unknown as SkillMcpManager["callTool"]
+
+      const tool = createSkillMcpTool({
+        manager,
+        getLoadedSkills: () => loadedSkills,
+        getSessionID: () => sessionID,
+      })
+
+      // when
+      await tool.execute(
+        {
+          mcp_name: "serena",
+          tool_name: "replace_symbol_body",
+          arguments: {},
+        },
+        { ...mockContext, agent: "sisyphus" },
+      )
+
+      // then
+      expect(callToolMock).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe("tool description", () => {
     it("has concise description", () => {
       // given / #when

@@ -119,8 +119,11 @@ Create the work plan directly - that's your job as the planning agent.`,
         ? `${normalizedMatchedModel.providerID}/${normalizedMatchedModel.modelID}`
         : undefined
 
+      const isAtlasParent = getAgentConfigKey(parentAgent ?? "") === "atlas"
+      const inheritedModelForSubagent = isAtlasParent ? undefined : inheritedModel
+
       const resolution = resolveModelForDelegateTask({
-        userModel: agentOverride?.model ?? inheritedModel,
+        userModel: agentOverride?.model ?? inheritedModelForSubagent,
         userFallbackModels: normalizedAgentFallbackModels,
         categoryDefaultModel: matchedAgentModelStr,
         fallbackChain: agentRequirement?.fallbackChain,

@@ -49,6 +49,11 @@ Then include a short recommendation (top 1-2 options).
   - quick external check: one narrow call_omo_agent(subagent_type="librarian") query
 - Cap optional checks to the minimum needed to unblock confidence (max 1-2 quick delegations).
 
+## Subagent dependency gate (mandatory)
+- If you launch explore/librarian with run_in_background=true and your next recommendation depends on their findings, wait until those results are collected with background_output(task_id="...").
+- While waiting, only perform non-overlapping work.
+- If no non-overlapping work exists, end your response and wait for completion notification.
+
 ## Escalation policy
 If user asks for in-depth plan or implementation-ready breakdown, escalate to Prometheus.
 When escalating, provide:

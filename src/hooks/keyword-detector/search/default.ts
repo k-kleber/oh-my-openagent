@@ -17,4 +17,9 @@ MAXIMIZE SEARCH EFFORT. Launch multiple background agents IN PARALLEL:
 - explore agents (codebase patterns, file structures, ast-grep)
 - librarian agents (remote repos, official docs, GitHub examples)
 Plus direct tools: Grep, ripgrep (rg), ast-grep (sg)
-NEVER stop at first result - be exhaustive.`
+NEVER stop at first result - be exhaustive.
+
+CRITICAL WAIT RULE:
+- If you launch explore/librarian tasks for information your next step depends on, DO NOT continue with dependent analysis/implementation until those task results are collected.
+- Do only genuinely non-overlapping work while tasks run.
+- If no non-overlapping work exists, end your response and wait for completion notification, then continue in the next turn with background_output results.`

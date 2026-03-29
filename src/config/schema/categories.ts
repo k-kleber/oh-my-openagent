@@ -33,6 +33,7 @@ export const BuiltinCategoryNameSchema = z.enum([
   "deep",
   "artistry",
   "quick",
+  "focused",
   "unspecified-low",
   "unspecified-high",
   "writing",

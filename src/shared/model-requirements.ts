@@ -348,6 +348,24 @@ export const CATEGORY_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
       { providers: ["opencode"], model: "gpt-5-nano" },
     ],
   },
+  focused: {
+    fallbackChain: [
+      {
+        providers: ["google", "github-copilot", "opencode"],
+        model: "gemini-3-flash",
+      },
+      {
+        providers: ["anthropic", "github-copilot", "opencode"],
+        model: "claude-sonnet-4-6",
+      },
+      {
+        providers: ["openai", "github-copilot", "opencode"],
+        model: "gpt-5.4-mini",
+      },
+      { providers: ["opencode-go"], model: "minimax-m2.5" },
+      { providers: ["opencode"], model: "gpt-5-nano" },
+    ],
+  },
   "unspecified-low": {
     fallbackChain: [
       {

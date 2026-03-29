@@ -24,4 +24,9 @@ IF COMPLEX - DO NOT STRUGGLE ALONE. Consult specialists:
 - **Oracle**: Conventional problems (architecture, debugging, complex logic)
 - **Artistry**: Non-conventional problems (different approach needed)
 
-SYNTHESIZE findings before proceeding.`
+SYNTHESIZE findings before proceeding.
+
+CRITICAL WAIT RULE:
+- After launching explore/librarian background tasks, do not proceed with any dependent reasoning or implementation until those results are collected.
+- While waiting, only do strictly non-overlapping work.
+- If no non-overlapping work exists, end your response and wait for completion notification, then continue in the next turn with collected background_output results.`

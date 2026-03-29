@@ -190,4 +190,31 @@ describe("resolveSubagentExecution", () => {
     expect(result.error).toBeUndefined()
     expect(result.agentToUse).toBe("oracle")
   })
+
+  test("does not inherit Atlas parent heavy model for subagent resolution", async () => {
+    //#given
+    const cacheSpy = spyOn(connectedProvidersCache, "readProviderModelsCache").mockReturnValue({
+      models: { openai: ["gpt-5-mini", "gpt-5.4"] },
+      connected: ["openai"],
+      updatedAt: "2026-03-03T00:00:00.000Z",
+    })
+    const args = createBaseArgs({ subagent_type: "oracle" })
+    const executorCtx = createExecutorContext(async () => ([
+      { name: "oracle", mode: "subagent", model: "openai/gpt-5-mini" },
+    ]))
+
+    //#when
+    const result = await resolveSubagentExecution(
+      args,
+      executorCtx,
+      "atlas",
+      "deep",
+      "openai/gpt-5.4"
+    )
+
+    //#then
+    expect(result.error).toBeUndefined()
+    expect(result.categoryModel).toEqual({ providerID: "openai", modelID: "gpt-5-mini" })
+    cacheSpy.mockRestore()
+  })
 })

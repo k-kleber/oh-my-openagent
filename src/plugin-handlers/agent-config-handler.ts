@@ -120,6 +120,7 @@ export async function applyAgentConfig(params: {
     allDiscoveredSkills,
     customAgentSummaries,
     browserProvider,
+    params.pluginConfig.websearch,
     currentModel,
     disabledSkills,
     useTaskSystem,

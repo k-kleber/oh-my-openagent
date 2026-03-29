@@ -1,5 +1,41 @@
-import { describe, test, expect } from "bun:test"
+import { afterEach, describe, test, expect } from "bun:test"
 import { createBuiltinSkills } from "./skills"
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+
+const originalTavily = process.env.TAVILY_API_KEY
+
+function resetTavilyEnv() {
+  if (typeof originalTavily === "undefined") {
+    delete process.env.TAVILY_API_KEY
+    return
+  }
+  process.env.TAVILY_API_KEY = originalTavily
+}
+
+function withTavilyEnv(value: string | undefined, run: () => void) {
+	const previous = process.env.TAVILY_API_KEY
+	if (typeof value === "undefined") {
+		delete process.env.TAVILY_API_KEY
+	} else {
+		process.env.TAVILY_API_KEY = value
+	}
+
+	try {
+		run()
+	} finally {
+		if (typeof previous === "undefined") {
+			delete process.env.TAVILY_API_KEY
+		} else {
+			process.env.TAVILY_API_KEY = previous
+		}
+	}
+}
+
+afterEach(() => {
+	resetTavilyEnv()
+})
 
 describe("createBuiltinSkills", () => {
 	test("returns playwright skill by default", () => {
@@ -172,6 +208,54 @@ describe("createBuiltinSkills", () => {
 		expect(websearchSkill).toBeDefined()
 		expect(websearchSkill!.mcpConfig).toBeDefined()
 		expect(websearchSkill!.mcpConfig!.websearch.url).toBe("https://mcp.tavily.com/mcp/")
+		expect(websearchSkill!.template).toContain("Preferred tool name: `tavily_search`")
+	})
+
+	test("uses exa tool-name guidance when provider is exa", () => {
+		const skills = createBuiltinSkills({ websearchConfig: { provider: "exa" } })
+		const websearchSkill = skills.find((s) => s.name === "websearch-mcp")
+
+		expect(websearchSkill).toBeDefined()
+		expect(websearchSkill!.template).toContain("Preferred tool name: `web_search_exa`")
+	})
+
+	test("does not double-prefix Bearer for tavily api key", () => {
+		withTavilyEnv("Bearer tavily-token", () => {
+			const skills = createBuiltinSkills({ websearchConfig: { provider: "tavily" } })
+			const websearchSkill = skills.find((s) => s.name === "websearch-mcp")
+
+			expect(websearchSkill).toBeDefined()
+			expect(websearchSkill!.mcpConfig!.websearch.headers).toEqual({ Authorization: "Bearer tavily-token" })
+		})
+	})
+
+	test("adds Bearer prefix for raw tavily api key", () => {
+		withTavilyEnv("tavily-token", () => {
+			const skills = createBuiltinSkills({ websearchConfig: { provider: "tavily" } })
+			const websearchSkill = skills.find((s) => s.name === "websearch-mcp")
+
+			expect(websearchSkill).toBeDefined()
+			expect(websearchSkill!.mcpConfig!.websearch.headers).toEqual({ Authorization: "Bearer tavily-token" })
+		})
+	})
+
+	test("reads tavily api key from project .secrets when env is absent", () => {
+		const dir = mkdtempSync(join(tmpdir(), "omo-websearch-"))
+		const previousCwd = process.cwd()
+		delete process.env.TAVILY_API_KEY
+		writeFileSync(join(dir, ".secrets"), "TAVILY_API_KEY=test-from-secrets\n")
+
+		process.chdir(dir)
+		try {
+			const skills = createBuiltinSkills({ websearchConfig: { provider: "tavily" } })
+			const websearchSkill = skills.find((s) => s.name === "websearch-mcp")
+
+			expect(websearchSkill).toBeDefined()
+			expect(websearchSkill!.mcpConfig!.websearch.headers).toEqual({ Authorization: "Bearer test-from-secrets" })
+		} finally {
+			process.chdir(previousCwd)
+			rmSync(dir, { recursive: true, force: true })
+		}
 	})
 
 	test("returns playwright-cli skill when browserProvider is 'playwright-cli'", () => {

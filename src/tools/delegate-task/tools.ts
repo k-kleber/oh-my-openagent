@@ -48,7 +48,22 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
   const availableSkillNames = new Set(availableSkills.map((skill) => skill.name.toLowerCase()))
 
   const defaultSkillsBySubagent: Record<string, string[]> = {
-    explore: ["code-intelligence", "global-tooling-preference", "fastcode"],
+    explore: [
+      "code-intelligence",
+      "global-tooling-preference",
+      "tool-doc-ripgrep",
+      "tool-doc-fd",
+      "tool-doc-sd",
+      "fastcode",
+    ],
+    librarian: [
+      "global-tooling-preference",
+      "context7-mcp",
+      "websearch-mcp",
+      "tool-doc-ripgrep",
+      "tool-doc-fd",
+      "tool-doc-sd",
+    ],
     ...(options.defaultSkillsBySubagent ?? {}),
   }
 

@@ -10,7 +10,9 @@ export function clearSkillCache(): void {
 }
 
 export async function getAllSkills(options?: SkillResolutionOptions): Promise<LoadedSkill[]> {
-	const cacheKey = options?.browserProvider ?? "playwright"
+	const browserProvider = options?.browserProvider ?? "playwright"
+	const websearchProvider = options?.websearchConfig?.provider ?? "exa"
+	const cacheKey = `${browserProvider}:${websearchProvider}`
 	const hasDisabledSkills = options?.disabledSkills && options.disabledSkills.size > 0
 
 	// Skip cache if disabledSkills is provided (varies between calls)
@@ -24,6 +26,7 @@ export async function getAllSkills(options?: SkillResolutionOptions): Promise<Lo
 		Promise.resolve(
 			createBuiltinSkills({
 				browserProvider: options?.browserProvider,
+				websearchConfig: options?.websearchConfig,
 				disabledSkills: options?.disabledSkills,
 			})
 		),
@@ -49,7 +52,7 @@ export async function getAllSkills(options?: SkillResolutionOptions): Promise<Lo
 
 	// Provider-gated skill names that should be filtered based on browserProvider
 	const providerGatedSkillNames = new Set(["agent-browser", "playwright"])
-	const browserProvider = options?.browserProvider ?? "playwright"
+	const browserProviderForFiltering = browserProvider
 
 	// Filter discovered skills to exclude provider-gated names that don't match the selected provider
 	const filteredDiscoveredSkills = discoveredSkills.filter((skill) => {
@@ -57,7 +60,7 @@ export async function getAllSkills(options?: SkillResolutionOptions): Promise<Lo
 			return true
 		}
 		// For provider-gated skills, only include if it matches the selected provider
-		return skill.name === browserProvider
+		return skill.name === browserProviderForFiltering
 	})
 
 	const discoveredNames = new Set(filteredDiscoveredSkills.map((skill) => skill.name))

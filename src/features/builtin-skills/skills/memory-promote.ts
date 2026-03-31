@@ -5,7 +5,7 @@ export const memoryPromoteSkill: BuiltinSkill = {
   description: "Reinforce, re-approve, or patch existing OpenMemory records. Use to boost strong memories, correct stale entries, or re-store after conflict resolution.",
   template: `# Memory Promote
 
-User explicitly reinforces a memory: "boost this", "this is important", "fix this entry".
+User explicitly reinforces a memory: "boost this", "this is important", "fix this entry", or approves promotion from project scope to broader scope.
 
 ## Workflow
 
@@ -29,6 +29,11 @@ skill_mcp(mcp_name="openmemory", tool_name="openmemory_reinforce", arguments={"i
 skill_mcp(mcp_name="openmemory", tool_name="openmemory_store", arguments={..., "metadata": {"approvalState": "approved"}})
 \`\`\`
 
+**If promoting scope:**
+\`\`\`
+skill_mcp(mcp_name="openmemory", tool_name="openmemory_store", arguments={..., "metadata": {"approvalState": "approved", "scope": "<new scope>", "promotedFrom": "project"}})
+\`\`\`
+
 ### 4. Confirm
 
 \`\`\`
@@ -39,6 +44,7 @@ Reinforced memory <id> in OpenMemory.
 ## Guardrails
 
 - NO auto-patch — explicit human instruction required.
+- NO auto-promotion to broader scopes without repeated evidence or explicit approval.
 - Only \`verified\` or \`partially_verified\` records can be reinforced.
 - Do NOT write into Hindsight — Hindsight is temporal only.`,
   mcpConfig: {

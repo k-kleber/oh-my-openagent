@@ -429,6 +429,89 @@ Available hooks: `todo-continuation-enforcer`, `context-window-monitor`, `sessio
 - `no-sisyphus-gpt` — **do not disable**. It blocks incompatible GPT models for Sisyphus while allowing the dedicated GPT-5.4 prompt path.
 - `startup-toast` is a sub-feature of `auto-update-checker`. Disable just the toast by adding `startup-toast` to `disabled_hooks`.
 
+### Memory
+
+First-class memory policy for autonomous retrieval/capture using both Hindsight and OpenMemory.
+
+```json
+{
+  "memory": {
+    "enabled": true,
+    "target_agents": ["sisyphus", "hephaestus", "atlas", "researcher", "writer", "brainstormer"],
+    "retrieval": {
+      "enabled": true,
+      "cooldown_ms": 60000,
+      "max_per_session": 1,
+      "max_query_chars": 180,
+      "run_in_background": false
+    },
+    "capture": {
+      "enabled": true,
+      "cooldown_ms": 300000,
+      "max_per_session": 3,
+      "min_output_chars": 280,
+      "max_insights": 3,
+      "max_insight_chars": 100,
+      "run_in_background": true,
+      "discovery_tools": ["read", "grep", "glob", "webfetch", "websearch", "google_search", "lsp_symbols", "ast_grep_search", "task"]
+    },
+    "lifecycle": {
+      "capture_on_session_idle": true,
+      "capture_on_session_compacted": true,
+      "capture_on_preemptive_compaction": true,
+      "idle_cooldown_ms": 300000
+    },
+    "budget": {
+      "session_chars": 500,
+      "pause_after_failures": 3,
+      "failure_pause_ms": 300000
+    },
+    "taxonomy": {
+      "enabled": true,
+      "default_scope": "project",
+      "allowed_scopes": ["project", "system", "framework", "global", "user"]
+    },
+    "observation_ledger": {
+      "enabled": true,
+      "max_entries_per_session": 25,
+      "sample_window": 5,
+      "min_output_chars": 280,
+      "capture_tool_inputs": false
+    },
+    "reducer": {
+      "enabled": true,
+      "confidence_threshold": 0.8,
+      "promotion_threshold": 0.92,
+      "min_evidence_count": 2,
+      "cross_project_evidence_min": 3,
+      "run_on_lifecycle_events": true,
+      "run_on_tool_capture": true
+    },
+    "observability": {
+      "enabled": true,
+      "log_metrics": true,
+      "include_session_summary_on_delete": true
+    }
+  }
+}
+```
+
+#### Memory behavior summary
+
+- Auto-recall runs on first eligible user message (per retrieval policy)
+- Auto-capture runs after discovery tools (per capture policy)
+- Lifecycle capture can run on idle and compaction events
+- Preemptive compaction can trigger memory capture before summarize
+- Taxonomy scope is passed to memory-store and used for OpenMemory tagging
+- Observation ledger stores repeated evidence before durable memory writes
+- Reducer thresholds gate which observations qualify for memory-store or promotion flows
+- Cross-project promotion candidates are only suggested after repeated distinct evidence signals
+- Memory metrics are logged for capture/reducer/promotion activity when observability is enabled
+- Memory metrics are also persisted under the oh-my-opencode cache for doctor/status visibility
+- When MCP memory servers are available, capture now uses native TypeScript orchestration instead of prompt-only storage delegation
+- When MCP memory servers are available, recall now uses native TypeScript orchestration with query enrichment, ranking, and verification-aware injection
+- Verification-aware recall now attaches workspace evidence when current files/content support the memory
+
 ### Commands
 
 Disable built-in commands via `disabled_commands`:

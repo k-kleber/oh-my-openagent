@@ -102,9 +102,9 @@ export function applyToolConfig(params: {
       patch: "deny",
       bash: "deny",
       interactive_bash: "deny",
-      task: "deny",
+      task: "allow",
       question: questionPermission,
-      call_omo_agent: "allow",
+      call_omo_agent: "deny",
       ...denyTodoTools,
     };
   }
@@ -118,8 +118,8 @@ export function applyToolConfig(params: {
       interactive_bash: "deny",
       apply_patch: "deny",
       patch: "deny",
-      task: "deny",
-      call_omo_agent: "allow",
+      task: "allow",
+      call_omo_agent: "deny",
       question: questionPermission,
       ...denyTodoTools,
     };
@@ -128,7 +128,7 @@ export function applyToolConfig(params: {
   if (researcher) {
     researcher.permission = {
       ...researcher.permission,
-      call_omo_agent: "allow",
+      call_omo_agent: "deny",
       task: "allow",
       question: questionPermission,
       ...denyTodoTools,
@@ -138,7 +138,7 @@ export function applyToolConfig(params: {
   if (writer) {
     writer.permission = {
       ...writer.permission,
-      call_omo_agent: "allow",
+      call_omo_agent: "deny",
       task: "allow",
       question: questionPermission,
       ...denyTodoTools,

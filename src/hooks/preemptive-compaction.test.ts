@@ -538,7 +538,6 @@ describe("preemptive-compaction", () => {
     })
     const sessionID = "ses_kimi_trigger"
 
-    // 210k total — above 78% of 256k (≈204k)
     await hook.event({
       event: {
         type: "message.updated",
@@ -550,7 +549,7 @@ describe("preemptive-compaction", () => {
             modelID: "kimi-k2.5-free",
             finish: true,
             tokens: {
-              input: 200000,
+              input: 230000,
               output: 0,
               reasoning: 0,
               cache: { read: 10000, write: 0 },

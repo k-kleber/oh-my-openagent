@@ -4,6 +4,7 @@ import { checkSystem, gatherSystemInfo } from "./system"
 import { checkConfig } from "./config"
 import { checkTools, gatherToolsSummary } from "./tools"
 import { checkModels } from "./model-resolution"
+import { checkMemory } from "./memory"
 
 export type { CheckDefinition }
 export * from "./model-resolution-types"
@@ -31,6 +32,11 @@ export function getAllCheckDefinitions(): CheckDefinition[] {
       id: CHECK_IDS.MODELS,
       name: CHECK_NAMES[CHECK_IDS.MODELS],
       check: checkModels,
+    },
+    {
+      id: CHECK_IDS.MEMORY,
+      name: CHECK_NAMES[CHECK_IDS.MEMORY],
+      check: checkMemory,
     },
   ]
 }

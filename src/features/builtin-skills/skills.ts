@@ -21,6 +21,7 @@ import {
   memoryInitSkill,
   memoryPromoteSkill,
   memoryPreCompactionSkill,
+  memoryObservationLedgerSkill,
   globalToolingPreferenceSkill,
   toolDocRipgrepSkill,
   toolDocFdSkill,
@@ -68,6 +69,7 @@ export function createBuiltinSkills(options: CreateBuiltinSkillsOptions = {}): B
     memoryInitSkill,
     memoryPromoteSkill,
     memoryPreCompactionSkill,
+    memoryObservationLedgerSkill,
     context7McpSkill,
     createWebsearchMcpSkill(websearchConfig),
   ]

@@ -26,7 +26,7 @@ const AGENT_RESTRICTIONS: Record<string, Record<string, boolean>> = {
   debugger: {
     write: false,
     edit: false,
-    task: false,
+    call_omo_agent: false,
     bash: false,
     apply_patch: false,
   },
@@ -34,7 +34,6 @@ const AGENT_RESTRICTIONS: Record<string, Record<string, boolean>> = {
   metis: {
     write: false,
     edit: false,
-    task: false,
   },
 
   momus: {
@@ -48,7 +47,7 @@ const AGENT_RESTRICTIONS: Record<string, Record<string, boolean>> = {
   },
 
   "sisyphus-junior": {
-    task: false,
+    call_omo_agent: false,
   },
 }
 

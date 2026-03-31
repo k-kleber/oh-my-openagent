@@ -125,7 +125,7 @@ bunDescribe("sendSyncPrompt", () => {
     bunExpect(promptArgs.body.tools.call_omo_agent).toBe(false)
   })
 
-  bunTest("does not restrict call_omo_agent for sisyphus agent", async () => {
+  bunTest("blocks call_omo_agent for sisyphus agent", async () => {
     //#given
     const { sendSyncPrompt } = require("./sync-prompt-sender")
 
@@ -162,7 +162,7 @@ bunDescribe("sendSyncPrompt", () => {
 
     //#then
     bunExpect(promptAsync).toHaveBeenCalled()
-    bunExpect(promptArgs.body.tools.call_omo_agent).toBe(true)
+    bunExpect(promptArgs.body.tools.call_omo_agent).toBe(false)
   })
 
   bunTest("keeps explicit subagent identity for direct subagent delegation even with custom model", async () => {

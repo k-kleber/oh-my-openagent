@@ -1,6 +1,7 @@
 import type { OhMyOpenCodeConfig, HookName } from "../../config"
 import type { ModelCacheState } from "../../plugin-state"
 import type { PluginContext } from "../types"
+import type { SkillMcpManager } from "../../features/skill-mcp-manager"
 
 import {
   createContextWindowMonitorHook,
@@ -74,10 +75,11 @@ export function createSessionHooks(args: {
   ctx: PluginContext
   pluginConfig: OhMyOpenCodeConfig
   modelCacheState: ModelCacheState
+  skillMcpManager: SkillMcpManager
   isHookEnabled: (hookName: HookName) => boolean
   safeHookEnabled: boolean
 }): SessionHooks {
-  const { ctx, pluginConfig, modelCacheState, isHookEnabled, safeHookEnabled } = args
+  const { ctx, pluginConfig, modelCacheState, skillMcpManager, isHookEnabled, safeHookEnabled } = args
   const safeHook = <T>(hookName: HookName, factory: () => T): T | null =>
     safeCreateHook(hookName, factory, { enabled: safeHookEnabled })
 
@@ -283,7 +285,7 @@ export function createSessionHooks(args: {
     : null
 
   const memoryAutoTrigger = isHookEnabled("memory-auto-trigger")
-    ? safeHook("memory-auto-trigger", () => createMemoryAutoTriggerHook(ctx))
+    ? safeHook("memory-auto-trigger", () => createMemoryAutoTriggerHook(ctx, pluginConfig.memory, skillMcpManager))
     : null
   return {
     contextWindowMonitor,

@@ -143,8 +143,8 @@ describe("createSisyphusJuniorAgentWithOverrides", () => {
     })
   })
 
-  describe("tool safety (task blocked, call_omo_agent allowed)", () => {
-    test("task remains blocked, call_omo_agent is allowed via tools format", () => {
+  describe("tool safety (task allowed, call_omo_agent blocked)", () => {
+    test("task remains allowed, call_omo_agent is blocked via tools format", () => {
       // given
       const override = {
         tools: {
@@ -161,23 +161,21 @@ describe("createSisyphusJuniorAgentWithOverrides", () => {
       const tools = result.tools as Record<string, boolean> | undefined
       const permission = result.permission as Record<string, string> | undefined
       if (tools) {
-        expect(tools.task).toBe(false)
-        // call_omo_agent is NOW ALLOWED for subagents to spawn explore/librarian
-        expect(tools.call_omo_agent).toBe(true)
+        expect(tools.task).toBe(true)
+        expect(tools.call_omo_agent).toBe(false)
         expect(tools.read).toBe(true)
       }
       if (permission) {
-        expect(permission.task).toBe("deny")
-        // call_omo_agent is NOW ALLOWED for subagents to spawn explore/librarian
-        expect(permission.call_omo_agent).toBe("allow")
+        expect(permission.task).toBe("allow")
+        expect(permission.call_omo_agent).toBe("deny")
       }
     })
 
-    test("task remains blocked when using permission format override", () => {
+    test("call_omo_agent remains blocked when using permission format override", () => {
       // given
       const override = {
         permission: {
-          task: "allow",
+          task: "deny",
           call_omo_agent: "allow",
           read: "allow",
         },
@@ -186,16 +184,15 @@ describe("createSisyphusJuniorAgentWithOverrides", () => {
       // when
       const result = createSisyphusJuniorAgentWithOverrides(override as Parameters<typeof createSisyphusJuniorAgentWithOverrides>[0])
 
-      // then - task blocked, but call_omo_agent allowed for explore/librarian spawning
       const tools = result.tools as Record<string, boolean> | undefined
       const permission = result.permission as Record<string, string> | undefined
       if (tools) {
-        expect(tools.task).toBe(false)
-        expect(tools.call_omo_agent).toBe(true)
+        expect(tools.task).toBe(true)
+        expect(tools.call_omo_agent).toBe(false)
       }
       if (permission) {
-        expect(permission.task).toBe("deny")
-        expect(permission.call_omo_agent).toBe("allow")
+        expect(permission.task).toBe("allow")
+        expect(permission.call_omo_agent).toBe("deny")
       }
     })
   })

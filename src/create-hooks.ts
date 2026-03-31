@@ -2,6 +2,7 @@ import type { AvailableSkill } from "./agents/dynamic-agent-prompt-builder"
 import type { HookName, OhMyOpenCodeConfig } from "./config"
 import type { LoadedSkill } from "./features/opencode-skill-loader/types"
 import type { BackgroundManager } from "./features/background-agent"
+import type { SkillMcpManager } from "./features/skill-mcp-manager"
 import type { PluginContext } from "./plugin/types"
 import type { ModelCacheState } from "./plugin-state"
 
@@ -30,6 +31,7 @@ export function createHooks(args: {
   pluginConfig: OhMyOpenCodeConfig
   modelCacheState: ModelCacheState
   backgroundManager: BackgroundManager
+  skillMcpManager: SkillMcpManager
   isHookEnabled: (hookName: HookName) => boolean
   safeHookEnabled: boolean
   mergedSkills: LoadedSkill[]
@@ -40,6 +42,7 @@ export function createHooks(args: {
     pluginConfig,
     modelCacheState,
     backgroundManager,
+    skillMcpManager,
     isHookEnabled,
     safeHookEnabled,
     mergedSkills,
@@ -50,6 +53,7 @@ export function createHooks(args: {
     ctx,
     pluginConfig,
     modelCacheState,
+    skillMcpManager,
     isHookEnabled,
     safeHookEnabled,
   })

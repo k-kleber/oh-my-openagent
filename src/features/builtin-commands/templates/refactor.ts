@@ -97,45 +97,55 @@ TodoWrite([
 
 ## 1.1: Launch Parallel Explore Agents (BACKGROUND)
 
-Fire ALL of these simultaneously using \`call_omo_agent\`:
+Fire ALL of these simultaneously using \`task\`:
 
 \`\`\`
 // Agent 1: Find the refactoring target
-call_omo_agent(
+task(
   subagent_type="explore",
+  load_skills=["code-intelligence", "fastcode"],
   run_in_background=true,
+  description="Locate refactor target",
   prompt="Find all occurrences and definitions of [TARGET]. 
   Report: file paths, line numbers, usage patterns."
 )
 
 // Agent 2: Find related code
-call_omo_agent(
+task(
   subagent_type="explore", 
+  load_skills=["code-intelligence", "fastcode"],
   run_in_background=true,
+  description="Map dependencies",
   prompt="Find all code that imports, uses, or depends on [TARGET].
   Report: dependency chains, import graphs."
 )
 
 // Agent 3: Find similar patterns
-call_omo_agent(
+task(
   subagent_type="explore",
+  load_skills=["code-intelligence", "fastcode"],
   run_in_background=true,
+  description="Find analogous patterns",
   prompt="Find similar code patterns to [TARGET] in the codebase.
   Report: analogous implementations, established conventions."
 )
 
 // Agent 4: Find tests
-call_omo_agent(
+task(
   subagent_type="explore",
+  load_skills=["code-intelligence", "fastcode"],
   run_in_background=true,
+  description="Find related tests",
   prompt="Find all test files related to [TARGET].
   Report: test file paths, test case names, coverage indicators."
 )
 
 // Agent 5: Architecture context
-call_omo_agent(
+task(
   subagent_type="explore",
+  load_skills=["code-intelligence", "fastcode"],
   run_in_background=true,
+  description="Map architecture context",
   prompt="Find architectural patterns and module organization around [TARGET].
   Report: module boundaries, layer structure, design patterns in use."
 )
@@ -274,9 +284,11 @@ ls -la *_test.go
 
 \`\`\`
 // Find all tests related to target
-call_omo_agent(
+task(
   subagent_type="explore",
+  load_skills=["code-intelligence", "fastcode"],
   run_in_background=false,  // Need this synchronously
+  description="Assess test coverage",
   prompt="Analyze test coverage for [TARGET]:
   1. Which test files cover this code?
   2. What test cases exist?

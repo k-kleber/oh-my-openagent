@@ -43,6 +43,12 @@ skill_mcp(mcp_name="openmemory", tool_name="openmemory_store", arguments={
 })
 \`\`\`
 
+### 2c. Scope and taxonomy tags (required)
+
+- Include scope tag: \`scope:<scope>\` where scope is one of \`project|system|framework|global|user\`
+- Include metadata scope aligned to the selected scope
+- If scope is missing, default to \`project\`
+
 ## Guardrails
 
 - Reject uncategorized content

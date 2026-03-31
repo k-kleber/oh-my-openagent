@@ -36,7 +36,26 @@
           "agent-browser",
           "dev-browser",
           "frontend-ui-ux",
-          "git-master"
+          "git-master",
+          "code-intelligence",
+          "code-intelligence-init",
+          "fastcode",
+          "memory-mcp",
+          "memory-capture",
+          "memory-recall-and-verify",
+          "memory-auto",
+          "memory-bootstrap-collector",
+          "memory-project-bootstrap",
+          "memory-init",
+          "memory-promote",
+          "memory-pre-compaction",
+          "memory-observation-ledger",
+          "global-tooling-preference",
+          "tool-doc-ripgrep",
+          "tool-doc-fd",
+          "tool-doc-sd",
+          "context7-mcp",
+          "websearch-mcp"
         ]
       }
     },
@@ -5364,6 +5383,241 @@
       "required": [
         "auto_commit"
       ],
+      "additionalProperties": false
+    },
+    "memory": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "target_agents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "retrieval": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "cooldown_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "max_per_session": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "max_query_chars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "run_in_background": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "capture": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "cooldown_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "max_per_session": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "min_output_chars": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "max_insights": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "max_insight_chars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "run_in_background": {
+              "type": "boolean"
+            },
+            "discovery_tools": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "lifecycle": {
+          "type": "object",
+          "properties": {
+            "capture_on_session_idle": {
+              "type": "boolean"
+            },
+            "capture_on_session_compacted": {
+              "type": "boolean"
+            },
+            "capture_on_preemptive_compaction": {
+              "type": "boolean"
+            },
+            "idle_cooldown_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "additionalProperties": false
+        },
+        "budget": {
+          "type": "object",
+          "properties": {
+            "session_chars": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "pause_after_failures": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "failure_pause_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "additionalProperties": false
+        },
+        "taxonomy": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "default_scope": {
+              "type": "string",
+              "enum": [
+                "project",
+                "system",
+                "framework",
+                "global",
+                "user"
+              ]
+            },
+            "allowed_scopes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "project",
+                  "system",
+                  "framework",
+                  "global",
+                  "user"
+                ]
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "observation_ledger": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "max_entries_per_session": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "sample_window": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "min_output_chars": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "capture_tool_inputs": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "reducer": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "confidence_threshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "promotion_threshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "min_evidence_count": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "cross_project_evidence_min": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "run_on_lifecycle_events": {
+              "type": "boolean"
+            },
+            "run_on_tool_capture": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "observability": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "log_metrics": {
+              "type": "boolean"
+            },
+            "include_session_summary_on_delete": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
       "additionalProperties": false
     },
     "_migrations": {

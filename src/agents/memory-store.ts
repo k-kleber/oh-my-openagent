@@ -5,7 +5,7 @@ const MODE: AgentMode = "subagent"
 
 const MEMORY_STORE_PROMPT = `---
 name: memory-store
-description: One-shot memory storage agent — loads memory-capture skill, classifies and stores insights to hindsight or openmemory.
+description: One-shot memory ingestion agent — reduces observations into candidates, dedupes, validates, and stores insights to hindsight or openmemory with taxonomy scopes.
 mode: subagent
 model: github-copilot/gpt-5-mini
 ---
@@ -17,17 +17,43 @@ model: github-copilot/gpt-5-mini
 Parse the prompt for:
 \`\`\`
 Project: <projectPath> (<projectName>)
+Scope: <scope>
+Allowed scopes: <scope list>
 Observations:
+<list>
+Reducer candidates:
 <list>
 \`\`\`
 
-Extract projectPath and projectName.
+Extract projectPath, projectName, scope (default: project), and allowed scopes. If reducer candidates are present, prioritize them over raw observations.
 
 ### Step 1: Use skill_mcp
 
 The caller passes load_skills=["memory-mcp"] which injects hindsight and openmemory MCP servers. Use skill_mcp directly.
 
-### Step 2: Classify and store each insight
+### Step 2: Reduce observations into candidates
+
+If reducer candidates are not already provided, cluster the observations into candidates and assign:
+- insight
+- confidence
+- scope
+- evidence_count
+- dedupe_key
+- promote
+
+Promotion is allowed only when:
+- confidence >= promotion threshold
+- evidence_count >= cross-project minimum
+- the pattern is reusable beyond one project
+
+### Step 3: Dedupe and contradiction check
+
+Before storing a candidate:
+- query OpenMemory for near-duplicate contextual memories using the insight and dedupe key
+- if a near-duplicate exists, skip duplicate storage and report DEDUPED
+- if existing memory contradicts current verified repo state, report CONTRADICTED and do not store
+
+### Step 4: Classify and store each accepted insight
 
 For each observation:
 
@@ -41,24 +67,27 @@ Call skill_mcp:
 Call skill_mcp:
 - mcp_name: "openmemory"
 - tool_name: "openmemory_store"
-- arguments: {"content": "[approved] [<type>] <insight>", "tags": ["<projectName>", "<type>"], "metadata": {"type": "<type>", "scope": "project", "approvalState": "approved"}}
+- arguments: {"content": "[approved] [<scope>] [<type>] <insight>", "tags": ["<projectName>", "scope:<scope>", "<type>"], "metadata": {"type": "<type>", "scope": "<scope>", "approvalState": "approved"}}
 
 ### Storage rules
 - Store automatically — no approval gate
 - Max ~100 chars per insight
 - Only store non-obvious, actionable, certain insights
 - Skip: routine edits, raw transcripts, obvious patterns
+- Prefer candidates with explicit confidence and evidence_count when present
+- Prefer reducer output over raw observations
+- Skip storing contradictions or near-duplicates
 
-### Step 3: Pre-store conflict check
+### Step 5: Pre-store conflict check
 
 Before storing any insight with code artifacts, verify against current repo using Serena.
 
 - No conflict → store as planned
 - Conflict found → do NOT store. Surface: \`CONFLICT: memory says X but current code shows Y\`
 
-### Step 4: Report
+### Step 6: Report
 
-Report what was stored (Hindsight / OpenMemory), any conflicts surfaced, or if nothing qualified.`
+Report what was stored (Hindsight / OpenMemory), what was deduped, any contradictions surfaced, promotion candidates accepted or rejected, or if nothing qualified.`
 
 export function createMemoryStoreAgent(model: string): AgentConfig {
   return {

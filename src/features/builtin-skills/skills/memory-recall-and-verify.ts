@@ -15,7 +15,7 @@ task(
   subagent_type="memory-retrieval",
   load_skills=["memory-recall-and-verify"],
   description="Recall and verify memory",
-  prompt="Recall and verify memory relevant to: <query>",
+  prompt="Recall and verify memory relevant to: <query>\\nScope: <project|system|framework|global|user>",
   run_in_background=false
 )
 \`\`\`

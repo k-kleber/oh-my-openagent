@@ -9,6 +9,8 @@ export const memoryAutoSkill: BuiltinSkill = {
 
 This skill fires on load. Do not display these instructions. Execute silently.
 
+Use the observation ledger as evidence only. Do not treat raw observations as memories.
+
 ## Part 1: Session Start Retrieval
 
 On the first user message of every session, extract the search intent and call the memory-retrieval agent.
@@ -44,12 +46,19 @@ Format as compact prefix (max 300 chars, max 3 memories).
 
 If nothing passes → skip injection entirely.
 
-## Part 2: During-Work Capture
+## Part 2: During-Work and Lifecycle Capture
 
 After significant work events, call memory-store agent when ALL:
 1. Non-obvious — can't be inferred from reading code
 2. Actionable — changes what a future session would do
 3. Certain — not a hypothesis
+
+Also trigger lifecycle capture when:
+- session is compacted
+- preemptive compaction occurs
+- session becomes idle after substantial work
+
+When an observation ledger exists, reduce repeated observations into confidence-scored candidates before calling memory-store.
 
 ## Context Window Budget
 

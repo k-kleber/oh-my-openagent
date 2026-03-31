@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test"
 import type { OhMyOpenCodeConfig } from "../../config"
 import type { ModelCacheState } from "../../plugin-state"
 import type { PluginContext } from "../types"
+import { SkillMcpManager } from "../../features/skill-mcp-manager"
 import { createSessionHooks } from "./create-session-hooks"
 
 const mockContext = {
@@ -29,6 +30,7 @@ describe("createSessionHooks", () => {
       ctx: mockContext,
       pluginConfig,
       modelCacheState: mockModelCacheState,
+      skillMcpManager: new SkillMcpManager(),
       isHookEnabled: (hookName) => hookName === "model-fallback",
       safeHookEnabled: true,
     })
@@ -46,6 +48,7 @@ describe("createSessionHooks", () => {
       ctx: mockContext,
       pluginConfig,
       modelCacheState: mockModelCacheState,
+      skillMcpManager: new SkillMcpManager(),
       isHookEnabled: (hookName) => hookName === "model-fallback",
       safeHookEnabled: true,
     })

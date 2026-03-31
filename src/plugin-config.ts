@@ -116,6 +116,7 @@ export function mergeConfigs(
     ...override,
     agents: deepMerge(base.agents, override.agents),
     categories: deepMerge(base.categories, override.categories),
+    memory: deepMerge(base.memory, override.memory),
     disabled_agents: [
       ...new Set([
         ...(base.disabled_agents ?? []),

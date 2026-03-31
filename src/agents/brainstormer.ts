@@ -45,8 +45,8 @@ Then include a short recommendation (top 1-2 options).
 - Do NOT launch broad parallel exploration by default.
 - Use optional checks only when uncertain or explicitly requested:
   - memory check: recall prior decisions/preferences
-  - quick code check: one narrow call_omo_agent(subagent_type="explore") query
-  - quick external check: one narrow call_omo_agent(subagent_type="librarian") query
+- quick code check: one narrow task(subagent_type="explore", load_skills=[...], run_in_background=true) query
+- quick external check: one narrow task(subagent_type="librarian", load_skills=[...], run_in_background=true) query
 - Cap optional checks to the minimum needed to unblock confidence (max 1-2 quick delegations).
 
 ## Subagent dependency gate (mandatory)

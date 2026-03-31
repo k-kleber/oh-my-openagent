@@ -1,5 +1,4 @@
 import type { DelegateTaskArgs, OpencodeClient } from "./types"
-import { isPlanFamily } from "./constants"
 import { buildTaskPrompt } from "./prompt-builder"
 import {
   promptSyncWithModelSuggestionRetry,
@@ -43,13 +42,15 @@ export async function sendSyncPrompt(
   },
   deps: SendSyncPromptDeps = sendSyncPromptDeps
 ): Promise<string | null> {
-  const allowTask = isPlanFamily(input.agentToUse)
   const effectivePrompt = buildTaskPrompt(input.args.prompt, input.agentToUse)
   const tools = {
-    task: allowTask,
-    call_omo_agent: true,
+    task: true,
+    call_omo_agent: false,
     question: false,
     ...getAgentToolRestrictions(input.agentToUse),
+  }
+  if (isOracleAgent(input.agentToUse)) {
+    tools.task = false
   }
   setSessionTools(input.sessionID, tools)
 

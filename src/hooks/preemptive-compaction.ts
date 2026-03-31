@@ -60,6 +60,8 @@ type PluginInput = {
       messages: (...args: any[]) => any
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       summarize: (...args: any[]) => any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      promptAsync?: (...args: any[]) => any
     }
     tui: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -78,7 +80,6 @@ export function createPreemptiveCompactionHook(
   const compactionInProgress = new Set<string>()
   const compactedSessions = new Set<string>()
   const tokenCache = new Map<string, CachedCompactionState>()
-
   const postCompactionMonitor = createPostCompactionDegradationMonitor({
     client: ctx.client,
     directory: ctx.directory,
@@ -147,7 +148,7 @@ export function createPreemptiveCompactionHook(
       await withTimeout(
         ctx.client.session.summarize({
           path: { id: sessionID },
-          body: { providerID: targetProviderID, modelID: targetModelID, auto: true } as never,
+          body: { providerID: targetProviderID, modelID: targetModelID, auto: true, source: "preemptive-compaction" } as never,
           query: { directory: ctx.directory },
         }),
         PREEMPTIVE_COMPACTION_TIMEOUT_MS,

@@ -47,7 +47,7 @@ Your sole mission: identify the actual root cause of bugs with high confidence a
 - Use librarian for external dependency behavior only when library semantics are uncertain.
 - Stop only when evidence is sufficient to prove causality.
 - For complex incidents, split analysis into explicit read-only tracks (reproduction, control flow, data integrity, dependency behavior) and run them in parallel.
-- Keep task() denied; use call_omo_agent-based research fanout only (explore/librarian).
+- Use task(...) for research fanout so delegated explore/librarian runs can load skills.
 
 ## Subagent dependency gate (mandatory)
 - When you launch explore/librarian with run_in_background=true, treat their findings as required inputs for dependent analysis.

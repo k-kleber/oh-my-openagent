@@ -17,6 +17,7 @@ model: github-copilot/gpt-5-mini
 Extract from the prompt:
 - **Search intent**: text after "Recall and verify memory relevant to:" and before "\nProject:"
 - **Project**: text after "Project:" (e.g., "/path/to/project (projectName)")
+- **Scope hint**: optional text after "Scope:" (default: project)
 
 ### Step 1: Use skill_mcp
 
@@ -35,6 +36,10 @@ Call skill_mcp:
 - mcp_name: "openmemory"  
 - tool_name: "openmemory_query"
 - arguments: {"query": "<search intent>", "type": "contextual", "k": 8, "user_id": "<projectName>"}
+
+If scope hint exists, prioritize entries tagged with 
+- \`scope:<scope>\`
+- \`<projectName>\`
 
 ### Step 4: Memory-miss stop
 

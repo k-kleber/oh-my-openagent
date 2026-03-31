@@ -1,6 +1,5 @@
 import type { DelegateTaskArgs, ToolContextWithMetadata } from "./types"
 import type { ExecutorContext, SessionMessage } from "./executor-types"
-import { isPlanFamily } from "./constants"
 import { storeToolMetadata } from "../../features/tool-metadata-store"
 import { getTaskToastManager } from "../../features/task-toast-manager"
 import { getAgentToolRestrictions } from "../../shared/agent-tool-restrictions"
@@ -82,13 +81,15 @@ export async function executeSyncContinuation(
       storeToolMetadata(ctx.sessionID, ctx.callID, syncContMeta)
     }
 
-    const allowTask = isPlanFamily(resumeAgent)
     const effectivePrompt = buildTaskPrompt(args.prompt, resumeAgent)
     const tools = {
-      ...(resumeAgent ? getAgentToolRestrictions(resumeAgent) : {}),
-      task: allowTask,
-      call_omo_agent: true,
+      task: true,
+      call_omo_agent: false,
       question: false,
+      ...(resumeAgent ? getAgentToolRestrictions(resumeAgent) : {}),
+    }
+    if (resumeAgent?.toLowerCase() === "oracle") {
+      tools.task = false
     }
     setSessionTools(args.session_id!, tools)
 

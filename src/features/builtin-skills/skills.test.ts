@@ -137,6 +137,20 @@ describe("createBuiltinSkills", () => {
 		expect(memoryInit!.mcpConfig).toHaveProperty("fastcode")
 	})
 
+	test("should include memory automation skill set in builtin skills", () => {
+		const skills = createBuiltinSkills()
+		const names = new Set(skills.map((s) => s.name))
+
+		expect(names.has("memory-mcp")).toBe(true)
+		expect(names.has("memory-capture")).toBe(true)
+		expect(names.has("memory-recall-and-verify")).toBe(true)
+		expect(names.has("memory-auto")).toBe(true)
+		expect(names.has("memory-init")).toBe(true)
+		expect(names.has("memory-promote")).toBe(true)
+		expect(names.has("memory-pre-compaction")).toBe(true)
+		expect(names.has("memory-observation-ledger")).toBe(true)
+	})
+
 	test("code-intelligence-init template includes FastCode API/CLI fallback", () => {
 		const skills = createBuiltinSkills()
 		const initSkill = skills.find((s) => s.name === "code-intelligence-init")

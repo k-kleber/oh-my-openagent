@@ -142,8 +142,8 @@ export async function startTask(
       ...(launchVariant ? { variant: launchVariant } : {}),
       system: input.skillContent,
       tools: {
-        task: false,
-        call_omo_agent: true,
+        task: true,
+        call_omo_agent: false,
         question: false,
         ...getAgentToolRestrictions(input.agent),
       },
@@ -228,8 +228,8 @@ export async function resumeTask(
       ...(resumeModel ? { model: resumeModel } : {}),
       ...(resumeVariant ? { variant: resumeVariant } : {}),
       tools: {
-        task: false,
-        call_omo_agent: true,
+        task: true,
+        call_omo_agent: false,
         question: false,
         ...getAgentToolRestrictions(task.agent),
       },

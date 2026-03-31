@@ -132,6 +132,29 @@ describe("mergeConfigs", () => {
       expect(result.disabled_tools).toContain("look_at");
       expect(result.disabled_tools?.length).toBe(3);
     });
+
+    it("should allow memory config merge with defaults preserved", () => {
+      const base: OhMyOpenCodeConfig = {
+        memory: {
+          enabled: true,
+          capture: { max_per_session: 3 },
+          taxonomy: { default_scope: "project" },
+        },
+      }
+
+      const override: OhMyOpenCodeConfig = {
+        memory: {
+          capture: { cooldown_ms: 120000 },
+          taxonomy: { default_scope: "framework" },
+        },
+      }
+
+      const result = mergeConfigs(base, override)
+      expect(result.memory?.enabled).toBe(true)
+      expect(result.memory?.capture?.max_per_session).toBe(3)
+      expect(result.memory?.capture?.cooldown_ms).toBe(120000)
+      expect(result.memory?.taxonomy?.default_scope).toBe("framework")
+    })
   });
 });
 

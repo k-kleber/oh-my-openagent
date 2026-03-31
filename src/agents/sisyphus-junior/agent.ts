@@ -28,8 +28,7 @@ import { buildGeminiSisyphusJuniorPrompt } from "./gemini"
 const MODE: AgentMode = "subagent"
 
 // Core tools that Sisyphus-Junior must NEVER have access to
-// Note: call_omo_agent is ALLOWED so subagents can spawn explore/librarian
-const BLOCKED_TOOLS = ["task"]
+const BLOCKED_TOOLS = ["call_omo_agent"]
 
 export const SISYPHUS_JUNIOR_DEFAULTS = {
   model: "anthropic/claude-sonnet-4-6",
@@ -100,7 +99,7 @@ export function createSisyphusJuniorAgentWithOverrides(
   for (const tool of BLOCKED_TOOLS) {
     merged[tool] = "deny"
   }
-  merged.call_omo_agent = "allow"
+  merged.task = "allow"
   const toolsConfig = { permission: { ...merged, ...basePermission } }
 
   const base: AgentConfig = {

@@ -9,7 +9,7 @@ Pre-compaction memory-save analysis before context compaction.
 
 ## Automatic Path
 
-When oh-my-openagent triggers preemptive compaction (usage ratio >= threshold), the PreCompact hook runs and delegates to \`memory-store\` subagent.
+When oh-my-openagent triggers preemptive compaction (usage ratio >= threshold), the memory auto-trigger hook performs pre-compaction lifecycle capture and delegates to \`memory-store\` subagent.
 
 ## Manual Invocation
 

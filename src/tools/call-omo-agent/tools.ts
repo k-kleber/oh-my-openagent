@@ -67,6 +67,10 @@ export function createCallOmoAgent(
       const toolCtx = toolContext as ToolContextWithMetadata
       log(`[call_omo_agent] Starting with agent: ${args.subagent_type}, background: ${args.run_in_background}`)
 
+      if (getAgentConfigKey(toolCtx.agent ?? "") === "brainstormer") {
+        return `Brainstormer cannot use call_omo_agent. Use task(subagent_type="explore"|"librarian"|"memory-retrieval") when needed.`
+      }
+
       const requestedAgent = args.subagent_type.trim().replace(/^@+/, "")
       if (!requestedAgent) {
         return `Error: Invalid agent type "${args.subagent_type}". Only ${ALLOWED_AGENTS.join(", ")} are allowed.`

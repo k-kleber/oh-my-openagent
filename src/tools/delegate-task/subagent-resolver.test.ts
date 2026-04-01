@@ -217,4 +217,34 @@ describe("resolveSubagentExecution", () => {
     expect(result.categoryModel).toEqual({ providerID: "openai", modelID: "gpt-5-mini" })
     cacheSpy.mockRestore()
   })
+
+  test("blocks brainstormer from delegating to implementation-oriented subagents", async () => {
+    //#given
+    const args = createBaseArgs({ subagent_type: "oracle" })
+    const executorCtx = createExecutorContext(async () => ([
+      { name: "oracle", mode: "subagent", model: "openai/gpt-5.3-codex" },
+    ]))
+
+    //#when
+    const result = await resolveSubagentExecution(args, executorCtx, "brainstormer", "quick, focused")
+
+    //#then
+    expect(result.agentToUse).toBe("")
+    expect(result.error).toContain("Brainstormer can only delegate to explore, librarian, or memory-retrieval")
+  })
+
+  test("allows brainstormer to delegate to memory-retrieval", async () => {
+    //#given
+    const args = createBaseArgs({ subagent_type: "memory-retrieval" })
+    const executorCtx = createExecutorContext(async () => ([
+      { name: "memory-retrieval", mode: "subagent", model: "openai/gpt-5-nano" },
+    ]))
+
+    //#when
+    const result = await resolveSubagentExecution(args, executorCtx, "brainstormer", "quick, focused")
+
+    //#then
+    expect(result.error).toBeUndefined()
+    expect(result.agentToUse).toBe("memory-retrieval")
+  })
 })

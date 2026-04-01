@@ -26,10 +26,22 @@ export function createBrainstormerSisyphusMdOnlyHook(ctx: PluginInput) {
 
       const normalizedTool = input.tool.toLowerCase()
 
+      if (normalizedTool === "write") {
+        throw new Error(
+          `[${HOOK_NAME}] Brainstormer is read-only. Write is not allowed. Tool not allowed: ${input.tool}`,
+        )
+      }
+
       if (normalizedTool === "edit" || normalizedTool === "apply_patch" || normalizedTool === "patch") {
         throw new Error(
-          `[${HOOK_NAME}] Brainstormer may only create brainstorm handoff files via Write. ` +
+          `[${HOOK_NAME}] Brainstormer is read-only. ` +
             `Tool not allowed: ${input.tool}`,
+        )
+      }
+
+      if (normalizedTool === "hashline_edit") {
+        throw new Error(
+          `[${HOOK_NAME}] Brainstormer is read-only. Tool not allowed: ${input.tool}`,
         )
       }
 
@@ -46,7 +58,7 @@ export function createBrainstormerSisyphusMdOnlyHook(ctx: PluginInput) {
           agent: agentName,
         })
         throw new Error(
-          `[${HOOK_NAME}] Brainstormer may only write brainstorm handoff files at `.concat(
+          `[${HOOK_NAME}] Brainstormer is read-only. `.concat(
             `.sisyphus/drafts/brainstorm*.md or .sisyphus/drafts/brainstorms/brainstorm*.md. `,
             `Attempted: ${filePath}`,
           ),

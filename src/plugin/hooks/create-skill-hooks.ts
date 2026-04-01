@@ -3,12 +3,17 @@ import type { HookName, OhMyOpenCodeConfig } from "../../config"
 import type { LoadedSkill } from "../../features/opencode-skill-loader/types"
 import type { PluginContext } from "../types"
 
-import { createAutoSlashCommandHook, createCategorySkillReminderHook } from "../../hooks"
+import {
+  createAutoSlashCommandHook,
+  createCategorySkillReminderHook,
+  createReviewFlowRecommendationHook,
+} from "../../hooks"
 import { safeCreateHook } from "../../shared/safe-create-hook"
 
 export type SkillHooks = {
   categorySkillReminder: ReturnType<typeof createCategorySkillReminderHook> | null
   autoSlashCommand: ReturnType<typeof createAutoSlashCommandHook> | null
+  reviewFlowRecommendation: ReturnType<typeof createReviewFlowRecommendationHook> | null
 }
 
 export function createSkillHooks(args: {
@@ -45,5 +50,9 @@ export function createSkillHooks(args: {
         }))
     : null
 
-  return { categorySkillReminder, autoSlashCommand }
+  const reviewFlowRecommendation = isHookEnabled("review-flow-recommendation")
+    ? safeHook("review-flow-recommendation", () => createReviewFlowRecommendationHook(ctx))
+    : null
+
+  return { categorySkillReminder, autoSlashCommand, reviewFlowRecommendation }
 }

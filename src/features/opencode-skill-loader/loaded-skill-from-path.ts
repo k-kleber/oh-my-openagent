@@ -62,6 +62,7 @@ export async function loadSkillFromPath(options: {
       allowedTools: parseAllowedTools(data["allowed-tools"]),
       mcpConfig,
       lazyContent: eagerLoader,
+      specialist: data.specialist,
     }
   } catch {
     return null

@@ -726,14 +726,13 @@ describe("sisyphus-task", () => {
         description: string
         prompt: string
         category: string
-        subagent_type: string
+        subagent_type?: string
         run_in_background: boolean
         load_skills: string[]
       } = {
         description: "Override test",
         prompt: "Do something",
         category: "quick",
-        subagent_type: "oracle",
         run_in_background: true,
         load_skills: [],
       }
@@ -745,6 +744,122 @@ describe("sisyphus-task", () => {
       expect(args.subagent_type).toBe("Sisyphus-Junior")
       expect(result).toContain("Background task launched")
     }, { timeout: 10000 })
+
+    test("error when multiple routing options provided", async () => {
+      //#given
+      const { createDelegateTask } = require("./tools")
+
+      const mockManager = {
+        launch: async () => ({ id: "task-123", status: "pending", description: "Test task", agent: "sisyphus-junior", sessionID: "test-session" }),
+      }
+
+      const mockClient = {
+        app: { agents: async () => ({ data: [] }) },
+        config: { get: async () => ({}) },
+        provider: { list: async () => ({ data: { connected: ["openai"] } }) },
+        model: { list: async () => ({ data: [{ provider: "openai", id: "gpt-5.3-codex" }] }) },
+        session: {
+          create: async () => ({ data: { id: "test-session" } }),
+          prompt: async () => ({ data: {} }),
+          promptAsync: async () => ({ data: {} }),
+          messages: async () => ({ data: [] }),
+          status: async () => ({ data: {} }),
+        },
+      }
+
+      const tool = createDelegateTask({
+        manager: mockManager,
+        client: mockClient,
+        connectedProvidersOverride: TEST_CONNECTED_PROVIDERS,
+        availableModelsOverride: createTestAvailableModels(),
+      })
+
+      const toolContext = {
+        sessionID: "parent-session",
+        messageID: "parent-message",
+        agent: "sisyphus",
+        abort: new AbortController().signal,
+      }
+
+      const args = {
+        description: "Multiple options test",
+        prompt: "Do something",
+        category: "quick",
+        subagent_type: "oracle",
+        run_in_background: true,
+        load_skills: [],
+      }
+
+      //#when
+      const result = await tool.execute(args, toolContext)
+
+      //#then
+      expect(result).toContain("Invalid arguments: Provide ONLY ONE of 'category', 'subagent_type', or 'specialist'")
+    })
+
+    test("specialist routing sets subagent_type", async () => {
+      //#given
+      const { createDelegateTask } = require("./tools")
+
+      const mockManager = {
+        launch: async (taskArgs: any) => ({
+          id: "task-specialist",
+          status: "pending",
+          description: "Specialist test",
+          agent: taskArgs.agent,
+          sessionID: "test-session",
+        }),
+      }
+
+      const mockClient = {
+        app: {
+          agents: async () => ({
+            data: [
+              { name: "my-specialist", mode: "subagent", model: "openai/gpt-5.3-codex" }
+            ]
+          })
+        },
+        config: { get: async () => ({}) },
+        provider: { list: async () => ({ data: { connected: ["openai"] } }) },
+        model: { list: async () => ({ data: [{ provider: "openai", id: "gpt-5.3-codex" }] }) },
+        session: {
+          create: async () => ({ data: { id: "test-session" } }),
+          prompt: async () => ({ data: {} }),
+          promptAsync: async () => ({ data: {} }),
+          messages: async () => ({ data: [] }),
+          status: async () => ({ data: {} }),
+        },
+      }
+
+      const tool = createDelegateTask({
+        manager: mockManager,
+        client: mockClient,
+        connectedProvidersOverride: TEST_CONNECTED_PROVIDERS,
+        availableModelsOverride: createTestAvailableModels(),
+      })
+
+      const toolContext = {
+        sessionID: "parent-session",
+        messageID: "parent-message",
+        agent: "sisyphus",
+        abort: new AbortController().signal,
+      }
+
+      const args = {
+        description: "Specialist test",
+        prompt: "Do something",
+        specialist: "my-specialist",
+        run_in_background: true,
+        load_skills: [],
+      }
+
+      //#when
+      const result = await tool.execute(args, toolContext)
+
+      //#then
+      expect(args.subagent_type).toBe("my-specialist")
+      expect(result).toContain("Background task launched")
+    })
 
     test("proceeds without error when systemDefaultModel is undefined", async () => {
       // given a mock client with no model in config
@@ -1474,6 +1589,82 @@ describe("sisyphus-task", () => {
   })
 
   describe("run_in_background parameter", () => {
+    test("brainstormer blocks category delegation", async () => {
+      // given
+      const { createDelegateTask } = require("./tools")
+      const mockManager = { launch: async () => ({}) }
+      const mockClient = {
+        app: { agents: async () => ({ data: [] }) },
+        config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
+        session: {
+          create: async () => ({ data: { id: "test-session" } }),
+          prompt: async () => ({ data: {} }),
+          promptAsync: async () => ({ data: {} }),
+          messages: async () => ({ data: [] }),
+        },
+      }
+      const tool = createDelegateTask({ manager: mockManager, client: mockClient })
+
+      // when
+      const result = await tool.execute(
+        {
+          description: "Category from brainstormer",
+          prompt: "Do work",
+          category: "quick",
+          run_in_background: false,
+          load_skills: [],
+        },
+        { sessionID: "parent-session", messageID: "parent-message", agent: "brainstormer", abort: new AbortController().signal },
+      )
+
+      // then
+      expect(result).toContain("Brainstormer cannot delegate implementation categories")
+    })
+
+    test("brainstormer allows memory-retrieval subagent delegation", async () => {
+      // given
+      const { createDelegateTask } = require("./tools")
+      let promptCalled = false
+      const mockManager = { launch: async () => ({}) }
+      const mockClient = {
+        app: {
+          agents: async () => ({ data: [{ name: "memory-retrieval", mode: "subagent", model: { providerID: "openai", modelID: "gpt-5-nano" } }] }),
+        },
+        config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
+        session: {
+          get: async () => ({ data: { directory: "/project" } }),
+          create: async () => ({ data: { id: "ses_memory_ok" } }),
+          prompt: async () => {
+            promptCalled = true
+            return { data: {} }
+          },
+          promptAsync: async () => {
+            promptCalled = true
+            return { data: {} }
+          },
+          messages: async () => ({ data: [{ info: { role: "assistant" }, parts: [{ type: "text", text: "Done" }] }] }),
+          status: async () => ({ data: { ses_memory_ok: { type: "idle" } } }),
+        },
+      }
+      const tool = createDelegateTask({ manager: mockManager, client: mockClient })
+
+      // when
+      const result = await tool.execute(
+        {
+          description: "Memory retrieval",
+          prompt: "Recall context",
+          subagent_type: "memory-retrieval",
+          run_in_background: false,
+          load_skills: [],
+        },
+        { sessionID: "parent-session", messageID: "parent-message", agent: "brainstormer", abort: new AbortController().signal },
+      )
+
+      // then
+      expect(promptCalled).toBe(true)
+      expect(result).toContain("Done")
+    }, { timeout: 10000 })
+
     test("#given category without run_in_background #when executing #then throws required parameter error", async () => {
       // given
       const { createDelegateTask } = require("./tools")

@@ -1,4 +1,6 @@
 import type { AgentPromptMetadata } from "./types"
+import type { AvailableSpecialist } from "../features/opencode-skill-loader/types"
+import { formatSpecialistCatalog } from "../features/opencode-skill-loader/specialist-catalog"
 
 export interface AvailableAgent {
   name: string
@@ -167,8 +169,8 @@ Before delegating research to explore or librarian, delegate to a memory-retriev
 After completing significant work (architectural decisions, bug fixes with non-obvious cause, pattern discoveries), consider triggering memory capture: \`task(subagent_type="memory-store", load_skills=["memory-mcp"], prompt="Project: <projectPath> (<projectName>)\\nObservations:\\n- <list of insights>", run_in_background=false)\`. Only capture high-signal, non-obvious, actionable insights.`
 }
 
-export function buildCategorySkillsDelegationGuide(categories: AvailableCategory[], skills: AvailableSkill[]): string {
-  if (categories.length === 0 && skills.length === 0) return ""
+export function buildCategorySkillsDelegationGuide(categories: AvailableCategory[], skills: AvailableSkill[], specialists: AvailableSpecialist[] = []): string {
+  if (categories.length === 0 && skills.length === 0 && specialists.length === 0) return ""
 
   const categoryRows = categories.map((c) => {
     const desc = c.description || c.name
@@ -211,6 +213,8 @@ export function buildCategorySkillsDelegationGuide(categories: AvailableCategory
     skillsSection = ""
   }
 
+  const specialistCatalog = formatSpecialistCatalog(specialists)
+
   return `### Category + Skills Delegation System
 
 **task() combines categories and skills for optimal task execution.**
@@ -222,6 +226,8 @@ Each category is configured with a model optimized for that domain. Read the des
 ${categoryRows.join("\n")}
 
 ${skillsSection}
+
+${specialistCatalog}
 
 ---
 
@@ -284,8 +290,37 @@ task(category="quick", load_skills=[], prompt="Redesign the sidebar layout with 
 | Autonomous research + end-to-end implementation | \`deep\` |
 | Single-file typo, trivial config change | \`quick\` |
 
-**When in doubt about category, it is almost never \`quick\` or \`unspecified-*\`. Match the domain.**`
-}
+    **When in doubt about category, it is almost never \`quick\` or \`unspecified-*\`. Match the domain.**
+
+    ---
+
+    ### Specialist Selection Guidance
+
+    When delegating, choose between three dispatch styles: (1) direct specialist selection (explicit agent alias), (2) skill-led composition (explicit \`load_skills\` list), or (3) the generalist category-based path. Use the hybrid rules below to decide.
+
+    Hybrid routing rules:
+    - Direct specialist selection: use when user intent is explicit and unambiguous (the user names a specialist, or the task requires the specialist's unique toolset or lifecycle semantics).
+    - Soft specialist suggestion: when repository evidence and skill/agent metadata yield high confidence, suggest a specialist but include a skill-list fallback in the prompt so the orchestration remains robust.
+    - Fallback to generalist: when confidence is low, prefer a category + skill composition and avoid binding a first-class specialist alias.
+
+    Writing specialist guardrail:
+    - Prefer fused composition: prefer the shared writing layer (\`writing-base\`) plus research stage (\`writing-research\`) and explicit stages (outline → draft → revision) instead of instantiating multiple overlapping persona specialists.
+    - Do not duplicate standalone persona skills. Use stage-specific skills (outline/draft) composed with the common writing layer.
+
+    Coding specialist guardrail:
+    - Stay language-agnostic by default. Attach a language-specific add-on skill only when repository evidence or explicit user intent justifies it.
+    - When a language-specific add-on is used, preserve the shared generic coding-guideline layer (for example \`code-intelligence\` or a project-wide guideline skill) and treat the language-specific skill as an extension, not a replacement.
+
+    Promotion rubric (when to promote to a first-class specialist agent):
+    - Prefer skill-led specialists by default (use \`load_skills\` with explicit skills).
+    - Reserve promotion to a first-class agent when one or more conditions apply:
+      1. Hard tool restrictions require the specialist's unique toolset or denied-tool constraints.
+      2. Custom fallback or model policy cannot be expressed via skills alone.
+      3. Lifecycle semantics demand session continuity, gating, or long-running coordination that a specialist agent provides.
+
+    Implementation note: do not change default categories or subagent semantics. This guidance is advisory: prefer specialists when justified, but do not force specialist selection.
+    `
+  }
 
 export function buildOracleSection(agents: AvailableAgent[]): string {
   const oracleAgent = agents.find((a) => a.name === "oracle")

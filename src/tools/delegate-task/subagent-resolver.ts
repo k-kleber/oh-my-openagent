@@ -51,6 +51,18 @@ Create the work plan directly - that's your job as the planning agent.`,
     }
   }
 
+  const normalizedParentAgent = getAgentConfigKey(parentAgent ?? "")
+  if (normalizedParentAgent === "brainstormer") {
+    const brainstormerAllowedSubagents = new Set(["explore", "librarian", "memory-retrieval"])
+    if (!brainstormerAllowedSubagents.has(agentName.toLowerCase())) {
+      return {
+        agentToUse: "",
+        categoryModel: undefined,
+        error: `Brainstormer can only delegate to explore, librarian, or memory-retrieval. Received: "${agentName}".`,
+      }
+    }
+  }
+
   let agentToUse = agentName
   let categoryModel: { providerID: string; modelID: string; variant?: string } | undefined
   let fallbackChain: FallbackEntry[] | undefined = undefined

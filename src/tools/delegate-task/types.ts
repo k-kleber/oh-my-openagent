@@ -13,6 +13,7 @@ export interface DelegateTaskArgs {
   prompt: string
   category?: string
   subagent_type?: string
+  specialist?: string
   run_in_background: boolean
   session_id?: string
   command?: string

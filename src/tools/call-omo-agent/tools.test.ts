@@ -280,6 +280,26 @@ describe("createCallOmoAgent", () => {
     //#then
     expect(result).not.toContain("Cannot call non-subagent agent")
   })
+
+  test("blocks call_omo_agent when caller is brainstormer", async () => {
+    //#given
+    const toolDef = createCallOmoAgent(mockCtx, mockBackgroundManager, [])
+    const executeFunc = toolDef.execute as Function
+
+    //#when
+    const result = await executeFunc(
+      {
+        description: "Test",
+        prompt: "Test prompt",
+        subagent_type: "explore",
+        run_in_background: true,
+      },
+      { sessionID: "test", messageID: "msg", agent: "brainstormer", abort: new AbortController().signal },
+    )
+
+    //#then
+    expect(result).toContain("Brainstormer cannot use call_omo_agent")
+  })
 })
 
 export {}

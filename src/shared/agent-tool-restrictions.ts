@@ -49,6 +49,13 @@ const AGENT_RESTRICTIONS: Record<string, Record<string, boolean>> = {
   "sisyphus-junior": {
     call_omo_agent: false,
   },
+
+  brainstormer: {
+    write: false,
+    edit: false,
+    apply_patch: false,
+    hashline_edit: false,
+  },
 }
 
 export function getAgentToolRestrictions(agentName: string): Record<string, boolean> {

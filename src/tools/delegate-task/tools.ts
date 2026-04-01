@@ -4,6 +4,7 @@ import { CATEGORY_DESCRIPTIONS } from "./constants"
 import { SISYPHUS_JUNIOR_AGENT } from "./sisyphus-junior-agent"
 import { mergeCategories } from "../../shared/merge-categories"
 import { log } from "../../shared/logger"
+import { getAgentConfigKey } from "../../shared/agent-display-names"
 import { buildSystemContent } from "./prompt-builder"
 import type {
   AvailableCategory,
@@ -74,13 +75,15 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
     return desc ? `  - ${name}: ${desc}` : `  - ${name}`
   }).join("\n")
 
+  const brainstormerAllowedSubagents = new Set(["explore", "librarian", "memory-retrieval"])
+
   const description = `Spawn agent task with category-based or direct agent selection.
   
-  ⚠️  CRITICAL: You MUST provide EITHER category OR subagent_type. Omitting BOTH will FAIL.
+  ⚠️  CRITICAL: You MUST provide EITHER category, subagent_type, OR specialist. Omitting ALL THREE will FAIL.
   
   **COMMON MISTAKE (DO NOT DO THIS):**
   \`\`\`
-  task(description="...", prompt="...", run_in_background=false)  // ❌ FAILS - missing category AND subagent_type
+  task(description="...", prompt="...", run_in_background=false)  // ❌ FAILS - missing routing (category/subagent_type/specialist)
   \`\`\`
   
   **CORRECT - Using category:**
@@ -96,14 +99,16 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
   REQUIRED: Provide ONE of:
   - category: For task delegation (uses Sisyphus-Junior with category-optimized model)
   - subagent_type: For direct agent invocation (explore, librarian, oracle, etc.)
+  - specialist: For explicit specialist invocation
   
-  **DO NOT provide both.** If category is provided, subagent_type is ignored.
+  **DO NOT provide more than one.** If multiple are provided, the tool will error to ensure deterministic routing.
   
   - load_skills: ALWAYS REQUIRED. Pass [] if no skills needed, or ["skill-1", "skill-2"] for category tasks.
   - category: Use predefined category → Spawns Sisyphus-Junior with category config
     Available categories:
   ${categoryList}
   - subagent_type: Use specific agent directly (explore, librarian, oracle, metis, momus)
+  - specialist: Use specific specialist name directly
   - run_in_background: REQUIRED. true=async (returns task_id), false=sync (waits). Use background=true ONLY for parallel exploration with 5+ independent queries.
   - session_id: Existing Task session to continue (from previous task output). Continues agent with FULL CONTEXT PRESERVED - saves tokens, maintains continuity.
   - command: The command that triggered this task (optional, for slash command tracking).
@@ -122,13 +127,23 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
       description: tool.schema.string().describe("Short task description (3-5 words)"),
       prompt: tool.schema.string().describe("Full detailed prompt for the agent"),
       run_in_background: tool.schema.boolean().describe("REQUIRED. true=async (returns task_id), false=sync (waits). Use false for task delegation, true ONLY for parallel exploration."),
-      category: tool.schema.string().optional().describe(`REQUIRED if subagent_type not provided. Do NOT provide both category and subagent_type.`),
-      subagent_type: tool.schema.string().optional().describe("REQUIRED if category not provided. Do NOT provide both category and subagent_type."),
+      category: tool.schema.string().optional().describe(`REQUIRED if subagent_type or specialist not provided. Do NOT provide more than one.`),
+      subagent_type: tool.schema.string().optional().describe("REQUIRED if category or specialist not provided. Do NOT provide more than one."),
+      specialist: tool.schema.string().optional().describe("REQUIRED if category or subagent_type not provided. Do NOT provide more than one."),
       session_id: tool.schema.string().optional().describe("Existing Task session to continue"),
       command: tool.schema.string().optional().describe("The command that triggered this task"),
     },
     async execute(args: DelegateTaskArgs, toolContext) {
       const ctx = toolContext as ToolContextWithMetadata
+
+      const routingOptionsCount = [args.category, args.subagent_type, args.specialist].filter(Boolean).length
+      if (routingOptionsCount > 1) {
+        return `Invalid arguments: Provide ONLY ONE of 'category', 'subagent_type', or 'specialist'. Got ${routingOptionsCount} routing options.`
+      }
+
+      if (args.specialist) {
+        args.subagent_type = args.specialist
+      }
 
       if (args.category) {
         if (args.subagent_type && args.subagent_type !== SISYPHUS_JUNIOR_AGENT) {
@@ -139,6 +154,23 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
         }
         args.subagent_type = SISYPHUS_JUNIOR_AGENT
       }
+
+      const callerAgentConfigKey = getAgentConfigKey(ctx.agent ?? "")
+      if (callerAgentConfigKey === "brainstormer") {
+        if (args.category) {
+          return `Brainstormer cannot delegate implementation categories. Use subagent_type="explore", "librarian", or "memory-retrieval" only.`
+        }
+
+        const requestedSubagent = args.subagent_type?.trim().replace(/^@+/, "").toLowerCase()
+        if (!requestedSubagent) {
+          return `Brainstormer must specify subagent_type. Allowed: explore, librarian, memory-retrieval.`
+        }
+
+        if (!brainstormerAllowedSubagents.has(requestedSubagent)) {
+          return `Brainstormer can only delegate to explore, librarian, or memory-retrieval. Received: "${args.subagent_type}".`
+        }
+      }
+
       await ctx.metadata?.({
         title: args.description,
       })
@@ -198,8 +230,8 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
         return executeSyncContinuation(args, ctx, options)
       }
 
-      if (!args.category && !args.subagent_type) {
-        return `Invalid arguments: Must provide either category or subagent_type.`
+      if (!args.category && !args.subagent_type && !args.specialist) {
+        return `Invalid arguments: Must provide one of 'category', 'subagent_type', or 'specialist'.`
       }
 
       let systemDefaultModel: string | undefined

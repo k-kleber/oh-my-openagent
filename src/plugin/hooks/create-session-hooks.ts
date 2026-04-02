@@ -194,6 +194,7 @@ export function createSessionHooks(args: {
           showStartupToast: isHookEnabled("startup-toast"),
           isSisyphusEnabled: pluginConfig.sisyphus_agent?.disabled !== true,
           autoUpdate: pluginConfig.auto_update ?? true,
+          modelCapabilities: pluginConfig.model_capabilities,
         }))
     : null
 

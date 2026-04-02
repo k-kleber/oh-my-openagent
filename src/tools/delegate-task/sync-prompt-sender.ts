@@ -1,4 +1,5 @@
-import type { DelegateTaskArgs, OpencodeClient } from "./types"
+import type { DelegateTaskArgs, OpencodeClient, DelegatedModelConfig } from "./types"
+import { isPlanFamily } from "./constants"
 import { buildTaskPrompt } from "./prompt-builder"
 import {
   promptSyncWithModelSuggestionRetry,
@@ -6,6 +7,7 @@ import {
 } from "../../shared/model-suggestion-retry"
 import { formatDetailedError } from "./error-formatting"
 import { getAgentToolRestrictions } from "../../shared/agent-tool-restrictions"
+import { applySessionPromptParams } from "../../shared/session-prompt-params-helpers"
 import { setSessionTools } from "../../shared/session-tools-store"
 import { createInternalAgentTextPart } from "../../shared/internal-initiator-marker"
 
@@ -36,33 +38,38 @@ export async function sendSyncPrompt(
     agentToUse: string
     args: DelegateTaskArgs
     systemContent: string | undefined
-    categoryModel: { providerID: string; modelID: string; variant?: string } | undefined
+    categoryModel: DelegatedModelConfig | undefined
     toastManager: { removeTask: (id: string) => void } | null | undefined
     taskId: string | undefined
   },
   deps: SendSyncPromptDeps = sendSyncPromptDeps
 ): Promise<string | null> {
+  const allowTask = isPlanFamily(input.agentToUse)
   const effectivePrompt = buildTaskPrompt(input.args.prompt, input.agentToUse)
   const tools = {
-    task: true,
-    call_omo_agent: false,
+    task: allowTask,
+    call_omo_agent: true,
     question: false,
     ...getAgentToolRestrictions(input.agentToUse),
   }
-  if (isOracleAgent(input.agentToUse)) {
-    tools.task = false
-  }
   setSessionTools(input.sessionID, tools)
+
+  applySessionPromptParams(input.sessionID, input.categoryModel)
 
   const promptArgs = {
     path: { id: input.sessionID },
     body: {
-      ...((input.categoryModel && input.args.category) ? {} : { agent: input.agentToUse }),
+      agent: input.agentToUse,
       system: input.systemContent,
       tools,
       parts: [createInternalAgentTextPart(effectivePrompt)],
       ...(input.categoryModel
-        ? { model: { providerID: input.categoryModel.providerID, modelID: input.categoryModel.modelID } }
+        ? {
+            model: {
+              providerID: input.categoryModel.providerID,
+              modelID: input.categoryModel.modelID,
+            },
+          }
         : {}),
       ...(input.categoryModel?.variant ? { variant: input.categoryModel.variant } : {}),
     },

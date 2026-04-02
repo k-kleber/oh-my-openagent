@@ -167,7 +167,7 @@ export function loadPluginConfig(
   const userConfigPath =
     userDetected.format !== "none"
       ? userDetected.path
-      : path.join(configDir, "oh-my-openagent.json");
+      : path.join(configDir, "oh-my-opencode.json");
 
   // Project-level config path - prefer .jsonc over .json
   const projectBasePath = path.join(directory, ".opencode");
@@ -175,7 +175,7 @@ export function loadPluginConfig(
   const projectConfigPath =
     projectDetected.format !== "none"
       ? projectDetected.path
-      : path.join(projectBasePath, "oh-my-openagent.json");
+      : path.join(projectBasePath, "oh-my-opencode.json");
 
   // Load user config first (base)
   let config: OhMyOpenCodeConfig =

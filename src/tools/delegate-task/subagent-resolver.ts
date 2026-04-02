@@ -1,11 +1,12 @@
 import type { DelegateTaskArgs } from "./types"
 import type { ExecutorContext } from "./executor-types"
+import type { DelegatedModelConfig } from "./types"
 import { isPlanFamily } from "./constants"
 import { SISYPHUS_JUNIOR_AGENT } from "./sisyphus-junior-agent"
 import { normalizeModelFormat } from "../../shared/model-format-normalizer"
 import { AGENT_MODEL_REQUIREMENTS } from "../../shared/model-requirements"
-import { normalizeFallbackModels } from "../../shared/model-resolver"
-import { buildFallbackChainFromModels } from "../../shared/fallback-chain-from-models"
+import { normalizeFallbackModels, flattenToFallbackModelStrings } from "../../shared/model-resolver"
+import { buildFallbackChainFromModels, findMostSpecificFallbackEntry } from "../../shared/fallback-chain-from-models"
 import { getAgentDisplayName, getAgentConfigKey } from "../../shared/agent-display-names"
 import { normalizeSDKResponse } from "../../shared"
 import { log } from "../../shared/logger"
@@ -17,9 +18,8 @@ export async function resolveSubagentExecution(
   args: DelegateTaskArgs,
   executorCtx: ExecutorContext,
   parentAgent: string | undefined,
-  categoryExamples: string,
-  inheritedModel?: string
-): Promise<{ agentToUse: string; categoryModel: { providerID: string; modelID: string; variant?: string } | undefined; fallbackChain?: FallbackEntry[]; error?: string }> {
+  categoryExamples: string
+): Promise<{ agentToUse: string; categoryModel: DelegatedModelConfig | undefined; fallbackChain?: FallbackEntry[]; error?: string }> {
   const { client, agentOverrides, userCategories } = executorCtx
 
   if (!args.subagent_type?.trim()) {
@@ -64,7 +64,7 @@ Create the work plan directly - that's your job as the planning agent.`,
   }
 
   let agentToUse = agentName
-  let categoryModel: { providerID: string; modelID: string; variant?: string } | undefined
+  let categoryModel: DelegatedModelConfig | undefined
   let fallbackChain: FallbackEntry[] | undefined = undefined
 
   try {
@@ -131,23 +131,34 @@ Create the work plan directly - that's your job as the planning agent.`,
         ? `${normalizedMatchedModel.providerID}/${normalizedMatchedModel.modelID}`
         : undefined
 
-      const isAtlasParent = getAgentConfigKey(parentAgent ?? "") === "atlas"
-      const inheritedModelForSubagent = isAtlasParent ? undefined : inheritedModel
-
       const resolution = resolveModelForDelegateTask({
-        userModel: agentOverride?.model ?? inheritedModelForSubagent,
-        userFallbackModels: normalizedAgentFallbackModels,
+        userModel: agentOverride?.model,
+        userFallbackModels: flattenToFallbackModelStrings(normalizedAgentFallbackModels),
         categoryDefaultModel: matchedAgentModelStr,
         fallbackChain: agentRequirement?.fallbackChain,
         availableModels,
         systemDefaultModel: undefined,
       })
 
-      if (resolution && !('skipped' in resolution)) {
+      const resolutionSkipped = resolution && 'skipped' in resolution
+
+      if (resolution && !resolutionSkipped) {
         const normalized = normalizeModelFormat(resolution.model)
         if (normalized) {
           const variantToUse = agentOverride?.variant ?? resolution.variant
           categoryModel = variantToUse ? { ...normalized, variant: variantToUse } : normalized
+        }
+      } else if (resolutionSkipped && agentOverride?.model) {
+        // Cold cache: resolution was skipped but user explicitly configured a model.
+        // Honor the user override directly — don't fall through to hardcoded fallback chain.
+        const normalized = normalizeModelFormat(agentOverride.model)
+        if (normalized) {
+          const variantToUse = agentOverride?.variant
+          categoryModel = variantToUse ? { ...normalized, variant: variantToUse } : normalized
+          log("[delegate-task] Cold cache: using explicit user override for subagent", {
+            agent: agentToUse,
+            model: agentOverride.model,
+          })
         }
       }
 
@@ -158,7 +169,33 @@ Create the work plan directly - that's your job as the planning agent.`,
         normalizedAgentFallbackModels,
         defaultProviderID,
       )
-      fallbackChain = configuredFallbackChain ?? agentRequirement?.fallbackChain
+      // Don't assign hardcoded fallback chain when resolution was skipped (cold cache)
+      // — the chain may contain model IDs that don't exist in the provider yet.
+      fallbackChain = configuredFallbackChain ?? (resolutionSkipped ? undefined : agentRequirement?.fallbackChain)
+
+      // Only promote fallback-only settings when resolution actually selected a fallback model.
+      const resolvedFallbackEntry = (resolution && !('skipped' in resolution)) ? resolution.fallbackEntry : undefined
+      const matchedFallback = (resolution && !('skipped' in resolution)) ? resolution.matchedFallback === true : false
+      const effectiveEntry = matchedFallback && categoryModel
+        ? (
+            resolvedFallbackEntry
+            ?? (configuredFallbackChain
+              ? findMostSpecificFallbackEntry(categoryModel.providerID, categoryModel.modelID, configuredFallbackChain)
+              : undefined)
+          )
+        : undefined
+
+      if (categoryModel && effectiveEntry) {
+        categoryModel = {
+          ...categoryModel,
+          variant: agentOverride?.variant ?? effectiveEntry.variant ?? categoryModel.variant,
+          reasoningEffort: effectiveEntry.reasoningEffort,
+          temperature: effectiveEntry.temperature,
+          top_p: effectiveEntry.top_p,
+          maxTokens: effectiveEntry.maxTokens,
+          thinking: effectiveEntry.thinking,
+        }
+      }
     }
 
     if (!categoryModel && matchedAgent.model) {

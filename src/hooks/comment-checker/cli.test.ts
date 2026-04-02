@@ -128,6 +128,46 @@ exit 2
       // then
       expect(result).toEqual({ hasComments: true, message: "found comments\n" })
     })
+
+    test("preserves docstrings on declarations (exit 0)", async () => {
+      // #given
+      const { runCommentChecker } = await import("./cli")
+      const binaryPath = createScriptBinary(`#!/bin/sh
+if [ "$1" != "check" ]; then
+  exit 1
+fi
+exit 0
+`)
+      const input = createMockInput()
+      input.tool_input.content = "/** docstring */\nexport function test() {}"
+
+      // #when
+      const result = await runCommentChecker(input, binaryPath)
+
+      // #then
+      expect(result).toEqual({ hasComments: false, message: "" })
+    })
+
+    test("warns on redundant narration (exit 2)", async () => {
+      // #given
+      const { runCommentChecker } = await import("./cli")
+      const binaryPath = createScriptBinary(`#!/bin/sh
+if [ "$1" != "check" ]; then
+  exit 1
+fi
+echo "⚠️ POTENTIAL LOW-VALUE COMMENT DETECTED ⚠️\nRedundant narration found" 1>&2
+exit 2
+`)
+      const input = createMockInput()
+      input.tool_input.content = "// increment i\ni++;"
+
+      // #when
+      const result = await runCommentChecker(input, binaryPath)
+
+      // #then
+      expect(result.hasComments).toBe(true)
+      expect(result.message).toContain("⚠️ POTENTIAL LOW-VALUE COMMENT DETECTED ⚠️")
+    })
   })
 
   describe("processWithCli semaphore", () => {

@@ -107,7 +107,7 @@ function findCommentCheckerPackageBinary(): string | null {
   const binaryName = process.platform === "win32" ? "comment-checker.exe" : "comment-checker"
   try {
     const require = createRequire(import.meta.url)
-    const pkgPath = require.resolve("@code-yeongyu/comment-checker/package.json")
+    const pkgPath = require.resolve("@k-kleber/comment-checker/package.json")
     const binaryPath = join(dirname(pkgPath), "bin", binaryName)
     if (existsSync(binaryPath)) return binaryPath
   } catch {

@@ -115,7 +115,7 @@ Fields: agents (14 overridable, 21 fields each), categories (8 built-in + custom
 - Never run `bun publish` directly — use GitHub Actions
 - Never modify `package.json` version locally
 - Test: given/when/then — never use Arrange-Act-Assert comments
-- Comments: avoid AI-generated comment patterns (enforced by comment-checker hook)
+- Comments: avoid redundant narration and agent memo comments (enforced by comment-checker hook). Preserved: docstrings on declarations and rationale comments.
 - Never create catch-all files (`utils.ts`, `helpers.ts`, `service.ts`)
 - Empty catch blocks `catch(e) {}` — always handle errors
 - Never use em dashes (—), en dashes (–), or AI filler phrases in generated content

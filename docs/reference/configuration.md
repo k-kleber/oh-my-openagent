@@ -425,6 +425,7 @@ Available hooks: `todo-continuation-enforcer`, `context-window-monitor`, `sessio
 
 **Notes:**
 
+- `comment-checker` — detects and warns about low-value comments (redundant narration, agent memos). Preserves docstrings for public declarations and rationale comments.
 - `directory-agents-injector` — auto-disabled on OpenCode 1.1.37+ (native AGENTS.md support)
 - `no-sisyphus-gpt` — **do not disable**. It blocks incompatible GPT models for Sisyphus while allowing the dedicated GPT-5.4 prompt path.
 - `startup-toast` is a sub-feature of `auto-update-checker`. Disable just the toast by adding `startup-toast` to `disabled_hooks`.

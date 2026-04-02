@@ -10,6 +10,17 @@ export interface CallOmoAgentArgs {
   session_id?: string
 }
 
+export type ToolContextWithMetadata = {
+  sessionID: string
+  messageID: string
+  agent: string
+  abort: AbortSignal
+  metadata?: (input: { title?: string; metadata?: Record<string, unknown> }) => void
+  callID?: string
+  callId?: string
+  call_id?: string
+}
+
 export interface CallOmoAgentSyncResult {
   title: string
   metadata: {
@@ -24,11 +35,4 @@ export interface CallOmoAgentSyncResult {
     sessionId: string
   }
   output: string
-}
-export type ToolContextWithMetadata = {
-  sessionID: string
-  messageID: string
-  agent: string
-  abort: AbortSignal
-  metadata?: (input: { title?: string; metadata?: Record<string, unknown> }) => void
 }

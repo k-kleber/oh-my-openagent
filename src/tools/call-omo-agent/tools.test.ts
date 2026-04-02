@@ -1,10 +1,14 @@
+/// <reference types="bun-types" />
 const { beforeEach, describe, test, expect, mock } = require("bun:test")
 const { createCallOmoAgent } = require("./tools")
 
-function createMockClientWithAgents(agents) {
+function createMockClientWithAgents(agents: Array<{ name: string; mode?: string }>) {
   return {
     app: {
       agents: mock(() => Promise.resolve({ data: agents })),
+    },
+    session: {
+      messages: mock(() => Promise.resolve({ data: [] })),
     },
   }
 }
@@ -300,6 +304,119 @@ describe("createCallOmoAgent", () => {
     //#then
     expect(result).toContain("Brainstormer cannot use call_omo_agent")
   })
-})
 
-export {}
+  test("deduplicates concurrent background launches for the same callID", async () => {
+    //#given
+    const launch = mock(() => Promise.resolve({
+      id: "bg_same_call",
+      sessionID: "ses_same_call",
+      description: "Test task",
+      agent: "explore",
+      status: "pending",
+    }))
+    const managerWithLaunch = {
+      launch,
+      getTask: mock(() => ({ sessionID: "ses_same_call" })),
+    }
+    const toolDef = createCallOmoAgent(
+      {
+        ...mockCtx,
+        client: {
+          session: { messages: mock(() => Promise.resolve({ data: [] })) },
+        },
+      },
+      managerWithLaunch,
+      [],
+    )
+    const executeFunc = toolDef.execute as Function
+    const args = {
+      description: "Test",
+      prompt: "Test prompt",
+      subagent_type: "explore",
+      run_in_background: true,
+    }
+    const toolContext = {
+      sessionID: "test",
+      messageID: "msg",
+      agent: "test",
+      callID: "call-dedupe-1",
+      abort: new AbortController().signal,
+    }
+
+    //#when
+    const [resultA, resultB] = await Promise.all([
+      executeFunc(args, toolContext),
+      executeFunc(args, toolContext),
+    ])
+
+    //#then
+    expect(launch).toHaveBeenCalledTimes(1)
+    expect(resultA).toContain("Task ID: bg_same_call")
+    expect(resultB).toContain("Task ID: bg_same_call")
+  })
+
+  test("does not deduplicate launches across different callIDs", async () => {
+    //#given
+    const launch = mock(() => Promise.resolve({
+      id: "bg_default",
+      sessionID: "ses_multi_call",
+      description: "Test task",
+      agent: "explore",
+      status: "pending",
+    }))
+    launch.mockImplementationOnce(() => Promise.resolve({
+      id: "bg_call_a",
+      sessionID: "ses_multi_call",
+      description: "Test task",
+      agent: "explore",
+      status: "pending",
+    }))
+    launch.mockImplementationOnce(() => Promise.resolve({
+      id: "bg_call_b",
+      sessionID: "ses_multi_call",
+      description: "Test task",
+      agent: "explore",
+      status: "pending",
+    }))
+    const managerWithLaunch = {
+      launch,
+      getTask: mock(() => ({ sessionID: "ses_multi_call" })),
+    }
+    const toolDef = createCallOmoAgent(
+      {
+        ...mockCtx,
+        client: {
+          session: { messages: mock(() => Promise.resolve({ data: [] })) },
+        },
+      },
+      managerWithLaunch,
+      [],
+    )
+    const executeFunc = toolDef.execute as Function
+    const args = {
+      description: "Test",
+      prompt: "Test prompt",
+      subagent_type: "explore",
+      run_in_background: true,
+    }
+
+    //#when
+    await executeFunc(args, {
+      sessionID: "test",
+      messageID: "msg",
+      agent: "test",
+      callID: "call-dedupe-2a",
+      abort: new AbortController().signal,
+    })
+    await executeFunc(args, {
+      sessionID: "test",
+      messageID: "msg",
+      agent: "test",
+      callID: "call-dedupe-2b",
+      abort: new AbortController().signal,
+    })
+
+    //#then
+    expect(launch).toHaveBeenCalledTimes(2)
+  })
+})

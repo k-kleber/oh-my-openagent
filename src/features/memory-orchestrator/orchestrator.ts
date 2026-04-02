@@ -11,6 +11,48 @@ import type {
   MemoryStoreInput,
   MemoryStoreResult,
 } from "./types"
+import { resolveMemoryProjectIdentity } from "./project-identity"
+
+type UnknownRecord = Record<string, unknown>
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null
+}
+
+function compactText(value: string): string {
+  return value.replace(/\s+/g, " ").trim()
+}
+
+function toArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : []
+}
+
+function pickString(record: UnknownRecord, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = record[key]
+    if (typeof value === "string") {
+      const normalized = compactText(value)
+      if (normalized.length > 0) return normalized
+    }
+  }
+  return null
+}
+
+function maybeNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (typeof value === "string") {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return null
+}
+
+function inferVerificationFromContent(content: string): MemoryRecallItem["verification"] {
+  const normalized = content.toLowerCase()
+  if (normalized.includes("contradicted")) return "contradicted"
+  if (normalized.includes("no contextual memories matched the query")) return "stale"
+  return "likely-valid"
+}
 
 function extractEvidenceTokens(content: string): string[] {
   const matches = content.match(/[A-Za-z0-9_./-]{4,}/g) ?? []
@@ -64,6 +106,8 @@ export class MemoryOrchestrator {
     const openmemoryInfo = buildClientInfo(input.sessionID, "openmemory")
     const openmemoryContext = buildServerContext("openmemory")
 
+    const projectIdentity = resolveMemoryProjectIdentity(input.projectPath, input.projectName)
+
     const enrichedQuery = [input.query, input.agentName, ...(input.recentTools ?? [])]
       .filter(Boolean)
       .join(" ")
@@ -78,7 +122,7 @@ export class MemoryOrchestrator {
       query: enrichedQuery,
       type: "contextual",
       k: 8,
-      user_id: input.projectName,
+      user_id: projectIdentity.projectKey,
     })
 
     const rawItems = [
@@ -102,6 +146,8 @@ export class MemoryOrchestrator {
     const openmemoryInfo = buildClientInfo(input.sessionID, "openmemory")
     const openmemoryContext = buildServerContext("openmemory")
 
+    const projectIdentity = resolveMemoryProjectIdentity(input.projectPath, input.projectName)
+
     const candidates = input.observations
       .map((observation) => normalizeObservation(observation, input))
       .filter((candidate) => candidate.confidence >= input.confidenceThreshold)
@@ -116,7 +162,7 @@ export class MemoryOrchestrator {
         query: candidate.insight,
         type: "contextual",
         k: 5,
-        user_id: input.projectName,
+        user_id: projectIdentity.projectKey,
       })
 
       const existingText = JSON.stringify(existing).toLowerCase()
@@ -133,13 +179,14 @@ export class MemoryOrchestrator {
       await this.manager.callTool(hindsightInfo, hindsightContext, "retain", {
         content: `[workflow] ${candidate.insight}`,
         context: input.projectPath,
-        tags: [input.projectName, candidate.scope],
+        tags: [projectIdentity.projectKey, `repo:${projectIdentity.projectLabel}`, candidate.scope],
         bank_id: "default",
       })
 
       await this.manager.callTool(openmemoryInfo, openmemoryContext, "openmemory_store", {
         content: `[approved] [${candidate.scope}] ${candidate.insight}`,
-        tags: [input.projectName, `scope:${candidate.scope}`],
+        user_id: projectIdentity.projectKey,
+        tags: [projectIdentity.projectKey, `repo:${projectIdentity.projectLabel}`, `scope:${candidate.scope}`],
         metadata: {
           type: "workflow",
           scope: candidate.scope,
@@ -147,6 +194,8 @@ export class MemoryOrchestrator {
           reason: input.reason,
           dedupeKey: candidate.dedupeKey,
           evidenceCount: candidate.evidenceCount,
+          projectKey: projectIdentity.projectKey,
+          projectLabel: projectIdentity.projectLabel,
         },
       })
 
@@ -164,25 +213,66 @@ export class MemoryOrchestrator {
     source: "hindsight" | "openmemory",
     scope: MemoryStoreInput["scope"],
   ): MemoryRecallItem[] {
-    const serialized = JSON.stringify(result)
-    if (!serialized || serialized === "[]") {
-      return []
+    const items: MemoryRecallItem[] = []
+
+    const pushItem = (content: string, index: number, scoreOverride?: number) => {
+      const normalized = compactText(content)
+      if (normalized.length < 8) return
+      items.push({
+        content: normalized,
+        source,
+        scope,
+        score: Math.max(0.1, scoreOverride ?? (1 - index * 0.1)),
+        verification: inferVerificationFromContent(normalized),
+      })
     }
 
-    const lines = serialized
-      .replace(/[\[\]{}]/g, " ")
-      .split(/[,\n]/)
-      .map((line) => line.replace(/\s+/g, " ").trim())
-      .filter((line) => line.length > 20)
-      .slice(0, 5)
+    if (!isRecord(result)) {
+      const serialized = typeof result === "string" ? result : JSON.stringify(result)
+      const normalized = compactText(serialized)
+      if (normalized.length > 0 && normalized !== "[]" && normalized !== "{}") {
+        pushItem(normalized, 0)
+      }
+      return items.slice(0, 5)
+    }
 
-    return lines.map((line, index) => ({
-      content: line,
-      source,
-      scope,
-      score: Math.max(0.1, 1 - index * 0.1),
-      verification: line.toLowerCase().includes("contradicted") ? "contradicted" : "likely-valid",
-    }))
+    if (source === "hindsight") {
+      const hindsightResults = toArray(result.results)
+      hindsightResults.forEach((entry, index) => {
+        if (!isRecord(entry)) return
+        const text = pickString(entry, ["text", "content", "insight"])
+        if (!text) return
+        const mentionedAt = pickString(entry, ["mentioned_at", "timestamp"])
+        const involving = pickString(entry, ["involving"])
+        const enriched = [text, mentionedAt ? `When: ${mentionedAt}` : null, involving ? `Involving: ${involving}` : null]
+          .filter((part): part is string => Boolean(part))
+          .join(" | ")
+        pushItem(enriched, index)
+      })
+
+      const hindsightText = pickString(result, ["text", "message", "content"])
+      if (items.length === 0 && hindsightText) {
+        pushItem(hindsightText, 0)
+      }
+
+      return items.slice(0, 5)
+    }
+
+    const openmemoryResults = toArray(result.results)
+    openmemoryResults.forEach((entry, index) => {
+      if (!isRecord(entry)) return
+      const text = pickString(entry, ["content", "text", "summary"])
+      if (!text) return
+      const score = maybeNumber(entry.score)
+      pushItem(text, index, score ?? undefined)
+    })
+
+    if (items.length === 0) {
+      const message = pickString(result, ["message", "error", "text"])
+      if (message) pushItem(message, 0)
+    }
+
+    return items.slice(0, 5)
   }
 
   private async verifyRecallItem(item: MemoryRecallItem, projectPath: string): Promise<MemoryRecallItem> {

@@ -11,6 +11,19 @@ const EXPLORATION_AGENT_DENYLIST: Record<string, boolean> = {
   call_omo_agent: false,
 }
 
+const SERENA_MUTATION_TOOL_DENYLIST: Record<string, boolean> = {
+  serena_create_text_file: false,
+  serena_replace_content: false,
+  serena_replace_symbol_body: false,
+  serena_insert_after_symbol: false,
+  serena_insert_before_symbol: false,
+  serena_rename_symbol: false,
+  serena_delete_memory: false,
+  serena_edit_memory: false,
+  serena_write_memory: false,
+  serena_execute_shell_command: false,
+}
+
 const AGENT_RESTRICTIONS: Record<string, Record<string, boolean>> = {
   explore: EXPLORATION_AGENT_DENYLIST,
 
@@ -51,10 +64,11 @@ const AGENT_RESTRICTIONS: Record<string, Record<string, boolean>> = {
   },
 
   brainstormer: {
-    write: false,
+    write: true,
     edit: false,
     apply_patch: false,
     hashline_edit: false,
+    ...SERENA_MUTATION_TOOL_DENYLIST,
   },
 }
 

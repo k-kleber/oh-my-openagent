@@ -283,10 +283,10 @@ https://github.com/tanstack/query/blob/abc123def/packages/react-query/src/useQue
 ### Primary Tools by Purpose
 
 - **Official Docs**: Use context7 via skill_mcp — \`skill_mcp(mcp_name: "context7", tool_name: "resolve-library-id", ...)\` → \`skill_mcp(mcp_name: "context7", tool_name: "query-docs", ...)\`
-- **Find Docs URL**: Use websearch_exa — \`websearch_web_search_exa("library official documentation")\`
+- **Find Docs URL**: Use websearch MCP — load websearch-mcp skill, then call the preferred tool from its template
 - **Sitemap Discovery**: Use webfetch — \`webfetch(docs_url + "/sitemap.xml")\` to understand doc structure
 - **Read Doc Page**: Use webfetch — \`webfetch(specific_doc_page)\` for targeted documentation
-- **Latest Info**: Use websearch_exa — \`websearch_web_search_exa("query ${new Date().getFullYear()}")\`
+- **Latest Info**: Use websearch MCP — same as above, append current year to query
 - **Fast Code Search**: Use grep_app — \`grep_app_searchGitHub(query, language, useRegexp)\`
 - **Deep Code Search**: Use gh CLI — \`gh search code "query" --repo owner/repo\`
 - **Clone Repo**: Use gh CLI — \`gh repo clone owner/repo \${TMPDIR:-/tmp}/name -- --depth 1\`

@@ -101,6 +101,21 @@ interface EventInput {
   }
 }
 
+function formatRecallLine(item: {
+  verification: string
+  source: string
+  content: string
+  evidence?: { path?: string; line?: number }
+}): string {
+  const status = item.verification.replace(/_/g, "-")
+  const base = `- [${status}] (${item.source}) ${item.content}`
+  if (!item.evidence?.path) return base
+  const location = typeof item.evidence.line === "number"
+    ? `${item.evidence.path}:${item.evidence.line}`
+    : item.evidence.path
+  return `${base} [evidence: ${location}]`
+}
+
 export function createMemoryAutoTriggerHook(ctx: PluginInput, memoryConfig?: MemoryConfig, skillMcpManager?: SkillMcpManager) {
 
   const memoryEnabled = memoryConfig?.enabled ?? true
@@ -387,10 +402,16 @@ export function createMemoryAutoTriggerHook(ctx: PluginInput, memoryConfig?: Mem
         agentName: input.agent,
         recentTools: state.recentTools,
       })
+      log("[memory-auto] recall_result", {
+        sessionID: input.sessionID,
+        hits: result.hits,
+        items: result.items.length,
+        agent: input.agent,
+      })
       if (result.hits === 0) return
 
       const recallLines = result.items
-        .map((item) => `- [${item.verification}] (${item.source}) ${item.content}`)
+        .map((item) => formatRecallLine(item))
         .join("\n")
       const nativeRecallBlock = `\n\n<system-reminder>\nMEMORY AUTO-RECALL:\n${recallLines}\nUse only verified items.\n</system-reminder>`
       if (!canSpend(state, nativeRecallBlock.length)) return
@@ -400,6 +421,11 @@ export function createMemoryAutoTriggerHook(ctx: PluginInput, memoryConfig?: Mem
       state.recallCount += 1
       state.lastRecallAt = now
       state.budgetUsed += nativeRecallBlock.length
+      log("[memory-auto] recall_injected", {
+        sessionID: input.sessionID,
+        recallCount: state.recallCount,
+        budgetUsed: state.budgetUsed,
+      })
       return
     }
 
@@ -461,6 +487,14 @@ export function createMemoryAutoTriggerHook(ctx: PluginInput, memoryConfig?: Mem
         promotionThreshold: reducerPromotionThreshold,
         crossProjectEvidenceMin: reducerCrossProjectEvidenceMin,
       })
+      log("[memory-auto] store_result", {
+        sessionID: input.sessionID,
+        tool: toolName,
+        stored: result.stored.length,
+        deduped: result.deduped.length,
+        contradicted: result.contradicted.length,
+        promoted: result.promoted.length,
+      })
       output.output = `${outputText}\n[memory-orchestrator] stored=${result.stored.length} deduped=${result.deduped.length} contradicted=${result.contradicted.length} promoted=${result.promoted.length}`
     } else {
       const memoryCaptureBlock = buildCaptureBlock({
@@ -476,6 +510,12 @@ export function createMemoryAutoTriggerHook(ctx: PluginInput, memoryConfig?: Mem
     state.metrics.autoCapturesTriggered += 1
     state.lastCaptureAt = now
     state.budgetUsed += budgetIncrement
+    log("[memory-auto] store_applied", {
+      sessionID: input.sessionID,
+      tool: toolName,
+      captureCount: state.captureCount,
+      budgetUsed: state.budgetUsed,
+    })
     emitMetricsLog(input.sessionID, state, `tool.execute.after:${toolName}`)
   }
 
@@ -559,6 +599,15 @@ export function createMemoryAutoTriggerHook(ctx: PluginInput, memoryConfig?: Mem
     const state = states.get(sessionID)
     if (state && observabilityIncludeSessionSummaryOnDelete) {
       emitMetricsLog(sessionID, state, "session.deleted")
+      log("[memory-auto] session_summary", {
+        sessionID,
+        recallCount: state.recallCount,
+        captureCount: state.captureCount,
+        lifecycleCaptureCount: state.lifecycleCaptureCount,
+        observations: state.observations.length,
+        promotionCandidates: state.promotionCandidates.length,
+        budgetUsed: state.budgetUsed,
+      })
     }
     states.delete(sessionID)
   }

@@ -127,7 +127,7 @@ describe("createToolExecuteBeforeHandler", () => {
       }
     }
 
-    test("sets subagent_type to sisyphus-junior when category is provided without subagent_type", async () => {
+    test("does not inject subagent_type when category is provided", async () => {
       //#given
       const ctx = createCtxWithSessionMessages()
       const handler = createToolExecuteBeforeHandler({ ctx, hooks: emptyHooks })
@@ -138,7 +138,7 @@ describe("createToolExecuteBeforeHandler", () => {
       await handler(input, output)
 
       //#then
-      expect(output.args.subagent_type).toBe("sisyphus-junior")
+      expect(output.args.subagent_type).toBeUndefined()
     })
 
     test("preserves existing subagent_type when explicitly provided", async () => {
@@ -155,7 +155,7 @@ describe("createToolExecuteBeforeHandler", () => {
       expect(output.args.subagent_type).toBe("plan")
     })
 
-    test("sets subagent_type to sisyphus-junior when category provided with different subagent_type", async () => {
+    test("preserves explicit subagent_type when category is provided", async () => {
       //#given
       const ctx = createCtxWithSessionMessages()
       const handler = createToolExecuteBeforeHandler({ ctx, hooks: emptyHooks })
@@ -166,7 +166,7 @@ describe("createToolExecuteBeforeHandler", () => {
       await handler(input, output)
 
       //#then
-      expect(output.args.subagent_type).toBe("sisyphus-junior")
+      expect(output.args.subagent_type).toBe("oracle")
     })
 
     test("resolves subagent_type from session first message when session_id provided without subagent_type", async () => {

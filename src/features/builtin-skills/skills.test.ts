@@ -133,8 +133,19 @@ describe("createBuiltinSkills", () => {
 		expect(memoryInit).toBeDefined()
 		expect(memoryInit!.template).toContain("Verify code-intelligence readiness")
 		expect(memoryInit!.template).toContain("code-intelligence-init")
-		expect(memoryInit!.mcpConfig).toBeDefined()
-		expect(memoryInit!.mcpConfig).toHaveProperty("fastcode")
+		expect(memoryInit!.template).toContain("hindsight_list_banks")
+		expect(memoryInit!.template).toContain("openmemory_store")
+		expect(memoryInit!.mcpConfig).toBeUndefined()
+	})
+
+	test("memory-mcp skill documents native memory MCP availability", () => {
+		const skills = createBuiltinSkills()
+		const memoryMcp = skills.find((s) => s.name === "memory-mcp")
+
+		expect(memoryMcp).toBeDefined()
+		expect(memoryMcp!.description).toContain("native always-on OMO MCPs")
+		expect(memoryMcp!.template).toContain("native always-on OMO MCPs")
+		expect(memoryMcp!.mcpConfig).toBeUndefined()
 	})
 
 	test("should include memory automation skill set in builtin skills", () => {
@@ -151,14 +162,14 @@ describe("createBuiltinSkills", () => {
 		expect(names.has("memory-observation-ledger")).toBe(true)
 	})
 
-	test("code-intelligence-init template includes FastCode API/CLI fallback", () => {
+	test("code-intelligence-init template focuses on Serena setup", () => {
 		const skills = createBuiltinSkills()
 		const initSkill = skills.find((s) => s.name === "code-intelligence-init")
 
 		expect(initSkill).toBeDefined()
-		expect(initSkill!.template).toContain("api.py --host 0.0.0.0 --port 8000")
-		expect(initSkill!.template).toContain("/load-and-index")
-		expect(initSkill!.template).toContain("main.py index --repo-path .")
+		expect(initSkill!.template).toContain('serena project index <projectName>')
+		expect(initSkill!.template).toContain('skill(name="clangd-preindex-init")')
+		expect(initSkill!.description).toContain("Initialize Serena")
 	})
 
 		test("should exclude playwright when it is in disabledSkills", () => {

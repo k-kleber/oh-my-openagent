@@ -5,6 +5,7 @@ import { normalizeSDKResponse } from "../../shared/normalize-sdk-response"
 import { normalizePromptTools } from "../../shared/prompt-tools"
 import { getSessionModel } from "../../shared/session-model-state"
 import { getSessionTools } from "../../shared/session-tools-store"
+import { SessionCategoryRegistry } from "../../shared/session-category-registry"
 import { isCompactionAgent } from "./session-id"
 import { resolveValidatedModel } from "./validated-model"
 
@@ -35,9 +36,12 @@ export async function resolveSessionPromptConfig(
   sessionID: string,
 ): Promise<CompactionAgentConfigCheckpoint> {
   const storedModel = getSessionModel(sessionID)
+  // Only capture category if it was explicitly set via task(category=...)
+  const storedCategory = SessionCategoryRegistry.get(sessionID)
   const promptConfig: CompactionAgentConfigCheckpoint = {
     agent: getSessionAgent(sessionID),
     tools: getSessionTools(sessionID),
+    ...(storedCategory ? { category: storedCategory } : {}),
   }
 
   try {

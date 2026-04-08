@@ -65,6 +65,13 @@ export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
     ],
     requiresProvider: ["openai", "github-copilot", "venice", "opencode"],
   },
+  tester: {
+    fallbackChain: [
+      { providers: ["opencode"], model: "gpt-5-nano" },
+      { providers: ["opencode"], model: "minimax-m2.5" },
+      { providers: ["opencode-go"], model: "minimax-m2.7" },
+    ],
+  },
   brainstormer: {
     fallbackChain: [
       {
@@ -157,6 +164,26 @@ export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
       { providers: ["opencode-go"], model: "minimax-m2.7" },
       { providers: ["opencode"], model: "minimax-m2.5" },
       { providers: ["anthropic", "opencode"], model: "claude-haiku-4-5" },
+      { providers: ["opencode"], model: "gpt-5-nano" },
+    ],
+  },
+  "deep-explorer": {
+    fallbackChain: [
+      {
+        providers: ["openai", "venice", "opencode"],
+        model: "gpt-5.3-codex",
+        variant: "medium",
+      },
+      {
+        providers: ["openai", "github-copilot", "opencode"],
+        model: "gpt-5.4",
+        variant: "high",
+      },
+      {
+        providers: ["anthropic", "github-copilot", "opencode"],
+        model: "claude-sonnet-4-6",
+      },
+      { providers: ["opencode-go"], model: "minimax-m2.7" },
       { providers: ["opencode"], model: "gpt-5-nano" },
     ],
   },

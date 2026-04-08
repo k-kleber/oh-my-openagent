@@ -17,6 +17,7 @@ import {
   mergeSkills,
 } from "../features/opencode-skill-loader"
 import { createBuiltinSkills } from "../features/builtin-skills"
+import { log } from "../shared"
 
 export type SkillContext = {
   mergedSkills: LoadedSkill[]
@@ -64,19 +65,34 @@ export async function createSkillContext(args: {
   })
 
   const includeClaudeSkills = pluginConfig.claude_code?.skills !== false
-  const [configSourceSkills, userSkills, globalSkills, projectSkills, opencodeProjectSkills, agentsProjectSkills, agentsGlobalSkills] =
-    await Promise.all([
-      discoverConfigSourceSkills({
-        config: pluginConfig.skills,
-        configDir: directory,
-      }),
-      includeClaudeSkills ? discoverUserClaudeSkills() : Promise.resolve([]),
-      discoverOpencodeGlobalSkills(),
-      includeClaudeSkills ? discoverProjectClaudeSkills(directory) : Promise.resolve([]),
-      discoverOpencodeProjectSkills(directory),
-      discoverProjectAgentsSkills(directory),
-      discoverGlobalAgentsSkills(),
-    ])
+  let configSourceSkills: Awaited<ReturnType<typeof discoverConfigSourceSkills>> = []
+  let userSkills: Awaited<ReturnType<typeof discoverUserClaudeSkills>> = []
+  let globalSkills: Awaited<ReturnType<typeof discoverOpencodeGlobalSkills>> = []
+  let projectSkills: Awaited<ReturnType<typeof discoverProjectClaudeSkills>> = []
+  let opencodeProjectSkills: Awaited<ReturnType<typeof discoverOpencodeProjectSkills>> = []
+  let agentsProjectSkills: Awaited<ReturnType<typeof discoverProjectAgentsSkills>> = []
+  let agentsGlobalSkills: Awaited<ReturnType<typeof discoverGlobalAgentsSkills>> = []
+
+  try {
+    [configSourceSkills, userSkills, globalSkills, projectSkills, opencodeProjectSkills, agentsProjectSkills, agentsGlobalSkills] =
+      await Promise.all([
+        discoverConfigSourceSkills({
+          config: pluginConfig.skills,
+          configDir: directory,
+        }),
+        includeClaudeSkills ? discoverUserClaudeSkills() : Promise.resolve([]),
+        discoverOpencodeGlobalSkills(),
+        includeClaudeSkills ? discoverProjectClaudeSkills(directory) : Promise.resolve([]),
+        discoverOpencodeProjectSkills(directory),
+        discoverProjectAgentsSkills(directory),
+        discoverGlobalAgentsSkills(),
+      ])
+  } catch (error) {
+    log("[skill-context] skill discovery failed; continuing with builtin skills", {
+      error: error instanceof Error ? error.message : String(error),
+      directory,
+    })
+  }
 
   const filteredConfigSourceSkills = filterProviderGatedSkills(
     configSourceSkills,

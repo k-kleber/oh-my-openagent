@@ -6,6 +6,8 @@ type PromptAsyncInput = {
   path: { id: string }
   body: {
     agent: string
+    model?: { providerID: string; modelID: string }
+    variant?: string
     tools: Record<string, boolean>
     parts: Array<{ type: string; text: string }>
   }
@@ -110,6 +112,40 @@ describe("executeSync", () => {
     expect(promptInput?.body.parts).toEqual([{ type: "text", text: "find something" }])
   })
 
+  test("passes resolved model override through sync prompt and metadata", async () => {
+    //#given
+    const executeSync = await importExecuteSync()
+    const deps = createDependencies()
+    const toolContext = createToolContext()
+    const recorder = createPromptAsyncRecorder()
+    const resolvedModel = {
+      providerID: "github-copilot",
+      modelID: "gemini-3-flash-preview",
+      variant: "high",
+    }
+    const args = {
+      subagent_type: "deep-explorer",
+      description: "deep search",
+      prompt: "trace everything",
+      run_in_background: false,
+    }
+
+    //#when
+    await executeSync(args, toolContext, createContext(recorder.promptAsync) as never, deps, undefined, undefined, resolvedModel)
+
+    //#then
+    const promptInput = recorder.getCapturedInput()
+    expect(promptInput?.body.model).toEqual({ providerID: "github-copilot", modelID: "gemini-3-flash-preview" })
+    expect(promptInput?.body.variant).toBe("high")
+    expect(toolContext.metadata).toHaveBeenCalledWith({
+      title: "deep search",
+      metadata: {
+        sessionId: "ses-test-123",
+        model: resolvedModel,
+      },
+    })
+  })
+
   test("returns processed response with task metadata footer", async () => {
     //#given
     const executeSync = await importExecuteSync()
@@ -166,6 +202,43 @@ describe("executeSync", () => {
     })
   })
 
+  test("does not record metadata for a new session before initial prompt delivery succeeds", async () => {
+    //#given
+    const executeSync = await importExecuteSync()
+    const deps = createDependencies({
+      createOrGetSession: mock(async () => ({ sessionID: "ses-pending-meta", isNew: true })),
+    })
+    const toolContext = createToolContext()
+    const args = {
+      subagent_type: "explore",
+      description: "metadata gate",
+      prompt: "collect evidence",
+      run_in_background: false,
+    }
+    let releasePrompt!: () => void
+    const promptStarted = new Promise<void>((resolve) => {
+      releasePrompt = resolve
+    })
+    const recorder = createPromptAsyncRecorder(async () => {
+      await promptStarted
+      return { data: {} }
+    })
+
+    //#when
+    const resultPromise = executeSync(args, toolContext, createContext(recorder.promptAsync) as never, deps)
+    await Promise.resolve()
+
+    //#then
+    expect(toolContext.metadata).not.toHaveBeenCalled()
+
+    releasePrompt()
+    await resultPromise
+    expect(toolContext.metadata).toHaveBeenCalledWith({
+      title: "metadata gate",
+      metadata: { sessionId: "ses-pending-meta" },
+    })
+  })
+
   test("applies fallback chain to sync sessions before completion polling", async () => {
     //#given
     const executeSync = await importExecuteSync()
@@ -198,7 +271,7 @@ describe("executeSync", () => {
     expect(deps.setSessionFallbackChain).toHaveBeenCalledWith("ses-fallback", fallbackChain)
   })
 
-  test("returns dedicated agent-not-found error with task metadata", async () => {
+  test("returns dedicated agent-not-found error without publishing a new session id", async () => {
     //#given
     const executeSync = await importExecuteSync()
     const deps = createDependencies({
@@ -220,12 +293,12 @@ describe("executeSync", () => {
 
     //#then
     expect(result).toContain('Error: Agent "explore" not found')
-    expect(result).toContain("session_id: ses-missing-agent")
+    expect(result).not.toContain("session_id:")
     expect(deps.waitForCompletion).not.toHaveBeenCalled()
     expect(deps.processMessages).not.toHaveBeenCalled()
   })
 
-  test("returns generic prompt failure with task metadata", async () => {
+  test("returns generic prompt failure without publishing a new session id", async () => {
     //#given
     const executeSync = await importExecuteSync()
     const deps = createDependencies({
@@ -247,7 +320,7 @@ describe("executeSync", () => {
 
     //#then
     expect(result).toContain("Error: Failed to send prompt: network exploded")
-    expect(result).toContain("session_id: ses-prompt-error")
+    expect(result).not.toContain("session_id:")
     expect(deps.waitForCompletion).not.toHaveBeenCalled()
     expect(deps.processMessages).not.toHaveBeenCalled()
   })

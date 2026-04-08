@@ -51,6 +51,7 @@ export function createCompactionContextInjector(options?: {
       agent: promptConfig.agent,
       model: promptConfig.model,
       hasTools: !!promptConfig.tools,
+      category: promptConfig.category,
     })
   }
 

@@ -1,5 +1,19 @@
 declare const require: (name: string) => any
 const { describe, test, expect, beforeEach, afterEach, spyOn } = require("bun:test")
+
+require("bun:test").mock.module("../../shared/connected-providers-cache", () => ({
+  readConnectedProvidersCache: () => null,
+  readProviderModelsCache: () => null,
+}))
+
+require("bun:test").mock.module("../../shared/tmux", async () => {
+  const actual = await import("../../shared/tmux")
+  return {
+    ...actual,
+    isInsideTmux: () => true,
+  }
+})
+
 import { getSessionPromptParams, clearSessionPromptParams } from "../../shared/session-prompt-params-state"
 import { tmpdir } from "node:os"
 import type { PluginInput } from "@opencode-ai/plugin"
@@ -1377,6 +1391,92 @@ describe("BackgroundManager.tryCompleteTask", () => {
     }
   })
 
+  test("retries transient validation socket failures before completing", async () => {
+    // given
+    let messageCalls = 0
+    const client = {
+      session: {
+        prompt: async () => ({}),
+        promptAsync: async () => ({}),
+        abort: async () => ({}),
+        messages: async () => {
+          messageCalls += 1
+          if (messageCalls < 3) {
+            throw new Error("The socket connection was closed unexpectedly")
+          }
+          return {
+            data: [{
+              info: { role: "assistant" },
+              parts: [{ type: "text", text: "done" }],
+            }],
+          }
+        },
+      },
+    }
+    manager.shutdown()
+    manager = new BackgroundManager({ client, directory: tmpdir() } as unknown as PluginInput)
+    stubNotifyParentSession(manager)
+
+    const task: BackgroundTask = {
+      id: "task-validation-retry",
+      sessionID: "session-validation-retry",
+      parentSessionID: "parent-validation-retry",
+      parentMessageID: "msg-1",
+      description: "validation retry task",
+      prompt: "test",
+      agent: "explore",
+      status: "running",
+      startedAt: new Date(),
+    }
+
+    // when
+    const completed = await tryCompleteTaskForTest(manager, task)
+
+    // then
+    expect(completed).toBe(true)
+    expect(task.status).toBe("completed")
+    expect(messageCalls).toBe(3)
+  })
+
+  test("fails closed when validation keeps hitting socket errors", async () => {
+    // given
+    let messageCalls = 0
+    const client = {
+      session: {
+        prompt: async () => ({}),
+        promptAsync: async () => ({}),
+        abort: async () => ({}),
+        messages: async () => {
+          messageCalls += 1
+          throw new Error("The socket connection was closed unexpectedly")
+        },
+      },
+    }
+    manager.shutdown()
+    manager = new BackgroundManager({ client, directory: tmpdir() } as unknown as PluginInput)
+    stubNotifyParentSession(manager)
+
+    const task: BackgroundTask = {
+      id: "task-validation-fail-closed",
+      sessionID: "session-validation-fail-closed",
+      parentSessionID: "parent-validation-fail-closed",
+      parentMessageID: "msg-1",
+      description: "validation fail closed task",
+      prompt: "test",
+      agent: "explore",
+      status: "running",
+      startedAt: new Date(),
+    }
+
+    // when
+    const completed = await tryCompleteTaskForTest(manager, task)
+
+    // then
+    expect(completed).toBe(false)
+    expect(task.status).toBe("running")
+    expect(messageCalls).toBe(3)
+  })
+
   test("should release task concurrencyKey when startTask throws after assigning it", async () => {
     // given
     const concurrencyKey = "anthropic/claude-opus-4-6"
@@ -2395,6 +2495,7 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
         secondPromptAsyncStarted,
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 100)),
       ])
+      await Promise.resolve()
 
       // then
       expect(cancelled).toBe(true)
@@ -4000,7 +4101,7 @@ describe("BackgroundManager.handleEvent - session.error", () => {
     })
 
     //#when
-    manager.handleEvent({
+    await manager.handleEvent({
       type: "session.error",
       properties: {
         sessionID,
@@ -4041,7 +4142,7 @@ describe("BackgroundManager.handleEvent - session.error", () => {
     })
 
     //#when
-    manager.handleEvent({
+    await manager.handleEvent({
       type: "session.status",
       properties: {
         sessionID,
@@ -4090,7 +4191,7 @@ describe("BackgroundManager.handleEvent - session.error", () => {
       },
     }
 
-    manager.handleEvent({
+    await manager.handleEvent({
       type: "message.updated",
       properties: {
         info: messageInfo,
@@ -4980,6 +5081,110 @@ describe("BackgroundManager - tool permission spread order", () => {
     expect(promptCalls[0].body.agent).toBe("sisyphus-junior")
     expect(promptCalls[0].body.model).toEqual({ providerID: "openai", modelID: "gpt-5.4" })
     expect(promptCalls[0].body.variant).toBe("medium")
+
+    manager.shutdown()
+  })
+
+  test("startTask waits to publish session linkage until prompt handoff completes", async () => {
+    //#given
+    let releasePrompt!: () => void
+    const promptStarted = new Promise<void>((resolve) => {
+      releasePrompt = resolve
+    })
+    const client = {
+      session: {
+        get: async () => ({ data: { directory: "/test/dir" } }),
+        create: async () => ({ data: { id: "session-live" } }),
+        promptAsync: async () => {
+          await promptStarted
+          return {}
+        },
+      },
+    }
+    const manager = new BackgroundManager({ client, directory: tmpdir() } as unknown as PluginInput)
+
+    const task: BackgroundTask = {
+      id: "task-prompt-pending",
+      status: "pending",
+      queuedAt: new Date(),
+      description: "test task",
+      prompt: "test prompt",
+      agent: "explore",
+      parentSessionID: "parent-session",
+      parentMessageID: "parent-message",
+    }
+    const input: import("./types").LaunchInput = {
+      description: task.description,
+      prompt: task.prompt,
+      agent: task.agent,
+      parentSessionID: task.parentSessionID,
+      parentMessageID: task.parentMessageID,
+    }
+
+    //#when
+    const startPromise = (manager as unknown as { startTask: (item: { task: BackgroundTask; input: import("./types").LaunchInput }) => Promise<void> })
+      .startTask({ task, input })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    //#then
+    expect(task.sessionID).toBeUndefined()
+    expect(task.status).toBe("pending")
+
+    releasePrompt()
+    await startPromise
+    expect(task.sessionID).toBe("session-live")
+    expect(task.status).toBe("running")
+    manager.shutdown()
+  })
+
+  test("startTask does not publish session linkage when initial prompt handoff fails", async () => {
+    //#given
+    let abortSessionID: string | undefined
+    const client = {
+      session: {
+        get: async () => ({ data: { directory: "/test/dir" } }),
+        create: async () => ({ data: { id: "session-fail" } }),
+        promptAsync: async () => {
+          throw new Error("The socket connection was closed unexpectedly")
+        },
+        abort: async ({ path }: { path: { id: string } }) => {
+          abortSessionID = path.id
+          return {}
+        },
+        messages: async () => ({ data: [] }),
+      },
+    }
+    const manager = new BackgroundManager({ client, directory: tmpdir() } as unknown as PluginInput)
+    stubNotifyParentSession(manager)
+
+    const task: BackgroundTask = {
+      id: "task-prompt-fail",
+      status: "pending",
+      queuedAt: new Date(),
+      description: "test task",
+      prompt: "test prompt",
+      agent: "explore",
+      parentSessionID: "parent-session",
+      parentMessageID: "parent-message",
+    }
+    const input: import("./types").LaunchInput = {
+      description: task.description,
+      prompt: task.prompt,
+      agent: task.agent,
+      parentSessionID: task.parentSessionID,
+      parentMessageID: task.parentMessageID,
+    }
+
+    //#when
+    await (manager as unknown as { startTask: (item: { task: BackgroundTask; input: import("./types").LaunchInput }) => Promise<void> })
+      .startTask({ task, input })
+    await flushBackgroundNotifications()
+
+    //#then
+    expect(task.status).toBe("interrupt")
+    expect(task.sessionID).toBeUndefined()
+    expect(task.error).toContain("The socket connection was closed unexpectedly")
+    expect(abortSessionID).toBe("session-fail")
 
     manager.shutdown()
   })

@@ -21,17 +21,17 @@ User must say "boost", "reinforce", "fix", "patch", "promote" explicitly. Do NOT
 
 **If reinforcing:**
 \`\`\`
-skill_mcp(mcp_name="openmemory", tool_name="openmemory_reinforce", arguments={"id": "<id>", "boost": 0.1})
+openmemory_reinforce({"id": "<id>", "boost": 0.1})
 \`\`\`
 
 **If patching/corrected version:**
 \`\`\`
-skill_mcp(mcp_name="openmemory", tool_name="openmemory_store", arguments={..., "metadata": {"approvalState": "approved"}})
+openmemory_store({... , "metadata": {"approvalState": "approved"}})
 \`\`\`
 
 **If promoting scope:**
 \`\`\`
-skill_mcp(mcp_name="openmemory", tool_name="openmemory_store", arguments={..., "metadata": {"approvalState": "approved", "scope": "<new scope>", "promotedFrom": "project"}})
+openmemory_store({... , "metadata": {"approvalState": "approved", "scope": "<new scope>", "promotedFrom": "project"}})
 \`\`\`
 
 ### 4. Confirm
@@ -47,7 +47,4 @@ Reinforced memory <id> in OpenMemory.
 - NO auto-promotion to broader scopes without repeated evidence or explicit approval.
 - Only \`verified\` or \`partially_verified\` records can be reinforced.
 - Do NOT write into Hindsight — Hindsight is temporal only.`,
-  mcpConfig: {
-    openmemory: { type: "http", url: "http://localhost:8080/mcp", headers: { "x-api-key": "local-dev-key" } },
-  },
 }

@@ -16,7 +16,7 @@ When starting work in unfamiliar repository: "bootstrap memory for this project"
    - \`[BOOTSTRAP_SCOPE] <scope>\`
    - \`[WORKER_ROLE] overview|deep-dive\`
 
-3. **Two-Phase Intelligence mandatory** — FastCode scout + Serena verification
+3. **Serena-first intelligence mandatory** — Serena discovery first, then LSP/AST/grep fallbacks only when needed
 
 4. **Memory writes via agent only** — Delegate to \`memory-store\` via \`task()\`
 
@@ -75,7 +75,7 @@ Keep only if ALL pass:
 \`\`\`
 task(
   subagent_type="memory-store",
-  load_skills=["memory-mcp"],
+  load_skills=[],
   description="Store bootstrap insights",
   prompt="Project: <path> (<name>)
 Observations:

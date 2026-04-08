@@ -22,29 +22,27 @@ At the start of a project session: "init memory", "set up memory for this projec
 
 ### 2.a Verify code-intelligence readiness
 
-- Verify Serena activation for this project and FastCode index availability.
-- FastCode probe: \`skill_mcp(mcp_name="fastcode", tool_name="list_indexed_repos", arguments={})\`.
-- If Serena or FastCode is not ready, run:
+- Verify Serena activation for this project.
+- If Serena is not ready, run:
 \`\`\`
-skill(name="code-intelligence-init", user_message="Initialize Serena and FastCode for this project")
+skill(name="code-intelligence-init", user_message="Initialize Serena for this project")
 \`\`\`
-- After bootstrap, re-check Serena + FastCode readiness and continue memory setup.
-- If FastCode MCP still times out, execute the direct FastCode API/CLI fallback steps from \`code-intelligence-init\` before continuing.
+- After bootstrap, re-check Serena readiness and continue memory setup.
 
 ### 3. Initialize Hindsight bank
 
 \`\`\`
-skill_mcp(mcp_name="hindsight", tool_name="list_banks", arguments={})
+hindsight_list_banks({})
 \`\`\`
 If bank doesn't exist:
 \`\`\`
-skill_mcp(mcp_name="hindsight", tool_name="create_bank", arguments={"bank_id": "<bankId>", "name": "<projectName>", "mission": "Temporal memory for <projectName>"})
+hindsight_create_bank({"bank_id": "<bankId>", "name": "<projectName>", "mission": "Temporal memory for <projectName>"})
 \`\`\`
 
 ### 4. Scope OpenMemory
 
 \`\`\`
-skill_mcp(mcp_name="openmemory", tool_name="openmemory_store", arguments={"content": "Project container initialized: <projectName>.", "tags": ["project:<projectName>"], "metadata": {"type": "project-config", "scope": "project"}})
+openmemory_store({"content": "Project container initialized: <projectName>.", "tags": ["project:<projectName>"], "metadata": {"type": "project-config", "scope": "project"}})
 \`\`\`
 
 ### 5. Report status
@@ -59,11 +57,6 @@ Memory initialized for project: <projectName>
 ## Guardrails
 
 - Use kebab-case for bank IDs.
-- Use \`skill_mcp\` for Hindsight, OpenMemory, and FastCode checks.
-- Run \`code-intelligence-init\` when Serena/FastCode readiness is missing.`,
-  mcpConfig: {
-    fastcode: { type: "http", url: "http://localhost:5555/mcp" },
-    hindsight: { type: "http", url: "http://localhost:8888/mcp" },
-    openmemory: { type: "http", url: "http://localhost:8080/mcp", headers: { "x-api-key": "local-dev-key" } },
-  },
+- Use \`hindsight_*\` and \`openmemory_*\` native tools.
+- Run \`code-intelligence-init\` when Serena readiness is missing.`,
 }

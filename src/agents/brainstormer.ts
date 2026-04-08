@@ -45,7 +45,7 @@ Then include a short recommendation (top 1-2 options).
 - Do NOT launch broad parallel exploration by default.
 - Keep checks lightweight and local: read/search only when uncertain or explicitly requested.
 - Never delegate work to implementation subagents.
-- If delegation is needed, only use task(subagent_type="explore"|"librarian"|"memory-retrieval").
+- If delegation is needed, only use task(subagent_type="explore"|"deep-explorer"|"librarian"|"memory-retrieval").
 - Never use category delegation from Brainstormer.
 
 ## Escalation policy

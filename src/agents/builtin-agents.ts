@@ -7,12 +7,14 @@ import { createSisyphusAgent } from "./sisyphus"
 import { createOracleAgent, ORACLE_PROMPT_METADATA } from "./oracle"
 import { createLibrarianAgent, LIBRARIAN_PROMPT_METADATA } from "./librarian"
 import { createExploreAgent, EXPLORE_PROMPT_METADATA } from "./explore"
+import { createDeepExplorerAgent, DEEP_EXPLORER_PROMPT_METADATA } from "./deep-explorer"
 import { createMultimodalLookerAgent, MULTIMODAL_LOOKER_PROMPT_METADATA } from "./multimodal-looker"
 import { createMetisAgent, metisPromptMetadata } from "./metis"
 import { createAtlasAgent, atlasPromptMetadata } from "./atlas"
 import { createMomusAgent, momusPromptMetadata } from "./momus"
 import { createHephaestusAgent } from "./hephaestus"
 import { createDebuggerAgent, DEBUGGER_PROMPT_METADATA } from "./debugger"
+import { createTesterAgent, TESTER_PROMPT_METADATA } from "./tester"
 import { createBrainstormerAgent, BRAINSTORMER_PROMPT_METADATA } from "./brainstormer"
 import { createResearcherAgent, RESEARCHER_PROMPT_METADATA } from "./researcher"
 import { createWriterAgent, WRITER_PROMPT_METADATA } from "./writer"
@@ -44,12 +46,14 @@ const agentSources: Record<BuiltinAgentName, AgentSource> = {
   sisyphus: createSisyphusAgent,
   hephaestus: createHephaestusAgent,
   debugger: createDebuggerAgent,
+  tester: createTesterAgent,
   brainstormer: createBrainstormerAgent,
   researcher: createResearcherAgent,
   writer: createWriterAgent,
   oracle: createOracleAgent,
   librarian: createLibrarianAgent,
   explore: createExploreAgent,
+  "deep-explorer": createDeepExplorerAgent,
   "multimodal-looker": createMultimodalLookerAgent,
   metis: createMetisAgent,
   momus: createMomusAgent,
@@ -69,11 +73,13 @@ const agentMetadata: Partial<Record<BuiltinAgentName, AgentPromptMetadata>> = {
   oracle: ORACLE_PROMPT_METADATA,
   librarian: LIBRARIAN_PROMPT_METADATA,
   explore: EXPLORE_PROMPT_METADATA,
+  "deep-explorer": DEEP_EXPLORER_PROMPT_METADATA,
   "multimodal-looker": MULTIMODAL_LOOKER_PROMPT_METADATA,
   metis: metisPromptMetadata,
   momus: momusPromptMetadata,
   atlas: atlasPromptMetadata,
   debugger: DEBUGGER_PROMPT_METADATA,
+  tester: TESTER_PROMPT_METADATA,
   brainstormer: BRAINSTORMER_PROMPT_METADATA,
   researcher: RESEARCHER_PROMPT_METADATA,
   writer: WRITER_PROMPT_METADATA,

@@ -50,30 +50,45 @@ export async function applyAgentConfig(params: {
   ) as typeof params.pluginConfig.disabled_agents;
 
   const includeClaudeSkillsForAwareness = params.pluginConfig.claude_code?.skills ?? true;
-  const [
-    discoveredConfigSourceSkills,
-    discoveredUserSkills,
-    discoveredProjectSkills,
-    discoveredProjectAgentsSkills,
-    discoveredOpencodeGlobalSkills,
-    discoveredOpencodeProjectSkills,
-    discoveredGlobalAgentsSkills,
-  ] = await Promise.all([
-    discoverConfigSourceSkills({
-      config: params.pluginConfig.skills,
-      configDir: params.ctx.directory,
-    }),
-    includeClaudeSkillsForAwareness ? discoverUserClaudeSkills() : Promise.resolve([]),
-    includeClaudeSkillsForAwareness
-       ? discoverProjectClaudeSkills(params.ctx.directory)
-       : Promise.resolve([]),
-    includeClaudeSkillsForAwareness
-      ? discoverProjectAgentsSkills(params.ctx.directory)
-      : Promise.resolve([]),
-    discoverOpencodeGlobalSkills(),
-    discoverOpencodeProjectSkills(params.ctx.directory),
-    includeClaudeSkillsForAwareness ? discoverGlobalAgentsSkills() : Promise.resolve([]),
-  ]);
+  let discoveredConfigSourceSkills: Awaited<ReturnType<typeof discoverConfigSourceSkills>> = []
+  let discoveredUserSkills: Awaited<ReturnType<typeof discoverUserClaudeSkills>> = []
+  let discoveredProjectSkills: Awaited<ReturnType<typeof discoverProjectClaudeSkills>> = []
+  let discoveredProjectAgentsSkills: Awaited<ReturnType<typeof discoverProjectAgentsSkills>> = []
+  let discoveredOpencodeGlobalSkills: Awaited<ReturnType<typeof discoverOpencodeGlobalSkills>> = []
+  let discoveredOpencodeProjectSkills: Awaited<ReturnType<typeof discoverOpencodeProjectSkills>> = []
+  let discoveredGlobalAgentsSkills: Awaited<ReturnType<typeof discoverGlobalAgentsSkills>> = []
+
+  try {
+    [
+      discoveredConfigSourceSkills,
+      discoveredUserSkills,
+      discoveredProjectSkills,
+      discoveredProjectAgentsSkills,
+      discoveredOpencodeGlobalSkills,
+      discoveredOpencodeProjectSkills,
+      discoveredGlobalAgentsSkills,
+    ] = await Promise.all([
+      discoverConfigSourceSkills({
+        config: params.pluginConfig.skills,
+        configDir: params.ctx.directory,
+      }),
+      includeClaudeSkillsForAwareness ? discoverUserClaudeSkills() : Promise.resolve([]),
+      includeClaudeSkillsForAwareness
+         ? discoverProjectClaudeSkills(params.ctx.directory)
+         : Promise.resolve([]),
+      includeClaudeSkillsForAwareness
+        ? discoverProjectAgentsSkills(params.ctx.directory)
+        : Promise.resolve([]),
+      discoverOpencodeGlobalSkills(),
+      discoverOpencodeProjectSkills(params.ctx.directory),
+      includeClaudeSkillsForAwareness ? discoverGlobalAgentsSkills() : Promise.resolve([]),
+    ]);
+  } catch (error) {
+    log("[config-handler] skill discovery failed; continuing without discovered skills", {
+      error: error instanceof Error ? error.message : String(error),
+      directory: params.ctx.directory,
+    })
+  }
 
   const allDiscoveredSkills = [
     ...discoveredConfigSourceSkills,

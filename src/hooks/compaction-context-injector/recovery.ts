@@ -6,6 +6,7 @@ import { createInternalAgentTextPart } from "../../shared/internal-initiator-mar
 import { log } from "../../shared/logger"
 import { setSessionModel } from "../../shared/session-model-state"
 import { setSessionTools } from "../../shared/session-tools-store"
+import { SessionCategoryRegistry } from "../../shared/session-category-registry"
 import {
   createExpectedRecoveryPromptConfig,
   isPromptConfigRecovered,
@@ -109,6 +110,10 @@ export function createRecoveryLogic(
       if (tools) {
         setSessionTools(sessionID, tools)
       }
+      // Restore category if it was explicitly provided via task(category=...)
+      if (expectedPromptConfig.category) {
+        SessionCategoryRegistry.register(sessionID, expectedPromptConfig.category)
+      }
 
       tailState.lastRecoveryAt = now
       tailState.consecutiveNoTextMessages = 0
@@ -118,6 +123,7 @@ export function createRecoveryLogic(
         reason,
         agent: expectedPromptConfig.agent,
         model,
+        category: expectedPromptConfig.category,
       })
 
       return true

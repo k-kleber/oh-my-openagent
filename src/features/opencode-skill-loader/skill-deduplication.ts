@@ -2,7 +2,6 @@ import type { LoadedSkill } from "./types"
 import { validateSpecialistCollisions } from "./specialist-validation"
 
 export function deduplicateSkillsByName(skills: LoadedSkill[]): LoadedSkill[] {
-  validateSpecialistCollisions(skills)
   const seen = new Set<string>()
   const result: LoadedSkill[] = []
   for (const skill of skills) {
@@ -11,5 +10,6 @@ export function deduplicateSkillsByName(skills: LoadedSkill[]): LoadedSkill[] {
       result.push(skill)
     }
   }
+  validateSpecialistCollisions(result)
   return result
 }

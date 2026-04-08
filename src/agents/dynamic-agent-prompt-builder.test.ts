@@ -6,6 +6,7 @@ import {
   buildUltraworkSection,
   buildParallelDelegationSection,
   buildNonClaudePlannerSection,
+  buildExploreSection,
   type AvailableSkill,
   type AvailableCategory,
   type AvailableAgent,
@@ -272,3 +273,37 @@ describe("buildNonClaudePlannerSection", () => {
   })
 })
 
+describe("buildExploreSection", () => {
+  it("includes explore/deep-explorer chooser guidance when both are available", () => {
+    const agents: AvailableAgent[] = [
+      {
+        name: "explore",
+        description: "Explore",
+        metadata: {
+          category: "exploration",
+          cost: "FREE",
+          triggers: [],
+          useWhen: ["Focused lookup"],
+          avoidWhen: ["Known file"],
+        },
+      },
+      {
+        name: "deep-explorer",
+        description: "Deep Explorer",
+        metadata: {
+          category: "exploration",
+          cost: "CHEAP",
+          triggers: [],
+          useWhen: ["Cross-module fan-out"],
+          avoidWhen: ["Trivial lookup"],
+        },
+      },
+    ]
+
+    const result = buildExploreSection(agents)
+    expect(result).toContain("Explore Agents = Contextual Grep Cascade")
+    expect(result).toContain("Use `explore` for smaller scoped discovery")
+    expect(result).toContain("Use `deep-explorer` when scope is broad/uncertain")
+    expect(result).toContain("deep-explorer may spawn `explore` only")
+  })
+})

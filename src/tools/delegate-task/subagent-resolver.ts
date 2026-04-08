@@ -14,6 +14,36 @@ import { getAvailableModelsForDelegateTask } from "./available-models"
 import type { FallbackEntry } from "../../shared/model-requirements"
 import { resolveModelForDelegateTask } from "./model-selection"
 
+const DEEP_EXPLORATION_COMPLEXITY_PATTERNS = [
+  /\bvery\s+thorough\b/i,
+  /\bexhaustive\b/i,
+  /\bcomprehensive\b/i,
+  /\bcross[-\s]?module\b/i,
+  /\bcross[-\s]?layer\b/i,
+  /\bdependency\s+graph\b/i,
+  /\barchitecture\b/i,
+  /\bunknown\s+boundaries\b/i,
+  /\bfan[-\s]?out\b/i,
+  /\bwide\s+coverage\b/i,
+  /\bunfamiliar\s+module\s+structure\b/i,
+]
+
+function shouldUpgradeExploreToDeepExplorer(args: DelegateTaskArgs, parentAgent: string | undefined): boolean {
+  const requested = args.subagent_type?.trim().replace(/^@+/, "").toLowerCase()
+  if (requested !== "explore") return false
+  if (getAgentConfigKey(parentAgent ?? "") === "deep-explorer") return false
+
+  const prompt = args.prompt ?? ""
+  const description = args.description ?? ""
+  const text = `${description}\n${prompt}`
+
+  const patternHits = DEEP_EXPLORATION_COMPLEXITY_PATTERNS.filter((pattern) => pattern.test(text)).length
+  const veryLongPrompt = prompt.length >= 900
+  const explicitModuleFanout = /\b(?:\d+\+\s*)?modules?\b/i.test(text)
+
+  return patternHits >= 2 || (patternHits >= 1 && (veryLongPrompt || explicitModuleFanout)) || (veryLongPrompt && explicitModuleFanout)
+}
+
 export async function resolveSubagentExecution(
   args: DelegateTaskArgs,
   executorCtx: ExecutorContext,
@@ -53,17 +83,29 @@ Create the work plan directly - that's your job as the planning agent.`,
 
   const normalizedParentAgent = getAgentConfigKey(parentAgent ?? "")
   if (normalizedParentAgent === "brainstormer") {
-    const brainstormerAllowedSubagents = new Set(["explore", "librarian", "memory-retrieval"])
+    const brainstormerAllowedSubagents = new Set(["explore", "deep-explorer", "librarian", "memory-retrieval"])
     if (!brainstormerAllowedSubagents.has(agentName.toLowerCase())) {
       return {
         agentToUse: "",
         categoryModel: undefined,
-        error: `Brainstormer can only delegate to explore, librarian, or memory-retrieval. Received: "${agentName}".`,
+        error: `Brainstormer can only delegate to explore, deep-explorer, librarian, or memory-retrieval. Received: "${agentName}".`,
       }
     }
   }
 
-  let agentToUse = agentName
+  if (normalizedParentAgent === "deep-explorer") {
+    const deepExplorerAllowedSubagents = new Set(["explore"])
+    if (!deepExplorerAllowedSubagents.has(agentName.toLowerCase())) {
+      return {
+        agentToUse: "",
+        categoryModel: undefined,
+        error: `deep-explorer can only delegate to explore. Received: "${agentName}".`,
+      }
+    }
+  }
+
+  const upgradedFromExplore = shouldUpgradeExploreToDeepExplorer(args, parentAgent)
+  let agentToUse = upgradedFromExplore ? "deep-explorer" : agentName
   let categoryModel: DelegatedModelConfig | undefined
   let fallbackChain: FallbackEntry[] | undefined = undefined
 
@@ -81,10 +123,22 @@ Create the work plan directly - that's your job as the planning agent.`,
     const callableAgents = agents.filter((a) => a.mode !== "primary")
 
     const resolvedDisplayName = getAgentDisplayName(agentToUse)
-    const matchedAgent = callableAgents.find(
+    let matchedAgent = callableAgents.find(
       (agent) => agent.name.toLowerCase() === agentToUse.toLowerCase()
         || agent.name.toLowerCase() === resolvedDisplayName.toLowerCase()
     )
+
+    if (!matchedAgent && upgradedFromExplore) {
+      const exploreDisplayName = getAgentDisplayName("explore")
+      matchedAgent = callableAgents.find(
+        (agent) => agent.name.toLowerCase() === "explore"
+          || agent.name.toLowerCase() === exploreDisplayName.toLowerCase()
+      )
+      if (matchedAgent) {
+        agentToUse = matchedAgent.name
+      }
+    }
+
     if (!matchedAgent) {
       const isPrimaryAgent = agents
         .filter((a) => a.mode === "primary")

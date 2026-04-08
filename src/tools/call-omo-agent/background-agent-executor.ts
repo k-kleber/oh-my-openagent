@@ -7,6 +7,8 @@ import type { CallOmoAgentArgs } from "./types"
 import type { ToolContextWithMetadata } from "./tool-context-with-metadata"
 import { getMessageDir } from "./message-storage-directory"
 import { getSessionTools } from "../../shared/session-tools-store"
+import { TESTER_SESSION_PERMISSION } from "../../shared/tester-session-permission"
+import { QUESTION_DENIED_SESSION_PERMISSION } from "../../shared/question-denied-session-permission"
 
 export async function executeBackgroundAgent(
 	args: CallOmoAgentArgs,
@@ -44,6 +46,7 @@ export async function executeBackgroundAgent(
 			parentMessageID: toolContext.messageID,
 			parentAgent,
 			parentTools: getSessionTools(toolContext.sessionID),
+			sessionPermission: args.subagent_type === "tester" ? TESTER_SESSION_PERMISSION : QUESTION_DENIED_SESSION_PERMISSION,
 		})
 
 		const waitStart = Date.now()

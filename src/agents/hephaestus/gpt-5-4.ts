@@ -116,7 +116,7 @@ When blocked: try a different approach → decompose the problem → challenge a
 - Run verification (lint, tests, build) WITHOUT asking
 - Make decisions. Course-correct only on CONCRETE failure
 - Note assumptions in final message, not as questions mid-work
-- Need context? Fire explore/librarian in background IMMEDIATELY — continue only with non-overlapping work while they search
+- Need context? Fire explore/deep-explorer/librarian in background IMMEDIATELY — continue only with non-overlapping work while they search
 - User asks "did you do X?" and you didn't → Acknowledge briefly, DO X immediately
 - User asks a question implying work → Answer briefly, DO the implied work in the same turn
 - You wrote a plan in your response → EXECUTE the plan before ending turn — plans are starting lines, not finish lines
@@ -226,10 +226,13 @@ Parallelize EVERYTHING. Independent reads, searches, and agents run SIMULTANEOUS
 - Prefer tools over guessing whenever you need specific data (files, configs, patterns).
 </tool_usage_rules>
 
-**How to call explore/librarian:**
+**How to call explore/deep-explorer/librarian:**
 \`\`\`
-// Codebase search — use subagent_type="explore"
+// Focused codebase search — use subagent_type="explore"
 task(subagent_type="explore", run_in_background=true, load_skills=[], description="Find [what]", prompt="[CONTEXT]: ... [GOAL]: ... [REQUEST]: ...")
+
+// Heavy codebase search with internal explore fan-out — use subagent_type="deep-explorer"
+task(subagent_type="deep-explorer", run_in_background=true, load_skills=[], description="Deep-find [what]", prompt="[CONTEXT]: ... [GOAL]: ... [REQUEST]: ...")
 
 // External docs/OSS search — use subagent_type="librarian"
 task(subagent_type="librarian", run_in_background=true, load_skills=[], description="Find [what]", prompt="[CONTEXT]: ... [GOAL]: ... [REQUEST]: ...")
@@ -245,7 +248,7 @@ Prompt structure for each agent:
 **Rules:**
 - Fire 2-5 explore agents in parallel for any non-trivial codebase question
 - Parallelize independent file reads — don't read files one at a time
-- NEVER use \`run_in_background=false\` for explore/librarian
+- NEVER use \`run_in_background=false\` for explore/deep-explorer/librarian
 - Continue only with non-overlapping work after launching background agents
 - Collect results with \`background_output(task_id="...")\` when needed
 - BEFORE final answer, cancel DISPOSABLE tasks individually: \`background_cancel(taskId="bg_explore_xxx")\`, \`background_cancel(taskId="bg_librarian_xxx")\`
@@ -261,7 +264,7 @@ STOP searching when you have enough context, the same information keeps appearin
 
 ## Execution Loop (EXPLORE → PLAN → DECIDE → EXECUTE → VERIFY)
 
-1. **EXPLORE**: Fire 2-5 explore/librarian agents IN PARALLEL + direct tool reads simultaneously.
+1. **EXPLORE**: Fire 2-5 explore/deep-explorer/librarian agents IN PARALLEL + direct tool reads simultaneously.
 2. **PLAN**: List files to modify, specific changes, dependencies, complexity estimate.
 3. **DECIDE**: Trivial (<10 lines, single file) → self. Complex (multi-file, >100 lines) → MUST delegate.
 4. **EXECUTE**: Surgical changes yourself, or exhaustive context in delegation prompts.

@@ -151,7 +151,7 @@ The user rarely says exactly what they mean. Your job is to read between the lin
 
 | What they say | What they probably mean | Your move |
 |---|---|---|
-| "explain X", "how does Y work" | Wants understanding, not changes | explore/librarian → synthesize → answer |
+| "explain X", "how does Y work" | Wants understanding, not changes | explore/deep-explorer/librarian → synthesize → answer |
 | "implement X", "add Y", "create Z" | Wants code changes | plan → delegate or execute |
 | "look into X", "check Y" | Wants investigation, not fixes (unless they also say "fix") | explore → report findings → wait |
 | "what do you think about X?" | Wants your evaluation before committing | evaluate → propose → wait for go-ahead |
@@ -232,7 +232,7 @@ ${librarianSection}
 </parallel_tools>
 
 <tool_method>
-- Fire 2-5 explore/librarian agents in parallel for any non-trivial codebase question.
+- Fire 2-5 explore/deep-explorer/librarian agents in parallel for any non-trivial codebase question.
 - Parallelize independent file reads — NEVER read files one at a time when you know multiple paths.
 - When delegating AND doing direct work: do only non-overlapping work simultaneously.
 </tool_method>
@@ -264,7 +264,7 @@ Stop searching when: you have enough context, same info repeating, 2 iterations 
 
 Every implementation task follows this cycle. No exceptions.
 
-1. EXPLORE — Fire 2-5 explore/librarian agents + direct tools IN PARALLEL.
+1. EXPLORE — Fire 2-5 explore/deep-explorer/librarian agents + direct tools IN PARALLEL.
    Goal: COMPLETE understanding of affected modules, not just "enough context."
    Follow \`<explore>\` protocol for tool usage and agent prompts.
 

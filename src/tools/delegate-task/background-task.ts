@@ -8,6 +8,7 @@ import { formatDetailedError } from "./error-formatting"
 import { getSessionTools } from "../../shared/session-tools-store"
 import { SessionCategoryRegistry } from "../../shared/session-category-registry"
 import { QUESTION_DENIED_SESSION_PERMISSION } from "../../shared/question-denied-session-permission"
+import { TESTER_SESSION_PERMISSION } from "../../shared/tester-session-permission"
 import { setSessionFallbackChain } from "../../hooks/model-fallback/hook"
 
 export async function executeBackgroundTask(
@@ -38,7 +39,7 @@ export async function executeBackgroundTask(
       skills: args.load_skills.length > 0 ? args.load_skills : undefined,
       skillContent: systemContent,
       category: args.category,
-      sessionPermission: QUESTION_DENIED_SESSION_PERMISSION,
+      sessionPermission: agentToUse === "tester" ? TESTER_SESSION_PERMISSION : QUESTION_DENIED_SESSION_PERMISSION,
     })
 
     // OpenCode TUI's `Task` tool UI calculates toolcalls by looking up
@@ -48,6 +49,7 @@ export async function executeBackgroundTask(
     const timing = getTimingConfig()
     const waitStart = Date.now()
     let sessionId = task.sessionID
+    let taskStatus = task.status
     while (!sessionId && Date.now() - waitStart < timing.WAIT_FOR_SESSION_TIMEOUT_MS) {
       if (ctx.abort?.aborted) {
         return `Task aborted while waiting for session to start.\n\nTask ID: ${task.id}`
@@ -55,13 +57,25 @@ export async function executeBackgroundTask(
       await new Promise(resolve => setTimeout(resolve, timing.WAIT_FOR_SESSION_INTERVAL_MS))
       const updated = manager.getTask(task.id)
       sessionId = updated?.sessionID
+      taskStatus = updated?.status ?? taskStatus
+      if (taskStatus === "interrupt" || taskStatus === "error" || taskStatus === "cancelled") {
+        break
+      }
     }
 
-    if (sessionId) {
-      setSessionFallbackChain(sessionId, fallbackChain)
+    const launchedTask = manager.getTask(task.id)
+    const resolvedSessionId = launchedTask?.sessionID ?? sessionId
+    const resolvedStatus = launchedTask?.status ?? taskStatus
+
+    if ((resolvedStatus === "interrupt" || resolvedStatus === "error" || resolvedStatus === "cancelled") && !resolvedSessionId) {
+      throw new Error(launchedTask?.error ?? `Background task failed to start (status: ${resolvedStatus})`)
     }
-    if (args.category && sessionId) {
-      SessionCategoryRegistry.register(sessionId, args.category)
+
+    if (resolvedSessionId) {
+      setSessionFallbackChain(resolvedSessionId, fallbackChain)
+    }
+    if (args.category && resolvedSessionId) {
+      SessionCategoryRegistry.register(resolvedSessionId, args.category)
     }
 
     const metadata = {
@@ -72,7 +86,7 @@ export async function executeBackgroundTask(
       description: args.description,
       run_in_background: args.run_in_background,
       command: args.command,
-      ...(sessionId ? { sessionId } : {}),
+      ...(resolvedSessionId ? { sessionId: resolvedSessionId } : {}),
       ...(categoryModel ? { model: { providerID: categoryModel.providerID, modelID: categoryModel.modelID } } : {}),
     }
 
@@ -85,8 +99,8 @@ export async function executeBackgroundTask(
       storeToolMetadata(ctx.sessionID, ctx.callID, unstableMeta)
     }
 
-    const taskMetadataBlock = sessionId
-      ? `\n\n<task_metadata>\nsession_id: ${sessionId}\ntask_id: ${task.id}\nbackground_task_id: ${task.id}\n</task_metadata>`
+    const taskMetadataBlock = resolvedSessionId
+      ? `\n\n<task_metadata>\nsession_id: ${resolvedSessionId}\ntask_id: ${task.id}\nbackground_task_id: ${task.id}\n</task_metadata>`
       : ""
 
     return `Background task launched.
@@ -94,7 +108,7 @@ export async function executeBackgroundTask(
 Background Task ID: ${task.id}
 Description: ${task.description}
 Agent: ${task.agent}${args.category ? ` (category: ${args.category})` : ""}
-Status: ${task.status}
+Status: ${resolvedStatus}
 
 System notifies on completion. Use \`background_output\` with task_id="${task.id}" to check.${taskMetadataBlock}`
   } catch (error) {

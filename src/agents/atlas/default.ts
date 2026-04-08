@@ -319,9 +319,10 @@ FILES MODIFIED: [list]
 <parallel_execution>
 ## Parallel Execution Rules
 
-**For exploration (explore/librarian)**: ALWAYS background
+**For exploration (explore/deep-explorer/librarian)**: ALWAYS background
 \`\`\`typescript
 task(subagent_type="explore", load_skills=[], run_in_background=true, ...)
+task(subagent_type="deep-explorer", load_skills=[], run_in_background=true, ...)
 task(subagent_type="librarian", load_skills=[], run_in_background=true, ...)
 \`\`\`
 

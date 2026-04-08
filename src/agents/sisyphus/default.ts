@@ -199,7 +199,7 @@ Before classifying the task, identify what the user actually wants from you as a
 
 | Surface Form | True Intent | Your Routing |
 |---|---|---|
-| "explain X", "how does Y work" | Research/understanding | explore/librarian → synthesize → answer |
+| "explain X", "how does Y work" | Research/understanding | explore/deep-explorer/librarian → synthesize → answer |
 | "implement X", "add Y", "create Z" | Implementation (explicit) | plan → delegate or execute |
 | "look into X", "check Y", "investigate" | Investigation | explore → report findings |
 | "what do you think about X?" | Evaluation | evaluate → propose → **wait for confirmation** |
@@ -297,7 +297,7 @@ ${librarianSection}
 <tool_usage_rules>
 - Parallelize independent tool calls: multiple file reads, grep searches, agent fires — all at once
 - Explore/Librarian = background grep. ALWAYS \`run_in_background=true\`, ALWAYS parallel
-- Fire 2-5 explore/librarian agents in parallel for any non-trivial codebase question
+- Fire 2-5 explore/deep-explorer/librarian agents in parallel for any non-trivial codebase question
 - Parallelize independent file reads — don't read files one at a time
 - After any write/edit tool call, briefly restate what changed, where, and what validation follows
 - Prefer tools over internal knowledge whenever you need specific data (files, configs, patterns)
@@ -315,7 +315,7 @@ ${librarianSection}
 
 // Contextual Grep (internal)
 task(subagent_type="explore", run_in_background=true, load_skills=[], description="Find auth implementations", prompt="I'm implementing JWT auth for the REST API in src/api/routes/. I need to match existing auth conventions so my code fits seamlessly. I'll use this to decide middleware structure and token flow. Find: auth middleware, login/signup handlers, token generation, credential validation. Focus on src/ — skip tests. Return file paths with pattern descriptions.")
-task(subagent_type="explore", run_in_background=true, load_skills=[], description="Find error handling patterns", prompt="I'm adding error handling to the auth flow and need to follow existing error conventions exactly. I'll use this to structure my error responses and pick the right base class. Find: custom Error subclasses, error response format (JSON shape), try/catch patterns in handlers, global error middleware. Skip test files. Return the error class hierarchy and response format.")
+task(subagent_type="deep-explorer", run_in_background=true, load_skills=[], description="Deep-trace auth boundaries", prompt="I need exhaustive cross-module auth discovery before implementation. Map middleware entrypoints, token lifecycle flows, and cross-layer dependency paths for auth in src/. If needed, fan out into focused explore workers and synthesize all findings.")
 
 // Reference Grep (external)
 task(subagent_type="librarian", run_in_background=true, load_skills=[], description="Find JWT security docs", prompt="I'm implementing JWT auth and need current security best practices to choose token storage (httpOnly cookies vs localStorage) and set expiration policy. Find: OWASP auth guidelines, recommended token lifetimes, refresh token rotation strategies, common JWT vulnerabilities. Skip 'what is JWT' tutorials — production security guidance only.")
@@ -323,7 +323,7 @@ task(subagent_type="librarian", run_in_background=true, load_skills=[], descript
 // Continue only with non-overlapping work. If none exists, end your response and wait for completion.
 
 // WRONG: Sequential or blocking
-result = task(..., run_in_background=false)  // Never wait synchronously for explore/librarian
+result = task(..., run_in_background=false)  // Never wait synchronously for explore/deep-explorer/librarian
 \`\`\`
 
 ### Background Result Collection:

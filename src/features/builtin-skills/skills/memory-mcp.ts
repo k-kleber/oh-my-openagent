@@ -2,18 +2,12 @@ import type { BuiltinSkill } from "../types"
 
 export const memoryMcpSkill: BuiltinSkill = {
   name: "memory-mcp",
-  description: "MCP configuration only — provides skill_mcp access to Hindsight and OpenMemory servers.",
-  template: `# Memory MCP Configuration
+  description: "Compatibility guidance for Hindsight and OpenMemory, which are now mounted as native always-on OMO MCPs.",
+  template: `# Memory MCP Compatibility Notes
 
-This skill provides MCP access to Hindsight (temporal memory) and OpenMemory (durable memory) servers.
+Hindsight (temporal memory) and OpenMemory (durable/project memory) are now native always-on OMO MCPs.
 
 ## Usage
 
-The MCP servers are available via the \`skill_mcp\` tool:
-- mcp_name: "hindsight" - for temporal/contextual memory
-- mcp_name: "openmemory" - for durable/project memory`,
-  mcpConfig: {
-    hindsight: { type: "http", url: "http://localhost:8888/mcp" },
-    openmemory: { type: "http", url: "http://localhost:8080/mcp", headers: { "x-api-key": "local-dev-key" } },
-  },
+Use the native MCP tools directly when available. Keep this skill only for workflow guidance or compatibility with older prompts that still mention memory MCP setup.`,
 }

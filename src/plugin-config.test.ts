@@ -1,6 +1,9 @@
-import { describe, expect, it } from "bun:test";
-import { mergeConfigs, parseConfigPartially } from "./plugin-config";
+import { afterEach, describe, expect, it } from "bun:test";
+import { mergeConfigs, parseConfigPartially, loadPluginConfig } from "./plugin-config";
 import { OhMyOpenCodeConfigSchema, type OhMyOpenCodeConfig } from "./config";
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 describe("mergeConfigs", () => {
   describe("categories merging", () => {
@@ -157,6 +160,55 @@ describe("mergeConfigs", () => {
     })
   });
 });
+
+describe("loadPluginConfig", () => {
+  const originalConfigDir = process.env.OPENCODE_CONFIG_DIR
+  const tempDirs: string[] = []
+
+  afterEach(() => {
+    if (originalConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = originalConfigDir
+    }
+    for (const dir of tempDirs.splice(0)) {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it("loads root-level project oh-my-opencode.jsonc when .opencode config is absent", () => {
+    const configDir = mkdtempSync(join(tmpdir(), "omo-user-config-"))
+    const projectDir = mkdtempSync(join(tmpdir(), "omo-project-config-"))
+    tempDirs.push(configDir, projectDir)
+    process.env.OPENCODE_CONFIG_DIR = configDir
+
+    mkdirSync(join(projectDir, ".opencode"), { recursive: true })
+    writeFileSync(
+      join(projectDir, "oh-my-opencode.jsonc"),
+      JSON.stringify({ agents: { "deep-explorer": { model: "github-copilot/gemini-3-flash-preview" } } }),
+      "utf-8",
+    )
+
+    const result = loadPluginConfig(projectDir, {})
+
+    expect(result.agents?.["deep-explorer"]?.model).toBe("github-copilot/gemini-3-flash-preview")
+  })
+
+  it("parses deep-explorer agent overrides from config schema", () => {
+    const parsed = OhMyOpenCodeConfigSchema.safeParse({
+      agents: {
+        "deep-explorer": {
+          model: "github-copilot/gemini-3-flash-preview",
+        },
+      },
+    })
+
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.agents?.["deep-explorer"]?.model).toBe("github-copilot/gemini-3-flash-preview")
+    }
+  })
+})
 
 describe("parseConfigPartially", () => {
   describe("disabled_hooks compatibility", () => {

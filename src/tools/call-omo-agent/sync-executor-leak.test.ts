@@ -131,6 +131,37 @@ describe("executeSync session cleanup", () => {
       expect(subagentSessions.has(sessionID)).toBe(false)
       expect(syncSubagentSessions.has(sessionID)).toBe(false)
     })
+
+    test("#when initial prompt delivery fails #then the new session is aborted and not leaked back", async () => {
+      // given
+      const sessionID = "ses-cleanup-prompt-fail"
+      const args = createArgs()
+      const toolContext = createToolContext()
+      const abort = mock(async () => ({}))
+      const promptAsync = mock(async () => {
+        throw new Error("socket closed")
+      })
+      const deps = createDependencies({
+        createOrGetSession: mock(async () => ({ sessionID, isNew: true })),
+      })
+
+      // when
+      const result = await executeSync(args, toolContext, {
+        client: {
+          session: {
+            promptAsync,
+            abort,
+          },
+        },
+      } as never, deps)
+
+      // then
+      expect(result).toContain("Error: Failed to send prompt: socket closed")
+      expect(result).not.toContain(`session_id: ${sessionID}`)
+      expect(abort).toHaveBeenCalledWith({ path: { id: sessionID } })
+      expect(subagentSessions.has(sessionID)).toBe(false)
+      expect(syncSubagentSessions.has(sessionID)).toBe(false)
+    })
   })
 
   describe("#given executeSync reuses an existing session", () => {

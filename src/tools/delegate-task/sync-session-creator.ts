@@ -1,5 +1,6 @@
 import type { OpencodeClient } from "./types"
 import { QUESTION_DENIED_SESSION_PERMISSION } from "../../shared/question-denied-session-permission"
+import { TESTER_SESSION_PERMISSION } from "../../shared/tester-session-permission"
 
 export async function createSyncSession(
   client: OpencodeClient,
@@ -14,7 +15,7 @@ export async function createSyncSession(
     body: {
       parentID: input.parentSessionID,
       title: `${input.description} (@${input.agentToUse} subagent)`,
-      permission: QUESTION_DENIED_SESSION_PERMISSION,
+      permission: input.agentToUse === "tester" ? TESTER_SESSION_PERMISSION : QUESTION_DENIED_SESSION_PERMISSION,
     } as Record<string, unknown>,
     query: {
       directory: parentDirectory,

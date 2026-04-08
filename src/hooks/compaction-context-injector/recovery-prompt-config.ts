@@ -50,11 +50,14 @@ export function createExpectedRecoveryPromptConfig(
 ): RecoveryPromptConfig {
   const model = checkpoint.model ?? currentPromptConfig.model
   const tools = checkpoint.tools ?? currentPromptConfig.tools
+  // Only include category if it was explicitly set in the checkpoint
+  const category = checkpoint.category
 
   return {
     agent: checkpoint.agent,
     ...(model ? { model } : {}),
     ...(tools ? { tools } : {}),
+    ...(category ? { category } : {}),
   }
 }
 

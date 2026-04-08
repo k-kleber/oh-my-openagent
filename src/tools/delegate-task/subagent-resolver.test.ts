@@ -64,6 +64,73 @@ describe("resolveSubagentExecution", () => {
     expect(result.error).toBe("Failed to delegate to agent \"oracle\": agents API unavailable")
   })
 
+  test("restricts deep-explorer to explore-only delegation", async () => {
+    //#given
+    const args = createBaseArgs({ subagent_type: "librarian" })
+    const executorCtx = createExecutorContext(async () => ([]))
+
+    //#when
+    const result = await resolveSubagentExecution(args, executorCtx, "deep-explorer", "quick")
+
+    //#then
+    expect(result.error).toBe("deep-explorer can only delegate to explore. Received: \"librarian\".")
+  })
+
+  test("upgrades high-complexity explore request to deep-explorer when available", async () => {
+    //#given
+    const args = createBaseArgs({
+      subagent_type: "explore",
+      description: "Exhaustive cross-module architecture mapping",
+      prompt: "Need very thorough fan-out exploration with cross-module dependency graph tracing and broad unknown boundaries.",
+    })
+    const executorCtx = createExecutorContext(async () => ([
+      { name: "deep-explorer", mode: "subagent", model: "openai/gpt-5.3-codex" },
+      { name: "explore", mode: "subagent", model: "xai/grok-code-fast-1" },
+    ]))
+
+    //#when
+    const result = await resolveSubagentExecution(args, executorCtx, "sisyphus", "deep")
+
+    //#then
+    expect(result.error).toBeUndefined()
+    expect(result.agentToUse).toBe("deep-explorer")
+  })
+
+  test("falls back to explore when deep-explorer is unavailable during auto-upgrade", async () => {
+    //#given
+    const args = createBaseArgs({
+      subagent_type: "explore",
+      description: "Exhaustive cross-module architecture mapping",
+      prompt: "Need very thorough fan-out exploration with cross-module dependency graph tracing and broad unknown boundaries.",
+    })
+    const executorCtx = createExecutorContext(async () => ([
+      { name: "explore", mode: "subagent", model: "xai/grok-code-fast-1" },
+    ]))
+
+    //#when
+    const result = await resolveSubagentExecution(args, executorCtx, "sisyphus", "deep")
+
+    //#then
+    expect(result.error).toBeUndefined()
+    expect(result.agentToUse).toBe("explore")
+  })
+
+  test("allows sisyphus-junior to delegate to tester", async () => {
+    //#given
+    const args = createBaseArgs({ subagent_type: "tester" })
+    const executorCtx = createExecutorContext(async () => ([
+      { name: "tester", mode: "subagent", model: "opencode/gpt-5-nano" },
+    ]))
+
+    //#when
+    const result = await resolveSubagentExecution(args, executorCtx, "sisyphus-junior", "quick")
+
+    //#then
+    expect(result.error).toBeUndefined()
+    expect(result.agentToUse).toBe("tester")
+    expect(result.categoryModel).toEqual({ providerID: "opencode", modelID: "gpt-5-nano" })
+  })
+
   test("logs failure details when subagent resolution throws", async () => {
     //#given
     const args = createBaseArgs({ subagent_type: "review" })

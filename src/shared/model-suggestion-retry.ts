@@ -86,32 +86,95 @@ interface PromptArgs {
   [key: string]: unknown
 }
 
+const PROMPT_ASYNC_TRANSPORT_MAX_ATTEMPTS = 10
+const PROMPT_ASYNC_TRANSPORT_RETRY_BASE_DELAY_MS = 50
+const PROMPT_ASYNC_TRANSPORT_RETRY_MAX_DELAY_MS = 1000
+
+const RETRYABLE_PROMPT_ASYNC_MESSAGE_PATTERNS = [
+  "socket connection was closed unexpectedly",
+  "network error",
+  "connection error",
+  "fetch failed",
+  "socket hang up",
+  "econnreset",
+  "ecanceled",
+  "eai_again",
+  "service unavailable",
+  "temporarily unavailable",
+] satisfies string[]
+
+function getErrorName(error: unknown): string {
+  if (error instanceof Error) return error.name
+  if (typeof error === "object" && error !== null) {
+    const maybeName = (error as Record<string, unknown>).name
+    if (typeof maybeName === "string") return maybeName
+  }
+  return ""
+}
+
+function isRetryablePromptAsyncTransportError(error: unknown): boolean {
+  const errorName = getErrorName(error).toLowerCase()
+  if (errorName === "aborterror" || errorName === "messageabortederror") {
+    return false
+  }
+
+  const message = extractMessage(error).toLowerCase()
+  return RETRYABLE_PROMPT_ASYNC_MESSAGE_PATTERNS.some((pattern) => message.includes(pattern))
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export async function promptWithModelSuggestionRetry(
   client: Client,
   args: PromptArgs,
   options: PromptRetryOptions = {},
 ): Promise<void> {
   const timeoutMs = options.timeoutMs ?? PROMPT_TIMEOUT_MS
-  const timeoutContext = createPromptTimeoutContext(args, timeoutMs)
-  // NOTE: Model suggestion retry removed — promptAsync returns 204 immediately,
-  // model errors happen asynchronously server-side and cannot be caught here
-  const promptPromise = client.session.promptAsync({
-    ...args,
-    signal: timeoutContext.signal,
-  } as Parameters<typeof client.session.promptAsync>[0])
+  for (let attempt = 1; attempt <= PROMPT_ASYNC_TRANSPORT_MAX_ATTEMPTS; attempt += 1) {
+    const timeoutContext = createPromptTimeoutContext(args, timeoutMs)
+    // NOTE: Model suggestion retry removed — promptAsync returns 204 immediately,
+    // model errors happen asynchronously server-side and cannot be caught here.
+    const promptPromise = client.session.promptAsync({
+      ...args,
+      signal: timeoutContext.signal,
+    } as Parameters<typeof client.session.promptAsync>[0])
 
-  try {
-    await promptPromise
-    if (timeoutContext.wasTimedOut()) {
-      throw new Error(`promptAsync timed out after ${timeoutMs}ms`)
+    try {
+      await promptPromise
+      if (timeoutContext.wasTimedOut()) {
+        throw new Error(`promptAsync timed out after ${timeoutMs}ms`)
+      }
+      return
+    } catch (error) {
+      if (timeoutContext.wasTimedOut()) {
+        throw new Error(`promptAsync timed out after ${timeoutMs}ms`)
+      }
+
+      const shouldRetryTransportError =
+        attempt < PROMPT_ASYNC_TRANSPORT_MAX_ATTEMPTS
+        && isRetryablePromptAsyncTransportError(error)
+
+      if (!shouldRetryTransportError) {
+        throw error
+      }
+
+      log("[model-suggestion-retry] promptAsync transport failure, retrying", {
+        attempt,
+        maxAttempts: PROMPT_ASYNC_TRANSPORT_MAX_ATTEMPTS,
+        sessionID: args.path.id,
+        error: extractMessage(error),
+      })
+
+      const delayMs = Math.min(
+        PROMPT_ASYNC_TRANSPORT_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1),
+        PROMPT_ASYNC_TRANSPORT_RETRY_MAX_DELAY_MS
+      )
+      await sleep(delayMs)
+    } finally {
+      timeoutContext.cleanup()
     }
-  } catch (error) {
-    if (timeoutContext.wasTimedOut()) {
-      throw new Error(`promptAsync timed out after ${timeoutMs}ms`)
-    }
-    throw error
-  } finally {
-    timeoutContext.cleanup()
   }
 }
 

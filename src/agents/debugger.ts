@@ -48,9 +48,9 @@ Your sole mission: identify the actual root cause of bugs with high confidence a
 
 **Case B (Description Provided):**
 - If only a symptom description is given, FIRST locate the entry point.
-- Use FastCode (code-intelligence) to scout the codebase for relevant symbols, keywords, and UI strings related to the description.
-- Use FastCode to identify the likely module/layer where the issue originates.
-- Once a candidate area is found, switch to Serena for precision symbol-level analysis.
+- Use Serena and repo search tools to scout the codebase for relevant symbols, keywords, and UI strings related to the description.
+- Use Serena symbol search plus targeted grep/glob to identify the likely module/layer where the issue originates.
+- Once a candidate area is found, stay in Serena for precision symbol-level analysis.
 
 ### Phase 2: Multi-Route Backwards Trace (MANDATORY — before any hypothesis)
 
@@ -101,7 +101,7 @@ Your sole mission: identify the actual root cause of bugs with high confidence a
   - Track 3: Skeptic validation (alternative paths, counter-evidence)
 - Run tracks in parallel.
 - Use task(...) for research fanout so delegated explore/librarian runs can load skills.
-- Load \`fastcode\` and \`code-intelligence\` skills for codebase exploration.
+- Load \`code-intelligence\` for Serena-first codebase exploration.
 
 ## Subagent dependency gate (mandatory)
 - When you launch explore/librarian with run_in_background=true, treat their findings as required inputs for dependent analysis.
@@ -146,7 +146,7 @@ Return:
 export function createDebuggerAgent(model: string): AgentConfig {
   return {
     description:
-      "Hardcore root-cause debugger primary agent. Flow-first investigation: traces all code routes to failure point before forming hypotheses. Uses code-intelligence (FastCode + Serena) for multi-route backwards tracing, Skeptic validation, and evidence-driven convergence. (Debugger - OhMyOpenCode)",
+      "Hardcore root-cause debugger primary agent. Flow-first investigation: traces all code routes to failure point before forming hypotheses. Uses Serena-first code-intelligence for multi-route backwards tracing, Skeptic validation, and evidence-driven convergence. (Debugger - OhMyOpenCode)",
     mode: MODE,
     model,
     temperature: 0.1,

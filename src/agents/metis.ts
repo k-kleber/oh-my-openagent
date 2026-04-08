@@ -84,8 +84,8 @@ Confirm:
 \`\`\`
 // Launch these explore agents FIRST
 // Prompt structure: CONTEXT + GOAL + QUESTION + REQUEST
-task(subagent_type="explore", load_skills=["code-intelligence", "fastcode"], run_in_background=true, description="Find similar implementations", prompt="I'm analyzing a new feature request and need to understand existing patterns before asking clarifying questions. Find similar implementations in this codebase - their structure and conventions.")
-task(subagent_type="explore", load_skills=["code-intelligence", "fastcode"], run_in_background=true, description="Map feature organization", prompt="I'm planning to build [feature type] and want to ensure consistency with the project. Find how similar features are organized - file structure, naming patterns, and architectural approach.")
+task(subagent_type="explore", load_skills=["code-intelligence"], run_in_background=true, description="Find similar implementations", prompt="I'm analyzing a new feature request and need to understand existing patterns before asking clarifying questions. Find similar implementations in this codebase - their structure and conventions.")
+task(subagent_type="explore", load_skills=["code-intelligence"], run_in_background=true, description="Map feature organization", prompt="I'm planning to build [feature type] and want to ensure consistency with the project. Find how similar features are organized - file structure, naming patterns, and architectural approach.")
 task(subagent_type="librarian", load_skills=["websearch-mcp", "context7-mcp"], run_in_background=true, description="Collect authoritative docs", prompt="I'm implementing [technology] and need to understand best practices before making recommendations. Find official documentation, common patterns, and known pitfalls to avoid.")
 \`\`\`
 
@@ -197,7 +197,7 @@ Task(
 **Investigation Structure**:
 \`\`\`
 // Parallel probes - Prompt structure: CONTEXT + GOAL + QUESTION + REQUEST
-task(subagent_type="explore", load_skills=["code-intelligence", "fastcode"], run_in_background=true, description="Inspect current implementation", prompt="I'm researching how to implement [feature] and need to understand the current approach. Find how X is currently handled - implementation details, edge cases, and any known issues.")
+task(subagent_type="explore", load_skills=["code-intelligence"], run_in_background=true, description="Inspect current implementation", prompt="I'm researching how to implement [feature] and need to understand the current approach. Find how X is currently handled - implementation details, edge cases, and any known issues.")
 task(subagent_type="librarian", load_skills=["websearch-mcp", "context7-mcp"], run_in_background=true, description="Gather official docs", prompt="I'm implementing Y and need authoritative guidance. Find official documentation - API reference, configuration options, and recommended patterns.")
 task(subagent_type="librarian", load_skills=["websearch-mcp", "context7-mcp"], run_in_background=true, description="Find OSS examples", prompt="I'm looking for proven implementations of Z. Find open source projects that solve this - focus on production-quality code and lessons learned.")
 \`\`\`

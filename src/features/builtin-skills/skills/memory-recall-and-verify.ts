@@ -2,7 +2,7 @@ import type { BuiltinSkill } from "../types"
 
 export const memoryRecallAndVerifySkill: BuiltinSkill = {
   name: "memory-recall-and-verify",
-  description: "Atomic recall-and-verify: pulls from Hindsight and OpenMemory, cross-checks with Serena, returns tagged results.",
+  description: "Atomic recall-and-verify: pulls from Hindsight and OpenMemory, cross-checks against current code, returns tagged results.",
   template: `# Memory Recall and Verify
 
 "What do we know about X", "recall architecture decisions about Y", "what patterns have we established for Z".
@@ -13,7 +13,7 @@ Spawn the \`memory-retrieval\` subagent via \`task()\`:
 \`\`\`
 task(
   subagent_type="memory-retrieval",
-  load_skills=["memory-recall-and-verify"],
+  load_skills=[],
   description="Recall and verify memory",
   prompt="Recall and verify memory relevant to: <query>\\nScope: <project|system|framework|global|user>",
   run_in_background=false
@@ -25,7 +25,7 @@ task(
 ### 1. Query Hindsight
 
 \`\`\`
-skill_mcp(mcp_name="hindsight", tool_name="recall", arguments={
+hindsight_recall({
   "query": "<query>",
   "bank_id": "default"
 })
@@ -34,16 +34,16 @@ skill_mcp(mcp_name="hindsight", tool_name="recall", arguments={
 ### 2. Query OpenMemory
 
 \`\`\`
-skill_mcp(mcp_name="openmemory", tool_name="openmemory_query", arguments={
+openmemory_query({
   "query": "<query>",
   "type": "contextual",
   "k": 8
 })
 \`\`\`
 
-### 3. Cross-check with Serena
+### 3. Cross-check against current code
 
-For each recalled item:
+For each recalled item, verify it against the current repository state using the standard code-validation tools available in the session. Do not use Serena memory tools for recall or durable storage:
 - Symbol exists → \`verified\`
 - Symbol exists but changed → \`partially_verified\`
 - File/symbol gone → \`stale\`
@@ -59,8 +59,4 @@ Present all recalled items with verification tags. Surface any \`contradicted\` 
 - Raw recalled memory MUST have a verification status tag.
 - Low-risk stale items degrade silently; high-impact contradictions shown to user.
 - Do NOT split recall and verify into separate steps — this workflow is atomic.`,
-  mcpConfig: {
-    hindsight: { type: "http", url: "http://localhost:8888/mcp" },
-    openmemory: { type: "http", url: "http://localhost:8080/mcp", headers: { "x-api-key": "local-dev-key" } },
-  },
 }

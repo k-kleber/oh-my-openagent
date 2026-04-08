@@ -169,13 +169,16 @@ export function loadPluginConfig(
       ? userDetected.path
       : path.join(configDir, "oh-my-opencode.json");
 
-  // Project-level config path - prefer .jsonc over .json
-  const projectBasePath = path.join(directory, ".opencode");
-  const projectDetected = detectPluginConfigFile(projectBasePath);
-  const projectConfigPath =
-    projectDetected.format !== "none"
-      ? projectDetected.path
-      : path.join(projectBasePath, "oh-my-opencode.json");
+  const projectConfigCandidates = [path.join(directory, ".opencode"), directory];
+  const detectedProjectConfig = projectConfigCandidates
+    .map((candidateBasePath) => ({
+      basePath: candidateBasePath,
+      detected: detectPluginConfigFile(candidateBasePath),
+    }))
+    .find((entry) => entry.detected.format !== "none");
+  const projectConfigPath = detectedProjectConfig
+    ? detectedProjectConfig.detected.path
+    : path.join(projectConfigCandidates[0], "oh-my-opencode.json");
 
   // Load user config first (base)
   let config: OhMyOpenCodeConfig =

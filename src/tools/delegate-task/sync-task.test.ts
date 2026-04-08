@@ -219,6 +219,131 @@ describe("executeSyncTask - cleanup on error paths", () => {
     expect(deleteCalls[0]).toBe("ses_test_12345678")
   })
 
+  test("rolls back reserved descendant quota when initial sync prompt delivery fails", async () => {
+    const abortCalls: string[] = []
+    const mockClient = {
+      session: {
+        abort: async ({ path }: { path: { id: string } }) => {
+          abortCalls.push(path.id)
+          return {}
+        },
+      },
+    }
+
+    const { executeSyncTask } = require("./sync-task")
+
+    const commit = mock(() => 1)
+    const rollback = mock(() => {})
+    const reserveSubagentSpawn = mock(async () => ({
+      spawnContext: { rootSessionID: "parent-session", parentDepth: 0, childDepth: 1 },
+      descendantCount: 1,
+      commit,
+      rollback,
+    }))
+
+    const deps = {
+      createSyncSession: async () => ({ ok: true, sessionID: "ses_test_12345678" }),
+      sendSyncPrompt: async () => "Send prompt failed",
+      pollSyncSession: async () => null,
+      fetchSyncResult: async () => ({ ok: true as const, textContent: "Result" }),
+    }
+
+    const mockCtx = {
+      sessionID: "parent-session",
+      callID: "call-123",
+      metadata: () => {},
+    }
+
+    const mockExecutorCtx = {
+      manager: { reserveSubagentSpawn },
+      client: mockClient,
+      directory: "/tmp",
+      onSyncSessionCreated: null,
+    }
+
+    const args = {
+      prompt: "test prompt",
+      description: "test task",
+      category: "test",
+      load_skills: [],
+      run_in_background: false,
+      command: null,
+    }
+
+    //#when
+    const result = await executeSyncTask(args, mockCtx, mockExecutorCtx, {
+      sessionID: "parent-session",
+    }, "test-agent", undefined, undefined, undefined, undefined, deps)
+
+    //#then
+    expect(result).toBe("Send prompt failed")
+    expect(commit).toHaveBeenCalledTimes(0)
+    expect(rollback).toHaveBeenCalledTimes(1)
+    expect(abortCalls).toEqual(["ses_test_12345678"])
+    expect(deleteCalls).toContain("ses_test_12345678")
+  })
+
+  test("defers onSyncSessionCreated callback until initial sync prompt delivery succeeds", async () => {
+    const mockClient = {
+      session: {},
+    }
+
+    const { executeSyncTask } = require("./sync-task")
+
+    let callbackCalls = 0
+    let releasePrompt!: () => void
+    const promptStarted = new Promise<void>((resolve) => {
+      releasePrompt = resolve
+    })
+
+    const deps = {
+      createSyncSession: async () => ({ ok: true, sessionID: "ses_test_12345678" }),
+      sendSyncPrompt: async () => {
+        await promptStarted
+        return null
+      },
+      pollSyncSession: async () => null,
+      fetchSyncResult: async () => ({ ok: true as const, textContent: "Result" }),
+    }
+
+    const mockCtx = {
+      sessionID: "parent-session",
+      callID: "call-123",
+      metadata: () => {},
+    }
+
+    const mockExecutorCtx = {
+      client: mockClient,
+      directory: "/tmp",
+      onSyncSessionCreated: async () => {
+        callbackCalls += 1
+      },
+    }
+
+    const args = {
+      prompt: "test prompt",
+      description: "test task",
+      category: "test",
+      load_skills: [],
+      run_in_background: false,
+      command: null,
+    }
+
+    //#when
+    const resultPromise = executeSyncTask(args, mockCtx, mockExecutorCtx, {
+      sessionID: "parent-session",
+    }, "test-agent", undefined, undefined, undefined, undefined, deps)
+    await Promise.resolve()
+
+    //#then
+    expect(callbackCalls).toBe(0)
+
+    releasePrompt()
+    const result = await resultPromise
+    expect(result).toContain("Task completed")
+    expect(callbackCalls).toBe(1)
+  })
+
   test("cleans up toast and subagentSessions on successful completion", async () => {
     const mockClient = {
       session: {

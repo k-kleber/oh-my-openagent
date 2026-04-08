@@ -1,6 +1,8 @@
 export const ALLOWED_AGENTS = [
   "explore",
+  "deep-explorer",
   "librarian",
+  "tester",
   "oracle",
   "hephaestus",
   "metis",
@@ -8,7 +10,7 @@ export const ALLOWED_AGENTS = [
   "multimodal-looker",
 ] as const
 
-export const CALL_OMO_AGENT_DESCRIPTION = `Spawn explore/librarian agent. run_in_background REQUIRED (true=async with task_id, false=sync).
+export const CALL_OMO_AGENT_DESCRIPTION = `Spawn specialized subagent directly. run_in_background REQUIRED (true=async with task_id, false=sync).
 
 Available: {agents}
 

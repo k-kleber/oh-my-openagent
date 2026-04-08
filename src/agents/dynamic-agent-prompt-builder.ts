@@ -111,12 +111,21 @@ export function buildToolSelectionTable(
 
 export function buildExploreSection(agents: AvailableAgent[]): string {
   const exploreAgent = agents.find((a) => a.name === "explore")
+  const deepExploreAgent = agents.find((a) => a.name === "deep-explorer")
   if (!exploreAgent) return ""
 
   const useWhen = exploreAgent.metadata.useWhen || []
   const avoidWhen = exploreAgent.metadata.avoidWhen || []
 
-  return `### Explore Agent = Contextual Grep
+  const deepExploreUseWhen = deepExploreAgent?.metadata.useWhen || []
+
+  return `### Explore Agents = Contextual Grep Cascade
+
+Use \`explore\` for smaller scoped discovery and \`deep-explorer\` for heavier exploration that may require fan-out.
+
+**Fast chooser:**
+- Use \`explore\` when search scope is focused and likely solvable in one pass.
+- Use \`deep-explorer\` when scope is broad/uncertain/cross-module and benefits from spawning multiple \`explore\` workers.
 
 Use it as a **peer tool**, not a fallback. Fire liberally for discovery, not for files you already know.
 
@@ -126,7 +135,13 @@ Use it as a **peer tool**, not a fallback. Fire liberally for discovery, not for
 ${avoidWhen.map((w) => `- ${w}`).join("\n")}
 
 **Use Explore Agent when:**
-${useWhen.map((w) => `- ${w}`).join("\n")}`
+${useWhen.map((w) => `- ${w}`).join("\n")}
+
+${deepExploreAgent ? `**Use Deep-Explorer when:**
+${deepExploreUseWhen.map((w) => `- ${w}`).join("\n")}
+
+**Deep-Explorer delegation boundary:**
+- deep-explorer may spawn \`explore\` only (no librarian/oracle/other subagents).` : ""}`
 }
 
 export function buildLibrarianSection(agents: AvailableAgent[]): string {
@@ -164,9 +179,9 @@ export function buildDelegationTable(agents: AvailableAgent[]): string {
 export function buildMemorySection(): string {
   return `## Memory Integration
 
-Before delegating research to explore or librarian, delegate to a memory-retrieval subagent to surface relevant prior context: \`task(subagent_type="memory-retrieval", load_skills=["memory-mcp"], prompt="Recall and verify memory relevant to: <user's request>\\nProject: <projectPath> (<projectName>)", run_in_background=false)\`. Memory retrieval is memory-only: on memory miss, do not perform fallback repo discovery; return a concise no-memory result. Treat recalled memory as advisory until verified against current code.
+Before delegating research to explore or librarian, delegate to a memory-retrieval subagent to surface relevant prior context: \`task(subagent_type="memory-retrieval", load_skills=[], prompt="Recall and verify memory relevant to: <user's request>\\nProject: <projectPath> (<projectName>)", run_in_background=false)\`. Hindsight and OpenMemory are native always-on MCPs, so no memory skill needs to be mounted first. Memory retrieval is memory-only: on memory miss, do not perform fallback repo discovery; return a concise no-memory result. Treat recalled memory as advisory until verified against current code.
 
-After completing significant work (architectural decisions, bug fixes with non-obvious cause, pattern discoveries), consider triggering memory capture: \`task(subagent_type="memory-store", load_skills=["memory-mcp"], prompt="Project: <projectPath> (<projectName>)\\nObservations:\\n- <list of insights>", run_in_background=false)\`. Only capture high-signal, non-obvious, actionable insights.`
+After completing significant work (architectural decisions, bug fixes with non-obvious cause, pattern discoveries), consider triggering memory capture: \`task(subagent_type="memory-store", load_skills=[], prompt="Project: <projectPath> (<projectName>)\\nObservations:\\n- <list of insights>", run_in_background=false)\`. Only capture high-signal, non-obvious, actionable insights.`
 }
 
 export function buildCategorySkillsDelegationGuide(categories: AvailableCategory[], skills: AvailableSkill[], specialists: AvailableSpecialist[] = []): string {

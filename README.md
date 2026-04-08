@@ -269,7 +269,7 @@ Add your own: `.opencode/skills/*/SKILL.md` or `~/.config/opencode/skills/*/SKIL
 >
 > **Contributing new agents or skills?** Use **[Adding Agents, Subagents, and Skills](docs/guide/adding-agents-and-skills.md)** for the required integration checklist.
 >
-> **Code analysis strategy?** See **[Code Analysis Cascade](docs/guide/code-analysis-cascade.md)** for the FastCode → Serena → AST/LSP → grep flow and fallback matrix.
+> **Code analysis strategy?** See **[Code Analysis Cascade](docs/guide/code-analysis-cascade.md)** for the Serena → AST/LSP → grep flow and fallback matrix.
 
 ## Uninstallation
 

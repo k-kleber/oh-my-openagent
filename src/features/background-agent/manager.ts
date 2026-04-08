@@ -116,6 +116,30 @@ interface QueueItem {
   input: LaunchInput
 }
 
+const OUTPUT_VALIDATION_MAX_ATTEMPTS = 10
+const OUTPUT_VALIDATION_RETRY_BASE_DELAY_MS = 50
+const OUTPUT_VALIDATION_RETRY_MAX_DELAY_MS = 1000
+
+const RETRYABLE_OUTPUT_VALIDATION_MESSAGE_PATTERNS = [
+  "socket connection was closed unexpectedly",
+  "fetch failed",
+  "network error",
+  "connection error",
+  "socket hang up",
+  "econnreset",
+  "service unavailable",
+  "temporarily unavailable",
+] satisfies string[]
+
+function isRetryableOutputValidationError(error: unknown): boolean {
+  const message = (extractErrorMessage(error) ?? String(error)).toLowerCase()
+  return RETRYABLE_OUTPUT_VALIDATION_MESSAGE_PATTERNS.some((pattern) => message.includes(pattern))
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export interface SubagentSessionCreatedEvent {
   sessionID: string
   parentID: string
@@ -452,49 +476,10 @@ export class BackgroundManager {
     this.settlePreStartDescendantReservation(task)
     subagentSessions.add(sessionID)
 
-    log("[background-agent] tmux callback check", {
-      hasCallback: !!this.onSubagentSessionCreated,
-      tmuxEnabled: this.tmuxEnabled,
-      isInsideTmux: isInsideTmux(),
-      sessionID,
-      parentID: input.parentSessionID,
-    })
-
-    if (this.onSubagentSessionCreated && this.tmuxEnabled && isInsideTmux()) {
-      log("[background-agent] Invoking tmux callback NOW", { sessionID })
-      await this.onSubagentSessionCreated({
-        sessionID,
-        parentID: input.parentSessionID,
-        title: input.description,
-      }).catch((err) => {
-        log("[background-agent] Failed to spawn tmux pane:", err)
-      })
-      log("[background-agent] tmux callback completed, waiting 200ms")
-      await new Promise(r => setTimeout(r, 200))
-    } else {
-      log("[background-agent] SKIP tmux callback - conditions not met")
-    }
-
-    // Update task to running state
-    task.status = "running"
-    task.startedAt = new Date()
-    task.sessionID = sessionID
-    task.progress = {
-      toolCalls: 0,
-      lastUpdate: new Date(),
-    }
     task.concurrencyKey = concurrencyKey
     task.concurrencyGroup = concurrencyKey
 
-    this.taskHistory.record(input.parentSessionID, { id: task.id, sessionID, agent: input.agent, description: input.description, status: "running", category: input.category, startedAt: task.startedAt })
-    this.startPolling()
-
-    log("[background-agent] Launching task:", { taskId: task.id, sessionID, agent: input.agent })
-
     const toastManager = getTaskToastManager()
-    if (toastManager) {
-      toastManager.updateTask(task.id, "running")
-    }
 
     log("[background-agent] Calling prompt (fire-and-forget) for launch with:", {
       sessionID,
@@ -519,28 +504,70 @@ export class BackgroundManager {
       applySessionPromptParams(sessionID, input.model)
     }
 
-    promptWithModelSuggestionRetry(this.client, {
-      path: { id: sessionID },
-      body: {
-        agent: input.agent,
-        ...(launchModel ? { model: launchModel } : {}),
-        ...(launchVariant ? { variant: launchVariant } : {}),
-        system: input.skillContent,
-        tools: (() => {
-          const tools = {
-            task: true,
-            call_omo_agent: false,
-            question: false,
-            ...getAgentToolRestrictions(input.agent),
-          }
-          setSessionTools(sessionID, tools)
-          return tools
-        })(),
-        parts: [createInternalAgentTextPart(input.prompt)],
-      },
-    }).catch((error) => {
+    try {
+      await promptWithModelSuggestionRetry(this.client, {
+        path: { id: sessionID },
+        body: {
+          agent: input.agent,
+          ...(launchModel ? { model: launchModel } : {}),
+          ...(launchVariant ? { variant: launchVariant } : {}),
+          system: input.skillContent,
+          tools: (() => {
+            const tools = {
+              task: true,
+              call_omo_agent: false,
+              question: false,
+              ...getAgentToolRestrictions(input.agent),
+            }
+            setSessionTools(sessionID, tools)
+            return tools
+          })(),
+          parts: [createInternalAgentTextPart(input.prompt)],
+        },
+      })
+
+      log("[background-agent] tmux callback check", {
+        hasCallback: !!this.onSubagentSessionCreated,
+        tmuxEnabled: this.tmuxEnabled,
+        isInsideTmux: isInsideTmux(),
+        sessionID,
+        parentID: input.parentSessionID,
+      })
+
+      if (this.onSubagentSessionCreated && this.tmuxEnabled && isInsideTmux()) {
+        log("[background-agent] Invoking tmux callback NOW", { sessionID })
+        await this.onSubagentSessionCreated({
+          sessionID,
+          parentID: input.parentSessionID,
+          title: input.description,
+        }).catch((err) => {
+          log("[background-agent] Failed to spawn tmux pane:", err)
+        })
+        log("[background-agent] tmux callback completed, waiting 200ms")
+        await new Promise(r => setTimeout(r, 200))
+      } else {
+        log("[background-agent] SKIP tmux callback - conditions not met")
+      }
+
+      task.sessionID = sessionID
+      task.status = "running"
+      task.startedAt = new Date()
+      task.progress = {
+        toolCalls: 0,
+        lastUpdate: new Date(),
+      }
+
+      this.taskHistory.record(input.parentSessionID, { id: task.id, sessionID, agent: input.agent, description: input.description, status: "running", category: input.category, startedAt: task.startedAt })
+      this.startPolling()
+
+      log("[background-agent] Launching task:", { taskId: task.id, sessionID, agent: input.agent })
+
+      if (toastManager) {
+        toastManager.updateTask(task.id, "running")
+      }
+    } catch (error) {
       log("[background-agent] promptAsync error:", error)
-      const existingTask = this.findBySession(sessionID)
+      const existingTask = task
       if (existingTask) {
         existingTask.status = "interrupt"
         const errorMessage = error instanceof Error ? error.message : String(error)
@@ -570,7 +597,7 @@ export class BackgroundManager {
           log("[background-agent] Failed to notify on error:", err)
         })
       }
-    })
+    }
   }
 
   getTask(id: string): BackgroundTask | undefined {
@@ -1210,59 +1237,64 @@ export class BackgroundManager {
    * Prevents premature completion when session.idle fires before agent responds.
    */
   private async validateSessionHasOutput(sessionID: string): Promise<boolean> {
-    try {
-      const response = await this.client.session.messages({
-        path: { id: sessionID },
-      })
+    for (let attempt = 1; attempt <= OUTPUT_VALIDATION_MAX_ATTEMPTS; attempt += 1) {
+      try {
+        const response = await this.client.session.messages({
+          path: { id: sessionID },
+        })
 
-      const messages = normalizeSDKResponse(response, [] as Array<{ info?: { role?: string } }>, { preferResponseOnMissingData: true })
-      
-      // Check for at least one assistant or tool message
-      const hasAssistantOrToolMessage = messages.some(
-        (m: { info?: { role?: string } }) => 
-          m.info?.role === "assistant" || m.info?.role === "tool"
-      )
+        const messages = normalizeSDKResponse(response, [] as Array<{ info?: { role?: string } }>, { preferResponseOnMissingData: true })
 
-      if (!hasAssistantOrToolMessage) {
-        log("[background-agent] No assistant/tool messages found in session:", sessionID)
-        return false
+        const hasAssistantOrToolMessage = messages.some(
+          (m: { info?: { role?: string } }) =>
+            m.info?.role === "assistant" || m.info?.role === "tool"
+        )
+
+        if (!hasAssistantOrToolMessage) {
+          log("[background-agent] No assistant/tool messages found in session:", sessionID)
+          return false
+        }
+
+        const hasContent = messages.some((m: any) => {
+          if (m.info?.role !== "assistant" && m.info?.role !== "tool") return false
+          const parts = m.parts ?? []
+          return parts.some((p: any) =>
+            (p.type === "text" && p.text && p.text.trim().length > 0) ||
+            (p.type === "reasoning" && p.text && p.text.trim().length > 0) ||
+            p.type === "tool" ||
+            (p.type === "tool_result" && p.content &&
+              (typeof p.content === "string" ? p.content.trim().length > 0 : p.content.length > 0))
+          )
+        })
+
+        if (!hasContent) {
+          log("[background-agent] Messages exist but no content found in session:", sessionID)
+          return false
+        }
+
+        return true
+      } catch (error) {
+        const retryable = isRetryableOutputValidationError(error)
+        log("[background-agent] Error validating session output:", {
+          sessionID,
+          attempt,
+          retryable,
+          error,
+        })
+
+        if (!retryable || attempt === OUTPUT_VALIDATION_MAX_ATTEMPTS) {
+          return false
+        }
+
+        const delayMs = Math.min(
+          OUTPUT_VALIDATION_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1),
+          OUTPUT_VALIDATION_RETRY_MAX_DELAY_MS
+        )
+        await sleep(delayMs)
       }
-
-      // Additionally check that at least one message has content (not just empty)
-      // OpenCode API uses different part types than Anthropic's API:
-      // - "reasoning" with .text property (thinking/reasoning content)
-      // - "tool" with .state.output property (tool call results)
-      // - "text" with .text property (final text output)
-      // - "step-start"/"step-finish" (metadata, no content)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const hasContent = messages.some((m: any) => {
-        if (m.info?.role !== "assistant" && m.info?.role !== "tool") return false
-        const parts = m.parts ?? []
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return parts.some((p: any) => 
-        // Text content (final output)
-        (p.type === "text" && p.text && p.text.trim().length > 0) ||
-        // Reasoning content (thinking blocks)
-        (p.type === "reasoning" && p.text && p.text.trim().length > 0) ||
-        // Tool calls (indicates work was done)
-        p.type === "tool" ||
-        // Tool results (output from executed tools) - important for tool-only tasks
-        (p.type === "tool_result" && p.content && 
-          (typeof p.content === "string" ? p.content.trim().length > 0 : p.content.length > 0))
-      )
-      })
-
-      if (!hasContent) {
-        log("[background-agent] Messages exist but no content found in session:", sessionID)
-        return false
-      }
-
-      return true
-    } catch (error) {
-      log("[background-agent] Error validating session output:", error)
-      // On error, allow completion to proceed (don't block indefinitely)
-      return true
     }
+
+    return false
   }
 
   private clearNotificationsForTask(taskId: string): void {

@@ -123,6 +123,12 @@ describe("getAgentDisplayName", () => {
     expect(result).toBe("explore")
   })
 
+  it("returns display name for deep-explorer", () => {
+    const configKey = "deep-explorer"
+    const result = getAgentDisplayName(configKey)
+    expect(result).toBe("deep-explorer")
+  })
+
   it("returns display name for brainstormer", () => {
     const configKey = "brainstormer"
 
@@ -148,6 +154,12 @@ describe("getAgentDisplayName", () => {
     const configKey = "debugger"
     const result = getAgentDisplayName(configKey)
     expect(result).toBe("Debugger (Root Cause Hunter)")
+  })
+
+  it("returns display name for tester", () => {
+    const configKey = "tester"
+    const result = getAgentDisplayName(configKey)
+    expect(result).toBe("tester")
   })
 
   it("returns display name for multimodal-looker", () => {
@@ -197,6 +209,7 @@ describe("getAgentConfigKey", () => {
 
   it("normalizes leading @ for known agents", () => {
     expect(getAgentConfigKey("@explore")).toBe("explore")
+    expect(getAgentConfigKey("@deep-explorer")).toBe("deep-explorer")
     expect(getAgentConfigKey("@Sisyphus (Ultraworker)")).toBe("sisyphus")
     expect(getAgentConfigKey("@Researcher (Evidence Scout)")).toBe("researcher")
     expect(getAgentConfigKey("@Writer (Content Partner)")).toBe("writer")
@@ -224,6 +237,7 @@ describe("AGENT_DISPLAY_NAMES", () => {
       sisyphus: "Sisyphus (Ultraworker)",
       hephaestus: "Hephaestus (Deep Agent)",
       debugger: "Debugger (Root Cause Hunter)",
+      tester: "tester",
       brainstormer: "Brainstormer (Fast Ideation)",
       researcher: "Researcher (Evidence Scout)",
       writer: "Writer (Content Partner)",
@@ -235,6 +249,7 @@ describe("AGENT_DISPLAY_NAMES", () => {
       oracle: "oracle",
       librarian: "librarian",
       explore: "explore",
+      "deep-explorer": "deep-explorer",
       "multimodal-looker": "multimodal-looker",
     }
 

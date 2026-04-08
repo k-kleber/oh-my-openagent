@@ -135,7 +135,45 @@ bunDescribe("sendSyncPrompt", () => {
     bunExpect(promptArgs.body.tools.call_omo_agent).toBe(false)
   })
 
-  bunTest("blocks call_omo_agent for sisyphus agent", async () => {
+  bunTest("applies tester execution-only restrictions", async () => {
+    const { sendSyncPrompt } = require("./sync-prompt-sender")
+
+    let promptArgs: any
+    const promptAsync = bunMock(async (input: any) => {
+      promptArgs = input
+      return { data: {} }
+    })
+
+    const mockClient = {
+      session: {
+        promptAsync,
+      },
+    }
+
+    const input = {
+      sessionID: "test-session",
+      agentToUse: "tester",
+      args: {
+        description: "test task",
+        prompt: "run tests",
+        run_in_background: false,
+        load_skills: [],
+      },
+      systemContent: undefined,
+      categoryModel: undefined,
+      toastManager: null,
+      taskId: undefined,
+    }
+
+    await sendSyncPrompt(mockClient, input)
+
+    bunExpect(promptAsync).toHaveBeenCalled()
+    bunExpect(promptArgs.body.tools.task).toBe(false)
+    bunExpect(promptArgs.body.tools.call_omo_agent).toBe(false)
+    bunExpect(promptArgs.body.tools.interactive_bash).toBe(false)
+  })
+
+  bunTest("leaves call_omo_agent unchanged for sisyphus in prompt sender", async () => {
     //#given
     const { sendSyncPrompt } = require("./sync-prompt-sender")
 
@@ -172,7 +210,7 @@ bunDescribe("sendSyncPrompt", () => {
 
     //#then
     bunExpect(promptAsync).toHaveBeenCalled()
-    bunExpect(promptArgs.body.tools.call_omo_agent).toBe(false)
+    bunExpect(promptArgs.body.tools.call_omo_agent).toBe(true)
   })
 
   bunTest("keeps explicit subagent identity for direct subagent delegation even with custom model", async () => {
@@ -215,7 +253,7 @@ bunDescribe("sendSyncPrompt", () => {
     bunExpect(promptArgs.body.model).toEqual({ providerID: "openai", modelID: "gpt-5.3-codex" })
   })
 
-  bunTest("omits explicit agent only for category-based delegation when custom model is present", async () => {
+  bunTest("keeps explicit agent for category-based delegation when custom model is present", async () => {
     //#given
     const { sendSyncPrompt } = require("./sync-prompt-sender")
 
@@ -252,7 +290,7 @@ bunDescribe("sendSyncPrompt", () => {
 
     //#then
     bunExpect(promptAsync).toHaveBeenCalled()
-    bunExpect(promptArgs.body.agent).toBeUndefined()
+    bunExpect(promptArgs.body.agent).toBe("sisyphus-junior")
     bunExpect(promptArgs.body.model).toEqual({ providerID: "openai", modelID: "gpt-5.3-codex" })
   })
 

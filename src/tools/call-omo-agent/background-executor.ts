@@ -7,6 +7,9 @@ import { resolveMessageContext } from "../../features/hook-message-injector"
 import { getSessionAgent } from "../../features/claude-code-session-state"
 import { getMessageDir } from "./message-dir"
 import { getSessionTools } from "../../shared/session-tools-store"
+import { TESTER_SESSION_PERMISSION } from "../../shared/tester-session-permission"
+import { QUESTION_DENIED_SESSION_PERMISSION } from "../../shared/question-denied-session-permission"
+import type { CallOmoAgentModelConfig } from "./types"
 
 export async function executeBackground(
   args: CallOmoAgentArgs,
@@ -20,6 +23,7 @@ export async function executeBackground(
   manager: BackgroundManager,
   client: PluginInput["client"],
   fallbackChain?: FallbackEntry[],
+  resolvedModel?: CallOmoAgentModelConfig,
 ): Promise<string> {
   try {
     const messageDir = getMessageDir(toolContext.sessionID)
@@ -50,7 +54,9 @@ export async function executeBackground(
       parentMessageID: toolContext.messageID,
       parentAgent,
       parentTools: getSessionTools(toolContext.sessionID),
+      model: resolvedModel,
       fallbackChain,
+      sessionPermission: args.subagent_type === "tester" ? TESTER_SESSION_PERMISSION : QUESTION_DENIED_SESSION_PERMISSION,
     })
 
     const WAIT_FOR_SESSION_INTERVAL_MS = 50
@@ -71,7 +77,10 @@ export async function executeBackground(
 
     await toolContext.metadata?.({
       title: args.description,
-      metadata: { sessionId: sessionId ?? "pending" },
+      metadata: {
+        sessionId: sessionId ?? "pending",
+        ...(resolvedModel ? { model: resolvedModel } : {}),
+      },
     })
 
     return `Background agent task launched successfully.

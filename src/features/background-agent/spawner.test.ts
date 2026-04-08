@@ -151,4 +151,64 @@ describe("background-agent spawner fallback model promotion", () => {
     })
     expect(promptCalls[0]?.body?.variant).toBe("medium")
   })
+
+  test("publishes session linkage before prompt handoff settles", async () => {
+    //#given
+    let releasePrompt!: () => void
+    const promptGate = new Promise<void>((resolve) => {
+      releasePrompt = resolve
+    })
+
+    const client = {
+      session: {
+        get: async () => ({ data: { directory: "/parent/dir" } }),
+        create: async () => ({ data: { id: "ses_child_live" } }),
+        promptAsync: async () => {
+          await promptGate
+          return {}
+        },
+      },
+    }
+
+    const task = createTask({
+      description: "Test task",
+      prompt: "Do work",
+      agent: "explore",
+      parentSessionID: "ses_parent",
+      parentMessageID: "msg_parent",
+    })
+
+    const item = {
+      task,
+      input: {
+        description: task.description,
+        prompt: task.prompt,
+        agent: task.agent,
+        parentSessionID: task.parentSessionID,
+        parentMessageID: task.parentMessageID,
+        parentModel: task.parentModel,
+        parentAgent: task.parentAgent,
+        model: task.model,
+      },
+    }
+
+    const ctx = {
+      client,
+      directory: "/fallback",
+      concurrencyManager: { release: () => {} },
+      tmuxEnabled: false,
+      onTaskError: () => {},
+    }
+
+    //#when
+    const startPromise = startTask(item as any, ctx as any)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    //#then
+    expect(task.sessionID).toBe("ses_child_live")
+    expect(task.status).toBe("running")
+
+    releasePrompt()
+    await startPromise
+  })
 })

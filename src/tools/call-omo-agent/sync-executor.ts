@@ -7,6 +7,7 @@ import type { FallbackEntry } from "../../shared/model-requirements"
 import { waitForCompletion } from "./completion-poller"
 import { processMessages } from "./message-processor"
 import { createOrGetSession } from "./session-creator"
+import type { CallOmoAgentModelConfig } from "./types"
 
 type SessionWithPromptAsync = {
   promptAsync: (opts: { path: { id: string }; body: Record<string, unknown> }) => Promise<unknown>
@@ -46,10 +47,12 @@ export async function executeSync(
   deps: ExecuteSyncDeps = defaultDeps,
   fallbackChain?: FallbackEntry[],
   spawnReservation?: SpawnReservation,
+  resolvedModel?: CallOmoAgentModelConfig,
 ): Promise<string> {
   let sessionID: string | undefined
   let createdSessionForExecution = false
   let appliedFallbackChain = false
+  let promptDelivered = false
 
   try {
     const session = await deps.createOrGetSession(args, toolContext, ctx)
@@ -58,21 +61,10 @@ export async function executeSync(
     subagentSessions.add(sessionID)
     syncSubagentSessions.add(sessionID)
 
-    if (session.isNew) {
-      spawnReservation?.commit()
-    }
-
     if (fallbackChain && fallbackChain.length > 0) {
       deps.setSessionFallbackChain(sessionID, fallbackChain)
       appliedFallbackChain = true
     }
-
-    await Promise.resolve(
-      toolContext.metadata?.({
-        title: args.description,
-        metadata: { sessionId: sessionID },
-      })
-    )
 
     log(`[call_omo_agent] Sending prompt to session ${sessionID}`)
     log(`[call_omo_agent] Prompt text:`, args.prompt.substring(0, 100))
@@ -82,6 +74,8 @@ export async function executeSync(
         path: { id: sessionID },
         body: {
           agent: args.subagent_type,
+          ...(resolvedModel ? { model: { providerID: resolvedModel.providerID, modelID: resolvedModel.modelID } } : {}),
+          ...(resolvedModel?.variant ? { variant: resolvedModel.variant } : {}),
           tools: {
             ...getAgentToolRestrictions(args.subagent_type),
             task: false,
@@ -90,14 +84,29 @@ export async function executeSync(
           parts: [{ type: "text", text: args.prompt }],
         },
       })
+      promptDelivered = true
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       log(`[call_omo_agent] Prompt error:`, errorMessage)
       if (errorMessage.includes("agent.name") || errorMessage.includes("undefined")) {
-        return `Error: Agent "${args.subagent_type}" not found. Make sure the agent is registered in your opencode.json or provided by a plugin.\n\n<task_metadata>\nsession_id: ${sessionID}\n</task_metadata>`
+        return `Error: Agent "${args.subagent_type}" not found. Make sure the agent is registered in your opencode.json or provided by a plugin.`
       }
-      return `Error: Failed to send prompt: ${errorMessage}\n\n<task_metadata>\nsession_id: ${sessionID}\n</task_metadata>`
+      return `Error: Failed to send prompt: ${errorMessage}`
     }
+
+    if (session.isNew) {
+      spawnReservation?.commit()
+    }
+
+    await Promise.resolve(
+      toolContext.metadata?.({
+        title: args.description,
+        metadata: {
+          sessionId: sessionID,
+          ...(resolvedModel ? { model: resolvedModel } : {}),
+        },
+      })
+    )
 
     await deps.waitForCompletion(sessionID, toolContext, ctx)
 
@@ -110,6 +119,12 @@ export async function executeSync(
   } finally {
     if (sessionID && appliedFallbackChain) {
       deps.clearSessionFallbackChain(sessionID)
+    }
+
+    if (sessionID && createdSessionForExecution && !promptDelivered) {
+      try {
+        await ctx.client.session.abort({ path: { id: sessionID } } as { path: { id: string } })
+      } catch {}
     }
 
     if (sessionID && createdSessionForExecution) {

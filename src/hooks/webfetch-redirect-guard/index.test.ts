@@ -166,6 +166,67 @@ describe("createWebFetchRedirectGuardHook", () => {
         )
       })
     })
+
+    describe("#when webfetch returns a GitHub 404 error", () => {
+      it("#then should append GitHub-specific recovery guidance", async () => {
+        const hook = createWebFetchRedirectGuardHook({} as never)
+        const input = createInput()
+        const beforeOutput = createBeforeOutput("https://github.com/pybind/pybind11/blob/main/docs/compiling.md")
+        const afterOutput = createAfterOutput("Request failed with status code: 404")
+
+        await hook["tool.execute.before"](input, beforeOutput)
+        await hook["tool.execute.after"](input, afterOutput)
+
+        expect(afterOutput.output).toContain("[webfetch-recovery]")
+        expect(afterOutput.output).toContain("GitHub fetch failed")
+        expect(afterOutput.output).toContain("gh api repos/{owner}/{repo}/contents/{path}?ref={ref}")
+      })
+    })
+
+    describe("#when webfetch returns a ReadTheDocs 404 error", () => {
+      it("#then should append ReadTheDocs-specific recovery guidance", async () => {
+        const hook = createWebFetchRedirectGuardHook({} as never)
+        const input = createInput()
+        const beforeOutput = createBeforeOutput("https://pybind11.readthedocs.io/en/stable/advanced/eigen.html")
+        const afterOutput = createAfterOutput("Request failed with status code: 404")
+
+        await hook["tool.execute.before"](input, beforeOutput)
+        await hook["tool.execute.after"](input, afterOutput)
+
+        expect(afterOutput.output).toContain("[webfetch-recovery]")
+        expect(afterOutput.output).toContain("ReadTheDocs fetch failed")
+        expect(afterOutput.output).toContain("https://status.readthedocs.org/")
+      })
+    })
+
+    describe("#when webfetch returns a transient 500 error", () => {
+      it("#then should append retry guidance", async () => {
+        const hook = createWebFetchRedirectGuardHook({} as never)
+        const input = createInput()
+        const beforeOutput = createBeforeOutput("https://example.com/transient")
+        const afterOutput = createAfterOutput("Streamable HTTP error: Error POSTing to endpoint: Request failed with status code: 500")
+
+        await hook["tool.execute.before"](input, beforeOutput)
+        await hook["tool.execute.after"](input, afterOutput)
+
+        expect(afterOutput.output).toContain("[webfetch-recovery]")
+        expect(afterOutput.output).toContain("transient HTTP 500")
+        expect(afterOutput.output).toContain("Retry-After")
+      })
+    })
+
+    describe("#when recovery guidance was already appended", () => {
+      it("#then should not append duplicate guidance", async () => {
+        const hook = createWebFetchRedirectGuardHook({} as never)
+        const input = createInput()
+        const output = createAfterOutput("Request failed with status code: 404\n[webfetch-recovery] already present")
+
+        await hook["tool.execute.after"](input, output)
+
+        const occurrences = output.output.split("[webfetch-recovery]").length - 1
+        expect(occurrences).toBe(1)
+      })
+    })
   })
 
   describe("#given a non-webfetch tool", () => {

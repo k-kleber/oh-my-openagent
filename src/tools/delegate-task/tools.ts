@@ -55,7 +55,13 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
       "tool-doc-ripgrep",
       "tool-doc-fd",
       "tool-doc-sd",
-      "fastcode",
+    ],
+    "deep-explorer": [
+      "code-intelligence",
+      "global-tooling-preference",
+      "tool-doc-ripgrep",
+      "tool-doc-fd",
+      "tool-doc-sd",
     ],
     librarian: [
       "global-tooling-preference",
@@ -75,7 +81,7 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
     return desc ? `  - ${name}: ${desc}` : `  - ${name}`
   }).join("\n")
 
-  const brainstormerAllowedSubagents = new Set(["explore", "librarian", "memory-retrieval"])
+  const brainstormerAllowedSubagents = new Set(["explore", "deep-explorer", "librarian", "memory-retrieval"])
 
   const description = `Spawn agent task with category-based or direct agent selection.
   
@@ -95,10 +101,16 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
   \`\`\`
   task(subagent_type="explore", load_skills=[], description="Find patterns", prompt="...", run_in_background=true)
   \`\`\`
+
+  **CORRECT - Testing execution:**
+  \`\`\`
+  task(subagent_type="tester", load_skills=[], description="Run test suite", prompt="Run the relevant tests/build verification commands and report only pass/fail output with failure excerpts.", run_in_background=false)
+  \`\`\`
   
   REQUIRED: Provide ONE of:
   - category: For task delegation (uses Sisyphus-Junior with category-optimized model)
-  - subagent_type: For direct agent invocation (explore, librarian, oracle, etc.)
+  - subagent_type: For direct agent invocation (explore, deep-explorer, librarian, tester, oracle, etc.)
+    - Use \`tester\` when the job is executing tests/build verification and reporting results without diagnosis.
   - specialist: For explicit specialist invocation
   
   **DO NOT provide more than one.** If multiple are provided, the tool will error to ensure deterministic routing.
@@ -107,7 +119,7 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
   - category: Use predefined category → Spawns Sisyphus-Junior with category config
     Available categories:
   ${categoryList}
-  - subagent_type: Use specific agent directly (explore, librarian, oracle, metis, momus)
+  - subagent_type: Use specific agent directly (explore, deep-explorer, librarian, tester, oracle, metis, momus)
   - specialist: Use specific specialist name directly
   - run_in_background: REQUIRED. true=async (returns task_id), false=sync (waits). Use background=true ONLY for parallel exploration with 5+ independent queries.
   - session_id: Existing Task session to continue (from previous task output). Continues agent with FULL CONTEXT PRESERVED - saves tokens, maintains continuity.
@@ -136,6 +148,30 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
     async execute(args: DelegateTaskArgs, toolContext) {
       const ctx = toolContext as ToolContextWithMetadata
 
+      const normalizedSkillNames = new Set(availableSkills.map((skill) => skill.name.trim().toLowerCase()))
+
+      const specialistToken = typeof args.specialist === "string" ? args.specialist.trim() : ""
+      const specialistLooksLikeSkill = specialistToken !== "" && normalizedSkillNames.has(specialistToken.toLowerCase())
+      const subagentToken = typeof args.subagent_type === "string" ? args.subagent_type.trim() : ""
+      const normalizedCategory = typeof args.category === "string" ? args.category.trim().toLowerCase() : ""
+      const normalizedSubagentToken = subagentToken.replace(/^@+/, "").toLowerCase()
+      const normalizedSubagentConfigKey = subagentToken ? getAgentConfigKey(subagentToken) : ""
+      const isCategoryEchoInSubagent = normalizedCategory !== "" && normalizedSubagentToken === normalizedCategory
+      const isWritingCategoryWriterAlias = normalizedCategory === "writing" && normalizedSubagentConfigKey === "writer"
+      const isCategoryImplementationAlias = normalizedSubagentConfigKey === getAgentConfigKey(SISYPHUS_JUNIOR_AGENT)
+
+      if (args.category && (isCategoryEchoInSubagent || isWritingCategoryWriterAlias || isCategoryImplementationAlias)) {
+        args.subagent_type = undefined
+      }
+
+      if (args.category && specialistLooksLikeSkill) {
+        args.load_skills = Array.isArray(args.load_skills) ? args.load_skills : []
+        if (!args.load_skills.some((skill) => skill.trim().toLowerCase() === specialistToken.toLowerCase())) {
+          args.load_skills.push(specialistToken)
+        }
+        args.specialist = undefined
+      }
+
       const routingOptionsCount = [args.category, args.subagent_type, args.specialist].filter(Boolean).length
       if (routingOptionsCount > 1) {
         return `Invalid arguments: Provide ONLY ONE of 'category', 'subagent_type', or 'specialist'. Got ${routingOptionsCount} routing options.`
@@ -158,16 +194,16 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
       const callerAgentConfigKey = getAgentConfigKey(ctx.agent ?? "")
       if (callerAgentConfigKey === "brainstormer") {
         if (args.category) {
-          return `Brainstormer cannot delegate implementation categories. Use subagent_type="explore", "librarian", or "memory-retrieval" only.`
+          return `Brainstormer cannot delegate implementation categories. Use subagent_type="explore", "deep-explorer", "librarian", or "memory-retrieval" only.`
         }
 
         const requestedSubagent = args.subagent_type?.trim().replace(/^@+/, "").toLowerCase()
         if (!requestedSubagent) {
-          return `Brainstormer must specify subagent_type. Allowed: explore, librarian, memory-retrieval.`
+          return `Brainstormer must specify subagent_type. Allowed: explore, deep-explorer, librarian, memory-retrieval.`
         }
 
         if (!brainstormerAllowedSubagents.has(requestedSubagent)) {
-          return `Brainstormer can only delegate to explore, librarian, or memory-retrieval. Received: "${args.subagent_type}".`
+          return `Brainstormer can only delegate to explore, deep-explorer, librarian, or memory-retrieval. Received: "${args.subagent_type}".`
         }
       }
 

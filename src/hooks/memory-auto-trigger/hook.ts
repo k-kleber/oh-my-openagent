@@ -430,7 +430,7 @@ export function createMemoryAutoTriggerHook(ctx: PluginInput, memoryConfig?: Mem
     }
 
     const scopeLine = buildScopePromptLine()
-    const memoryRecallBlock = `\n\n<system-reminder>\nMEMORY AUTO-RECALL:\ntask(subagent_type="memory-retrieval", load_skills=["memory-mcp"], description="Retrieve memory", prompt="Recall and verify memory relevant to: ${original.slice(0, recallMaxQueryChars)}\\nProject: ${projectPath} (${projectName})\\n${scopeLine}", run_in_background=${recallRunInBackground})\nUse only verified items.\n</system-reminder>`
+    const memoryRecallBlock = `\n\n<system-reminder>\nMEMORY AUTO-RECALL:\ntask(subagent_type="memory-retrieval", load_skills=[], description="Retrieve memory", prompt="Recall and verify memory relevant to: ${original.slice(0, recallMaxQueryChars)}\\nProject: ${projectPath} (${projectName})\\n${scopeLine}", run_in_background=${recallRunInBackground})\nUse only verified items.\n</system-reminder>`
     if (!canSpend(state, memoryRecallBlock.length)) return
 
     output.parts[partIndex].text = `${original}${memoryRecallBlock}`

@@ -24,12 +24,12 @@ Parse the user's message for:
 
 ### Step 2: Call memory-retrieval agent
 
-Pass \`memory-mcp\` skill:
+Hindsight and OpenMemory are native MCPs, so no memory skill needs to be mounted:
 
 \`\`\`
 task(
   subagent_type="memory-retrieval",
-  load_skills=["memory-mcp"],
+  load_skills=[],
   description="Retrieve relevant memory",
   prompt="Recall and verify memory relevant to: <search intent>",
   run_in_background=false
@@ -74,8 +74,4 @@ When an observation ledger exists, reduce repeated observations into confidence-
 - Never capture routine work
 - Never exceed the budget
 - Never dump raw memory responses — always summarize`,
-  mcpConfig: {
-    hindsight: { type: "http", url: "http://localhost:8888/mcp" },
-    openmemory: { type: "http", url: "http://localhost:8080/mcp", headers: { "x-api-key": "local-dev-key" } },
-  },
 }

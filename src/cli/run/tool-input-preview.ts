@@ -76,6 +76,14 @@ export function formatToolHeader(toolName: string, input: Record<string, unknown
     }
   }
 
+  if (toolName === "websearch_tavily_search") {
+    const query = str(input.query)
+    return {
+      icon: "◈",
+      title: query ? `Web Search "${query}"` : "Web Search",
+    }
+  }
+
   if (toolName === "grep_app_searchGitHub") {
     const query = str(input.query)
     return {

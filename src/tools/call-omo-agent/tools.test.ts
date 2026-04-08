@@ -285,6 +285,118 @@ describe("createCallOmoAgent", () => {
     expect(result).not.toContain("Cannot call non-subagent agent")
   })
 
+  test("allows deep-explorer runtime subagent", async () => {
+    //#given
+    const toolDef = createCallOmoAgent(
+      {
+        ...mockCtx,
+        client: createMockClientWithAgents([{ name: "deep-explorer", mode: "subagent" }]),
+      },
+      mockBackgroundManager,
+      [],
+    )
+    const executeFunc = toolDef.execute as Function
+
+    //#when
+    const result = await executeFunc(
+      {
+        description: "Test",
+        prompt: "Test prompt",
+        subagent_type: "deep-explorer",
+        run_in_background: true,
+      },
+      { sessionID: "test", messageID: "msg", agent: "test", abort: new AbortController().signal },
+    )
+
+    //#then
+    expect(result).not.toContain("Invalid agent type")
+    expect(result).not.toContain("Cannot call non-subagent agent")
+  })
+
+  test("uses deep-explorer configured model override when launching background subagent", async () => {
+    //#given
+    const launch = mock((_input: { model?: { providerID: string; modelID: string; variant?: string } }) => Promise.resolve({
+      id: "task-deep-model",
+      sessionID: "deep-session",
+      description: "Deep task",
+      agent: "deep-explorer",
+      status: "pending",
+    }))
+    const managerWithLaunch = {
+      launch,
+      getTask: mock(() => ({ sessionID: "deep-session", status: "pending" })),
+    }
+    const toolDef = createCallOmoAgent(
+      {
+        ...mockCtx,
+        client: {
+          app: {
+            agents: mock(() => Promise.resolve({ data: [{ name: "deep-explorer", mode: "subagent", model: "openai/gpt-5.3-codex" }] })),
+            providers: mock(() => Promise.resolve({ data: [{ models: ["github-copilot/gemini-3-flash-preview"] }] })),
+          },
+          session: {
+            messages: mock(() => Promise.resolve({ data: [] })),
+          },
+        },
+        directory: "/test",
+      },
+      managerWithLaunch,
+      [],
+      {
+        "deep-explorer": {
+          model: "github-copilot/gemini-3-flash-preview",
+        },
+      },
+    )
+    const executeFunc = toolDef.execute as Function
+
+    //#when
+    await executeFunc(
+      {
+        description: "Deep task",
+        prompt: "Trace everything",
+        subagent_type: "deep-explorer",
+        run_in_background: true,
+      },
+      { sessionID: "test", messageID: "msg", agent: "test", abort: new AbortController().signal, metadata: mock(async () => {}) },
+    )
+
+    //#then
+    const launchArgs = launch.mock.calls.at(-1)?.[0]
+    expect(launchArgs.model).toEqual({
+      providerID: "github-copilot",
+      modelID: "gemini-3-flash-preview",
+    })
+  })
+
+  test("allows tester runtime subagent", async () => {
+    //#given
+    const toolDef = createCallOmoAgent(
+      {
+        ...mockCtx,
+        client: createMockClientWithAgents([{ name: "tester", mode: "subagent" }]),
+      },
+      mockBackgroundManager,
+      [],
+    )
+    const executeFunc = toolDef.execute as Function
+
+    //#when
+    const result = await executeFunc(
+      {
+        description: "Test",
+        prompt: "Run tests",
+        subagent_type: "tester",
+        run_in_background: true,
+      },
+      { sessionID: "test", messageID: "msg", agent: "test", abort: new AbortController().signal },
+    )
+
+    //#then
+    expect(result).not.toContain("Invalid agent type")
+    expect(result).not.toContain("Cannot call non-subagent agent")
+  })
+
   test("blocks call_omo_agent when caller is brainstormer", async () => {
     //#given
     const toolDef = createCallOmoAgent(mockCtx, mockBackgroundManager, [])

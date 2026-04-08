@@ -64,8 +64,4 @@ If no insights pass threshold: \`No high-signal pre-compaction memory found; ski
 - trigger used (PreCompact hook or manual)
 - items captured (or explicit no-op)
 - destination per item`,
-  mcpConfig: {
-    hindsight: { type: "http", url: "http://localhost:8888/mcp" },
-    openmemory: { type: "http", url: "http://localhost:8080/mcp", headers: { "x-api-key": "local-dev-key" } },
-  },
 }

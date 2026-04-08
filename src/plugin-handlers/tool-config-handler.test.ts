@@ -321,6 +321,8 @@ describe("applyToolConfig", () => {
         expect(agent.permission.bash).toBe("deny")
         expect(agent.permission.interactive_bash).toBe("deny")
         expect(agent.permission.apply_patch).toBe("deny")
+        expect(agent.permission.serena_read_memory).toBe("deny")
+        expect(agent.permission.serena_list_memories).toBe("deny")
         expect(agent.permission.serena_create_text_file).toBe("deny")
         expect(agent.permission.serena_replace_content).toBe("deny")
         expect(agent.permission.serena_replace_symbol_body).toBe("deny")
@@ -355,7 +357,60 @@ describe("applyToolConfig", () => {
         expect(agent.permission.interactive_bash).toBe("deny")
         expect(agent.permission.task).toBe("allow")
         expect(agent.permission.call_omo_agent).toBe("deny")
+        expect(agent.permission.serena_read_memory).toBe("deny")
+        expect(agent.permission.serena_list_memories).toBe("deny")
+        expect(agent.permission.serena_delete_memory).toBe("deny")
+        expect(agent.permission.serena_edit_memory).toBe("deny")
+        expect(agent.permission.serena_write_memory).toBe("deny")
       })
+    })
+  })
+
+  describe("#given tester agent", () => {
+    describe("#when applying tool config", () => {
+      it("#then should enforce tester execution-only permissions", () => {
+        const params = createParams({ agents: ["tester"] })
+
+        applyToolConfig(params)
+
+        const agent = params.agentResult.tester as {
+          permission: Record<string, unknown>
+        }
+
+        expect(agent.permission.write).toBe("deny")
+        expect(agent.permission.edit).toBe("deny")
+        expect(agent.permission.apply_patch).toBe("deny")
+        expect(agent.permission.task).toBe("deny")
+        expect(agent.permission.call_omo_agent).toBe("deny")
+        expect(agent.permission.question).toBe("deny")
+        expect(agent.permission.interactive_bash).toBe("deny")
+        expect(agent.permission.serena_read_memory).toBe("deny")
+        expect(agent.permission.serena_list_memories).toBe("deny")
+        expect(agent.permission.serena_execute_shell_command).toBe("deny")
+      })
+    })
+  })
+
+  describe("#given primary agents with task access", () => {
+    describe("#when applying tool config", () => {
+      it.each(["sisyphus", "hephaestus", "prometheus", "researcher", "writer"])(
+        "#then should deny Serena memory tools for %s agent",
+        (agentName) => {
+          const params = createParams({ agents: [agentName] })
+
+          applyToolConfig(params)
+
+          const agent = params.agentResult[agentName] as {
+            permission: Record<string, unknown>
+          }
+
+          expect(agent.permission.serena_read_memory).toBe("deny")
+          expect(agent.permission.serena_list_memories).toBe("deny")
+          expect(agent.permission.serena_delete_memory).toBe("deny")
+          expect(agent.permission.serena_edit_memory).toBe("deny")
+          expect(agent.permission.serena_write_memory).toBe("deny")
+        },
+      )
     })
   })
 })

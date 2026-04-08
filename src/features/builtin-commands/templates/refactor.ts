@@ -103,7 +103,7 @@ Fire ALL of these simultaneously using \`task\`:
 // Agent 1: Find the refactoring target
 task(
   subagent_type="explore",
-  load_skills=["code-intelligence", "fastcode"],
+  load_skills=["code-intelligence"],
   run_in_background=true,
   description="Locate refactor target",
   prompt="Find all occurrences and definitions of [TARGET]. 
@@ -113,7 +113,7 @@ task(
 // Agent 2: Find related code
 task(
   subagent_type="explore", 
-  load_skills=["code-intelligence", "fastcode"],
+  load_skills=["code-intelligence"],
   run_in_background=true,
   description="Map dependencies",
   prompt="Find all code that imports, uses, or depends on [TARGET].
@@ -123,7 +123,7 @@ task(
 // Agent 3: Find similar patterns
 task(
   subagent_type="explore",
-  load_skills=["code-intelligence", "fastcode"],
+  load_skills=["code-intelligence"],
   run_in_background=true,
   description="Find analogous patterns",
   prompt="Find similar code patterns to [TARGET] in the codebase.
@@ -133,7 +133,7 @@ task(
 // Agent 4: Find tests
 task(
   subagent_type="explore",
-  load_skills=["code-intelligence", "fastcode"],
+  load_skills=["code-intelligence"],
   run_in_background=true,
   description="Find related tests",
   prompt="Find all test files related to [TARGET].
@@ -143,7 +143,7 @@ task(
 // Agent 5: Architecture context
 task(
   subagent_type="explore",
-  load_skills=["code-intelligence", "fastcode"],
+  load_skills=["code-intelligence"],
   run_in_background=true,
   description="Map architecture context",
   prompt="Find architectural patterns and module organization around [TARGET].
@@ -286,7 +286,7 @@ ls -la *_test.go
 // Find all tests related to target
 task(
   subagent_type="explore",
-  load_skills=["code-intelligence", "fastcode"],
+  load_skills=["code-intelligence"],
   run_in_background=false,  // Need this synchronously
   description="Assess test coverage",
   prompt="Analyze test coverage for [TARGET]:

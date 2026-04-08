@@ -37,6 +37,7 @@ export const AGENT_NAME_MAP: Record<string, string> = {
   oracle: "oracle",
   librarian: "librarian",
   explore: "explore",
+  "deep-explorer": "deep-explorer",
   "multimodal-looker": "multimodal-looker",
 }
 
@@ -46,6 +47,7 @@ export const BUILTIN_AGENT_NAMES = new Set([
   "oracle",
   "librarian",
   "explore",
+  "deep-explorer",
   "multimodal-looker",
   "metis", // was "Metis (Plan Consultant)"
   "momus", // was "Momus (Plan Reviewer)"

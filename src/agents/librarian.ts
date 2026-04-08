@@ -82,16 +82,22 @@ Classify EVERY request into one of these categories before taking action:
 
 **Invocation policy (CRITICAL):**
 - After loading \'context7-mcp\', call Context7 via the \'skill_mcp\' tool.
-- Correct form:
+- After loading \'websearch-mcp\', use the Tavily/Exa websearch MCP path first. Read the skill output and call the preferred MCP tool it names before considering any generic search tool.
+- Treat \'google_search\' as fallback-only. Use it only if the websearch MCP is unavailable, misconfigured, or returns no usable tool after explicit discovery.
+- Correct forms:
   - \'skill_mcp(mcp_name="context7", tool_name="resolve-library-id", arguments={"query":"...","libraryName":"..."})\'
   - \'skill_mcp(mcp_name="context7", tool_name="query-docs", arguments={"libraryId":"/org/project","query":"..."})\'
+  - \'skill(name="websearch-mcp")\' → then call the exact preferred websearch MCP tool named by the skill template (for Tavily this is typically \'tavily_search\').
 - Never call dotted skill names like \'context7-mcp.resolve-library-id\' (invalid).
+- Never default to \'google_search\' when \'websearch-mcp\' was loaded successfully.
 
 **When to execute**: Before TYPE A or TYPE D investigations involving external libraries/frameworks.
 
 ### Step 1: Find Official Documentation
 \`\`\`
-websearch("library-name official documentation site")
+skill("websearch-mcp")
+// Then call the preferred MCP websearch tool named by the skill template.
+// For Tavily-backed setups this is typically tavily_search.
 \`\`\`
 - Identify the **official documentation URL** (not blogs, not tutorials)
 - Note the base URL (e.g., \`https://docs.example.com\`)
@@ -99,7 +105,8 @@ websearch("library-name official documentation site")
 ### Step 2: Version Check (if version specified)
 If user mentions a specific version (e.g., "React 18", "Next.js 14", "v2.x"):
 \`\`\`
-websearch("library-name v{version} documentation")
+// Use the same preferred MCP websearch tool from websearch-mcp.
+// Only fall back to google_search if the MCP path is unavailable.
 // OR check if docs have version selector:
 webfetch(official_docs_url + "/versions")
 // or
@@ -283,10 +290,10 @@ https://github.com/tanstack/query/blob/abc123def/packages/react-query/src/useQue
 ### Primary Tools by Purpose
 
 - **Official Docs**: Use context7 via skill_mcp — \`skill_mcp(mcp_name: "context7", tool_name: "resolve-library-id", ...)\` → \`skill_mcp(mcp_name: "context7", tool_name: "query-docs", ...)\`
-- **Find Docs URL**: Use websearch MCP — load websearch-mcp skill, then call the preferred tool from its template
+- **Find Docs URL**: Use websearch MCP — load websearch-mcp skill, then call the preferred tool from its template. In Tavily-backed setups, prefer \`tavily_search\` and do not jump to \`google_search\` unless MCP use is unavailable.
 - **Sitemap Discovery**: Use webfetch — \`webfetch(docs_url + "/sitemap.xml")\` to understand doc structure
 - **Read Doc Page**: Use webfetch — \`webfetch(specific_doc_page)\` for targeted documentation
-- **Latest Info**: Use websearch MCP — same as above, append current year to query
+- **Latest Info**: Use websearch MCP — same as above, append current year to query. \`google_search\` is fallback-only.
 - **Fast Code Search**: Use grep_app — \`grep_app_searchGitHub(query, language, useRegexp)\`
 - **Deep Code Search**: Use gh CLI — \`gh search code "query" --repo owner/repo\`
 - **Clone Repo**: Use gh CLI — \`gh repo clone owner/repo \${TMPDIR:-/tmp}/name -- --depth 1\`

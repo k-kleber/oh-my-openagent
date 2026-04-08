@@ -4,6 +4,8 @@ import { resolveSessionDirectory } from "../../shared"
 import { subagentSessions, syncSubagentSessions } from "../../features/claude-code-session-state"
 import type { CallOmoAgentArgs } from "./types"
 import type { ToolContextWithMetadata } from "./tool-context-with-metadata"
+import { TESTER_SESSION_PERMISSION } from "../../shared/tester-session-permission"
+import { QUESTION_DENIED_SESSION_PERMISSION } from "../../shared/question-denied-session-permission"
 
 export async function resolveOrCreateSessionId(
 	ctx: PluginInput,
@@ -40,6 +42,7 @@ export async function resolveOrCreateSessionId(
 	const body = {
 		parentID: toolContext.sessionID,
 		title: `${args.description} (@${args.subagent_type} subagent)`,
+		permission: args.subagent_type === "tester" ? TESTER_SESSION_PERMISSION : QUESTION_DENIED_SESSION_PERMISSION,
 	}
 
 	const createResult = await ctx.client.session.create({

@@ -15,6 +15,7 @@ export const TARGET_TOOLS = new Set([
   "context7_resolve-library-id",
   "context7_query-docs",
   "websearch_web_search_exa",
+  "websearch_tavily_search",
   "context7_get-library-docs",
   "grep_app_searchgithub",
 ]);

@@ -2,6 +2,7 @@ export type CompactionAgentConfigCheckpoint = {
   agent?: string
   model?: { providerID: string; modelID: string }
   tools?: Record<string, boolean>
+  category?: string  // Only set when explicitly provided via category= in task()
 }
 
 const checkpoints = new Map<string, CompactionAgentConfigCheckpoint>()
@@ -20,6 +21,7 @@ function cloneCheckpoint(
         }
       : {}),
     ...(checkpoint.tools ? { tools: { ...checkpoint.tools } } : {}),
+    ...(checkpoint.category ? { category: checkpoint.category } : {}),
   }
 }
 

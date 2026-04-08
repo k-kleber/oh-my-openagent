@@ -7,6 +7,7 @@ const afterEachFn = bunTest.afterEach
 
 const { executeBackgroundTask } = require("./background-task")
 const { __setTimingConfig, __resetTimingConfig } = require("./timing")
+const { TESTER_SESSION_PERMISSION } = require("../../shared/tester-session-permission")
 
 describeFn("executeBackgroundTask output/session metadata compatibility", () => {
   beforeEachFn(() => {
@@ -156,6 +157,51 @@ describeFn("executeBackgroundTask output/session metadata compatibility", () => 
     expectFn(metadataCalls[0].metadata.sessionId).toBe("ses_late_123")
   })
 
+  testFn("returns launch error details when background startup fails before session becomes usable", async () => {
+    //#given - task enters interrupt without ever exposing a usable child session id
+    const metadataCalls: any[] = []
+    const manager = {
+      launch: async () => ({
+        id: "bg_failed_start",
+        sessionID: undefined,
+        description: "Broken session",
+        agent: "explore",
+        status: "pending",
+      }),
+      getTask: () => ({
+        status: "interrupt",
+        error: "The socket connection was closed unexpectedly",
+      }),
+    }
+
+    const result = await executeBackgroundTask(
+      {
+        description: "Broken session",
+        prompt: "check",
+        run_in_background: true,
+        load_skills: [],
+      },
+      {
+        sessionID: "ses_parent",
+        callID: "call_failed",
+        metadata: async (value: any) => metadataCalls.push(value),
+        abort: new AbortController().signal,
+      },
+      { manager },
+      { sessionID: "ses_parent", messageID: "msg_failed" },
+      "explore",
+      undefined,
+      undefined,
+      undefined,
+    )
+
+    //#then - caller gets an explicit startup error instead of an unusable session link
+    expectFn(result).toContain("Launch background task failed")
+    expectFn(result).toContain("The socket connection was closed unexpectedly")
+    expectFn(result).not.toContain("<task_metadata>")
+    expectFn(metadataCalls).toHaveLength(0)
+  })
+
   testFn("passes question-deny session permission when launching delegate task", async () => {
     //#given - delegate task background launch should deny question at session creation time
     const launchCalls: any[] = []
@@ -200,5 +246,46 @@ describeFn("executeBackgroundTask output/session metadata compatibility", () => 
     expectFn(launchCalls[0].sessionPermission).toEqual([
       { permission: "question", action: "deny", pattern: "*" },
     ])
+  })
+
+  testFn("passes tester session permission when launching tester delegate task", async () => {
+    const launchCalls: any[] = []
+    const manager = {
+      launch: async (input: any) => {
+        launchCalls.push(input)
+        return {
+          id: "bg_tester_permission",
+          sessionID: "ses_tester_permission_123",
+          description: "Tester session",
+          agent: "tester",
+          status: "running",
+        }
+      },
+      getTask: () => ({ sessionID: "ses_tester_permission_123" }),
+    }
+
+    await executeBackgroundTask(
+      {
+        description: "Tester session",
+        prompt: "run tests",
+        run_in_background: true,
+        load_skills: [],
+      },
+      {
+        sessionID: "ses_parent",
+        callID: "call_tester",
+        metadata: async () => {},
+        abort: new AbortController().signal,
+      },
+      { manager },
+      { sessionID: "ses_parent", messageID: "msg_tester" },
+      "tester",
+      undefined,
+      undefined,
+      undefined,
+    )
+
+    expectFn(launchCalls).toHaveLength(1)
+    expectFn(launchCalls[0].sessionPermission).toEqual(TESTER_SESSION_PERMISSION)
   })
 })

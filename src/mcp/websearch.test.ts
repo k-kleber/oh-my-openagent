@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import { createWebsearchConfig } from "./websearch"
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
+import { tmpdir } from "node:os"
 
 describe("websearch MCP provider configuration", () => {
   let originalExaApiKey: string | undefined
@@ -38,6 +41,19 @@ describe("websearch MCP provider configuration", () => {
     expect(result.url).toContain("tools=web_search_exa")
     expect(result.type).toBe("remote")
     expect(result.enabled).toBe(true)
+  })
+
+  test("auto-selects Tavily when provider omitted and Tavily key exists", () => {
+    //#given
+    process.env.TAVILY_API_KEY = "test-tavily-key-67890"
+    delete process.env.EXA_API_KEY
+
+    //#when
+    const result = createWebsearchConfig()
+
+    //#then
+    expect(result.url).toContain("mcp.tavily.com")
+    expect(result.headers).toEqual({ Authorization: "Bearer test-tavily-key-67890" })
   })
 
   test("returns Exa config when provider is 'exa'", () => {
@@ -115,7 +131,7 @@ describe("websearch MCP provider configuration", () => {
     expect(createTavilyConfig).toThrow("TAVILY_API_KEY environment variable is required")
   })
 
-  test("returns Exa when both keys present but no explicit provider", () => {
+  test("returns Tavily when both keys present but no explicit provider", () => {
     //#given
     const exaKey = "test-exa-key"
     process.env.EXA_API_KEY = exaKey
@@ -125,9 +141,53 @@ describe("websearch MCP provider configuration", () => {
     const result = createWebsearchConfig()
 
     //#then
-    expect(result.url).toContain("mcp.exa.ai")
-    expect(result.url).toContain(`exaApiKey=${encodeURIComponent(exaKey)}`)
-    expect(result.headers).toEqual({ "x-api-key": exaKey })
+    expect(result.url).toContain("mcp.tavily.com")
+    expect(result.headers).toEqual({ Authorization: "Bearer test-tavily-key" })
+  })
+
+  test("reads Tavily key from project .secrets when env is absent", () => {
+    //#given
+    const dir = mkdtempSync(join(tmpdir(), "omo-websearch-config-"))
+    const previousCwd = process.cwd()
+    delete process.env.TAVILY_API_KEY
+    delete process.env.EXA_API_KEY
+    writeFileSync(join(dir, ".secrets"), "TAVILY_API_KEY=test-from-secrets\n")
+
+    process.chdir(dir)
+    try {
+      //#when
+      const result = createWebsearchConfig()
+
+      //#then
+      expect(result.url).toContain("mcp.tavily.com")
+      expect(result.headers).toEqual({ Authorization: "Bearer test-from-secrets" })
+    } finally {
+      process.chdir(previousCwd)
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test("reads Exa key from project .secrets when Exa provider is explicit", () => {
+    //#given
+    const dir = mkdtempSync(join(tmpdir(), "omo-websearch-config-"))
+    const previousCwd = process.cwd()
+    delete process.env.TAVILY_API_KEY
+    delete process.env.EXA_API_KEY
+    writeFileSync(join(dir, ".secrets"), "EXA_API_KEY=exa-from-secrets\n")
+
+    process.chdir(dir)
+    try {
+      //#when
+      const result = createWebsearchConfig({ provider: "exa" })
+
+      //#then
+      expect(result.url).toContain("mcp.exa.ai")
+      expect(result.url).toContain(`exaApiKey=${encodeURIComponent("exa-from-secrets")}`)
+      expect(result.headers).toEqual({ "x-api-key": "exa-from-secrets" })
+    } finally {
+      process.chdir(previousCwd)
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 
   test("Tavily config uses Authorization Bearer header format", () => {

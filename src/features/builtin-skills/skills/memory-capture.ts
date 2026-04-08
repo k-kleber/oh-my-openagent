@@ -9,10 +9,10 @@ When the user explicitly wants to remember something: "remember that X", "captur
 
 ## Classify first
 
-| Type     | Destination | MCP Server  | skill_mcp tool_name |
-| -------- | ----------- | ----------- | ------------------- |
-| Temporal | Hindsight   | \`hindsight\` | \`retain\`            |
-| Durable  | OpenMemory  | \`openmemory\`| \`openmemory_store\`  |
+| Type     | Destination | Native tool |
+| -------- | ----------- | ----------- |
+| Temporal | Hindsight   | \`hindsight_retain\` |
+| Durable  | OpenMemory  | \`openmemory_store\` |
 
 ## Workflow
 
@@ -22,9 +22,9 @@ Determine the MemoryRecordType. Reject anything that doesn't fit a category.
 
 ### 2a. Temporal → Hindsight
 
-Call via \`skill_mcp\`:
+Call the native MCP tool directly:
 \`\`\`
-skill_mcp(mcp_name="hindsight", tool_name="retain", arguments={
+hindsight_retain({
   "content": "[<type>] <content>",
   "context": "<projectPath>",
   "tags": ["<projectName>", "<type>"],
@@ -34,9 +34,9 @@ skill_mcp(mcp_name="hindsight", tool_name="retain", arguments={
 
 ### 2b. Durable → OpenMemory
 
-Call via \`skill_mcp\`:
+Call the native MCP tool directly:
 \`\`\`
-skill_mcp(mcp_name="openmemory", tool_name="openmemory_store", arguments={
+openmemory_store({
   "content": "[approved] [<type>] <content>",
   "tags": ["<projectName>", "<type>"],
   "metadata": {"type": "<type>", "scope": "project", "approvalState": "approved"}
@@ -54,9 +54,5 @@ skill_mcp(mcp_name="openmemory", tool_name="openmemory_store", arguments={
 - Reject uncategorized content
 - If conflict found with current codebase, pause and ask user: \`CONFLICT: memory says X but current code shows Y — which is truth?\`
 - Do NOT write durable memory into Hindsight
-- Use skill_mcp for Hindsight and OpenMemory`,
-  mcpConfig: {
-    hindsight: { type: "http", url: "http://localhost:8888/mcp" },
-    openmemory: { type: "http", url: "http://localhost:8080/mcp", headers: { "x-api-key": "local-dev-key" } },
-  },
+- Use native memory MCP tools for Hindsight and OpenMemory`,
 }

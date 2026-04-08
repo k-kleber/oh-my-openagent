@@ -42,4 +42,20 @@ describe("skill_mcp builtin MCP hint", () => {
       tool.execute({ mcp_name: "unknown-mcp", tool_name: "x" }, mockContext),
     ).rejects.toThrow(/Load the skill first/)
   })
+
+  it("returns builtin hint for openmemory", async () => {
+    const tool = createSkillMcpTool({
+      manager: new SkillMcpManager(),
+      getLoadedSkills: () => [],
+      getSessionID: () => "session",
+    })
+
+    await expect(
+      tool.execute({ mcp_name: "openmemory", tool_name: "openmemory_query" }, mockContext),
+    ).rejects.toThrow(/builtin MCP/)
+
+    await expect(
+      tool.execute({ mcp_name: "openmemory", tool_name: "openmemory_query" }, mockContext),
+    ).rejects.toThrow(/openmemory_query/)
+  })
 })

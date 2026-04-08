@@ -342,7 +342,6 @@ describe("sisyphus-task", () => {
           { name: "tool-doc-ripgrep", description: "test" },
           { name: "tool-doc-fd", description: "test" },
           { name: "tool-doc-sd", description: "test" },
-          { name: "fastcode", description: "test" },
         ],
       })
 
@@ -376,7 +375,6 @@ describe("sisyphus-task", () => {
         "tool-doc-ripgrep",
         "tool-doc-fd",
         "tool-doc-sd",
-        "fastcode",
       ])
       expect(resolveSkillContentSpy).toHaveBeenCalledWith(
         [
@@ -385,7 +383,6 @@ describe("sisyphus-task", () => {
           "tool-doc-ripgrep",
           "tool-doc-fd",
           "tool-doc-sd",
-          "fastcode",
         ],
         expect.any(Object),
       )
@@ -684,14 +681,16 @@ describe("sisyphus-task", () => {
       //#given
       const { createDelegateTask } = require("./tools")
 
+      const launchedTask = {
+        id: "task-override",
+        status: "pending",
+        description: "Override test",
+        agent: "sisyphus-junior",
+        sessionID: "test-session",
+      }
       const mockManager = {
-        launch: async () => ({
-          id: "task-override",
-          status: "pending",
-          description: "Override test",
-          agent: "sisyphus-junior",
-          sessionID: "test-session",
-        }),
+        launch: async () => launchedTask,
+        getTask: () => launchedTask,
       }
 
       const mockClient = {
@@ -749,8 +748,10 @@ describe("sisyphus-task", () => {
       //#given
       const { createDelegateTask } = require("./tools")
 
+      const launchedTask = { id: "task-123", status: "pending", description: "Test task", agent: "sisyphus-junior", sessionID: "test-session" }
       const mockManager = {
-        launch: async () => ({ id: "task-123", status: "pending", description: "Test task", agent: "sisyphus-junior", sessionID: "test-session" }),
+        launch: async () => launchedTask,
+        getTask: () => launchedTask,
       }
 
       const mockClient = {
@@ -801,14 +802,19 @@ describe("sisyphus-task", () => {
       //#given
       const { createDelegateTask } = require("./tools")
 
+      let launchedTask: { id: string; status: string; description: string; agent: string; sessionID: string } | undefined
       const mockManager = {
-        launch: async (taskArgs: any) => ({
-          id: "task-specialist",
-          status: "pending",
-          description: "Specialist test",
-          agent: taskArgs.agent,
-          sessionID: "test-session",
-        }),
+        launch: async (taskArgs: any) => {
+          launchedTask = {
+            id: "task-specialist",
+            status: "pending",
+            description: "Specialist test",
+            agent: taskArgs.agent,
+            sessionID: "test-session",
+          }
+          return launchedTask
+        },
+        getTask: () => launchedTask,
       }
 
       const mockClient = {
@@ -845,7 +851,14 @@ describe("sisyphus-task", () => {
         abort: new AbortController().signal,
       }
 
-      const args = {
+      const args: {
+        description: string
+        prompt: string
+        specialist: string
+        subagent_type?: string
+        run_in_background: boolean
+        load_skills: string[]
+      } = {
         description: "Specialist test",
         prompt: "Do something",
         specialist: "my-specialist",
@@ -861,11 +874,215 @@ describe("sisyphus-task", () => {
       expect(result).toContain("Background task launched")
     })
 
+    test("treats skill-backed specialist token as load_skills when category is present", async () => {
+      //#given
+      const { createDelegateTask } = require("./tools")
+
+      let launchInput: any
+      const mockManager = {
+        launch: async (taskArgs: any) => {
+          launchInput = taskArgs
+          return {
+            id: "task-skill-specialist",
+            status: "running",
+            description: "Category with skill specialist",
+            agent: "sisyphus-junior",
+            sessionID: "test-session",
+          }
+        },
+        getTask: () => launchInput ? { sessionID: "test-session", status: "running" } : undefined,
+      }
+
+      const mockClient = {
+        app: { agents: async () => ({ data: [] }) },
+        config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
+        provider: { list: async () => ({ data: { connected: ["openai", "anthropic", "google"] } }) },
+        model: { list: async () => ({ data: [{ provider: "openai", id: "gpt-5.3-codex" }] }) },
+        session: {
+          get: async () => ({ data: { directory: "/project" } }),
+          create: async () => ({ data: { id: "test-session" } }),
+          prompt: async () => ({ data: {} }),
+          promptAsync: async () => ({ data: {} }),
+          messages: async () => ({ data: [] }),
+          status: async () => ({ data: {} }),
+        },
+      }
+
+      const tool = createDelegateTask({
+        manager: mockManager,
+        client: mockClient,
+        connectedProvidersOverride: TEST_CONNECTED_PROVIDERS,
+        availableModelsOverride: createTestAvailableModels(),
+        availableSkills: [
+          { name: "cpp-specialist", description: "C++ specialist skill", location: "user" },
+        ],
+      })
+
+      const toolContext = {
+        sessionID: "parent-session",
+        messageID: "parent-message",
+        agent: "sisyphus",
+        abort: new AbortController().signal,
+      }
+
+      const args: any = {
+        description: "Category with skill specialist",
+        prompt: "Implement C++ fix",
+        category: "focused",
+        specialist: "cpp-specialist",
+        run_in_background: true,
+        load_skills: [],
+      }
+
+      //#when
+      const result = await tool.execute(args, toolContext)
+
+      //#then
+      expect(result).toContain("Background task launched")
+      expect(args.specialist).toBeUndefined()
+      expect(args.load_skills).toContain("cpp-specialist")
+      expect(launchInput.skills).toContain("cpp-specialist")
+      expect(launchInput.agent).toBe("Sisyphus-Junior")
+    })
+
+    test("ignores writing category echoed into subagent_type", async () => {
+      //#given
+      const { createDelegateTask } = require("./tools")
+
+      let launchInput: any
+      const mockManager = {
+        launch: async (taskArgs: any) => {
+          launchInput = taskArgs
+          return {
+            id: "task-writing-echo",
+            status: "running",
+            description: "Writing echo",
+            agent: taskArgs.agent,
+            sessionID: "test-session",
+          }
+        },
+        getTask: () => launchInput ? { sessionID: "test-session", status: "running" } : undefined,
+      }
+
+      const mockClient = {
+        app: { agents: async () => ({ data: [] }) },
+        config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
+        provider: { list: async () => ({ data: { connected: ["openai", "anthropic", "google"] } }) },
+        model: { list: async () => ({ data: [{ provider: "openai", id: "gpt-5.3-codex" }] }) },
+        session: {
+          get: async () => ({ data: { directory: "/project" } }),
+          create: async () => ({ data: { id: "test-session" } }),
+          prompt: async () => ({ data: {} }),
+          promptAsync: async () => ({ data: {} }),
+          messages: async () => ({ data: [] }),
+          status: async () => ({ data: {} }),
+        },
+      }
+
+      const tool = createDelegateTask({
+        manager: mockManager,
+        client: mockClient,
+        connectedProvidersOverride: TEST_CONNECTED_PROVIDERS,
+        availableModelsOverride: createTestAvailableModels(),
+      })
+
+      const toolContext = {
+        sessionID: "parent-session",
+        messageID: "parent-message",
+        agent: "sisyphus",
+        abort: new AbortController().signal,
+      }
+
+      const args: any = {
+        description: "Writing echo",
+        prompt: "Write docs",
+        category: "writing",
+        subagent_type: "writing",
+        run_in_background: true,
+        load_skills: [],
+      }
+
+      //#when
+      const result = await tool.execute(args, toolContext)
+
+      //#then
+      expect(result).toContain("Background task launched")
+      expect(args.subagent_type).toBe("Sisyphus-Junior")
+      expect(launchInput.agent).toBe("Sisyphus-Junior")
+    })
+
+    test("ignores Writer alias when writing category is present", async () => {
+      //#given
+      const { createDelegateTask } = require("./tools")
+
+      let launchInput: any
+      const mockManager = {
+        launch: async (taskArgs: any) => {
+          launchInput = taskArgs
+          return {
+            id: "task-writing-writer",
+            status: "running",
+            description: "Writing alias",
+            agent: taskArgs.agent,
+            sessionID: "test-session",
+          }
+        },
+        getTask: () => launchInput ? { sessionID: "test-session", status: "running" } : undefined,
+      }
+
+      const mockClient = {
+        app: { agents: async () => ({ data: [] }) },
+        config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
+        provider: { list: async () => ({ data: { connected: ["openai", "anthropic", "google"] } }) },
+        model: { list: async () => ({ data: [{ provider: "openai", id: "gpt-5.3-codex" }] }) },
+        session: {
+          get: async () => ({ data: { directory: "/project" } }),
+          create: async () => ({ data: { id: "test-session" } }),
+          prompt: async () => ({ data: {} }),
+          promptAsync: async () => ({ data: {} }),
+          messages: async () => ({ data: [] }),
+          status: async () => ({ data: {} }),
+        },
+      }
+
+      const tool = createDelegateTask({
+        manager: mockManager,
+        client: mockClient,
+        connectedProvidersOverride: TEST_CONNECTED_PROVIDERS,
+        availableModelsOverride: createTestAvailableModels(),
+      })
+
+      const toolContext = {
+        sessionID: "parent-session",
+        messageID: "parent-message",
+        agent: "sisyphus",
+        abort: new AbortController().signal,
+      }
+
+      const args: any = {
+        description: "Writing alias",
+        prompt: "Write docs",
+        category: "writing",
+        subagent_type: "Writer (Content Partner)",
+        run_in_background: true,
+        load_skills: [],
+      }
+
+      //#when
+      const result = await tool.execute(args, toolContext)
+
+      //#then
+      expect(result).toContain("Background task launched")
+      expect(args.subagent_type).toBe("Sisyphus-Junior")
+      expect(launchInput.agent).toBe("Sisyphus-Junior")
+    })
+
     test("proceeds without error when systemDefaultModel is undefined", async () => {
       // given a mock client with no model in config
       const { createDelegateTask } = require("./tools")
       
-       const mockManager = { launch: async () => ({ id: "task-123", status: "pending", description: "Test task", agent: "sisyphus-junior", sessionID: "test-session" }) }
+       const launchedTask = { id: "task-123", status: "pending", description: "Test task", agent: "sisyphus-junior", sessionID: "test-session" }
+       const mockManager = { launch: async () => launchedTask, getTask: () => launchedTask }
        const mockClient = {
          app: { agents: async () => ({ data: [] }) },
          config: { get: async () => ({}) }, // No model configured
@@ -1665,6 +1882,50 @@ describe("sisyphus-task", () => {
       expect(result).toContain("Done")
     }, { timeout: 10000 })
 
+    test("brainstormer allows deep-explorer subagent delegation", async () => {
+      // given
+      const { createDelegateTask } = require("./tools")
+      let promptCalled = false
+      const mockManager = { launch: async () => ({}) }
+      const mockClient = {
+        app: {
+          agents: async () => ({ data: [{ name: "deep-explorer", mode: "subagent", model: { providerID: "openai", modelID: "gpt-5.3-codex" } }] }),
+        },
+        config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
+        session: {
+          get: async () => ({ data: { directory: "/project" } }),
+          create: async () => ({ data: { id: "ses_deep_explorer_ok" } }),
+          prompt: async () => {
+            promptCalled = true
+            return { data: {} }
+          },
+          promptAsync: async () => {
+            promptCalled = true
+            return { data: {} }
+          },
+          messages: async () => ({ data: [{ info: { role: "assistant" }, parts: [{ type: "text", text: "Done" }] }] }),
+          status: async () => ({ data: { ses_deep_explorer_ok: { type: "idle" } } }),
+        },
+      }
+      const tool = createDelegateTask({ manager: mockManager, client: mockClient })
+
+      // when
+      const result = await tool.execute(
+        {
+          description: "Deep exploration",
+          prompt: "Map architecture thoroughly",
+          subagent_type: "deep-explorer",
+          run_in_background: false,
+          load_skills: [],
+        },
+        { sessionID: "parent-session", messageID: "parent-message", agent: "brainstormer", abort: new AbortController().signal },
+      )
+
+      // then
+      expect(promptCalled).toBe(true)
+      expect(result).toContain("Done")
+    }, { timeout: 10000 })
+
     test("#given category without run_in_background #when executing #then throws required parameter error", async () => {
       // given
       const { createDelegateTask } = require("./tools")
@@ -1826,17 +2087,19 @@ describe("sisyphus-task", () => {
       // given
       const { createDelegateTask } = require("./tools")
       let launchCalled = false
+      const launchedTask = {
+        id: "bg_explicit_true",
+        sessionID: "ses_bg_explicit_true",
+        description: "Explicit true",
+        agent: "Sisyphus-Junior",
+        status: "running",
+      }
       const mockManager = {
         launch: async () => {
           launchCalled = true
-          return {
-            id: "bg_explicit_true",
-            sessionID: "ses_bg_explicit_true",
-            description: "Explicit true",
-            agent: "Sisyphus-Junior",
-            status: "running",
-          }
+          return launchedTask
         },
+        getTask: () => launchedTask,
       }
       const mockClient = {
         app: { agents: async () => ({ data: [] }) },
@@ -2438,18 +2701,20 @@ describe("sisyphus-task", () => {
       const { createDelegateTask } = require("./tools")
       let launchCalled = false
       
-      const mockManager = {
-        launch: async () => {
-          launchCalled = true
-          return {
-            id: "task-normal-bg",
-            sessionID: "ses_normal_bg",
-            description: "Normal background task",
-            agent: "sisyphus-junior",
-            status: "running",
-          }
-        },
-      }
+       const launchedTask = {
+         id: "task-normal-bg",
+         sessionID: "ses_normal_bg",
+         description: "Normal background task",
+         agent: "sisyphus-junior",
+         status: "running",
+       }
+       const mockManager = {
+         launch: async () => {
+           launchCalled = true
+           return launchedTask
+         },
+         getTask: () => launchedTask,
+       }
       
        const mockClient = {
          app: { agents: async () => ({ data: [] }) },
@@ -4461,14 +4726,16 @@ describe("sisyphus-task", () => {
       // given
       const { createDelegateTask } = require("./tools")
 
+      const launchedTask = {
+        id: "bg_meta_test",
+        sessionID: "ses_bg_metadata",
+        description: "Background metadata test",
+        agent: "sisyphus-junior",
+        status: "running",
+      }
       const mockManager = {
-        launch: async () => ({
-          id: "bg_meta_test",
-          sessionID: "ses_bg_metadata",
-          description: "Background metadata test",
-          agent: "sisyphus-junior",
-          status: "running",
-        }),
+        launch: async () => launchedTask,
+        getTask: () => launchedTask,
       }
        const mockClient = {
          app: { agents: async () => ({ data: [] }) },

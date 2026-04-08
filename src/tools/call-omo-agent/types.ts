@@ -10,6 +10,12 @@ export interface CallOmoAgentArgs {
   session_id?: string
 }
 
+export type CallOmoAgentModelConfig = {
+  providerID: string
+  modelID: string
+  variant?: string
+}
+
 export type ToolContextWithMetadata = {
   sessionID: string
   messageID: string

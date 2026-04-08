@@ -1,18 +1,21 @@
-# src/mcp/ — 3 Built-in Remote MCPs
+# src/mcp/ — 6 Built-in Remote/Local MCPs
 
 **Generated:** 2026-03-06
 
 ## OVERVIEW
 
-Tier 1 of the three-tier MCP system. 3 remote HTTP MCPs created via `createBuiltinMcps(disabledMcps, config)`.
+Tier 1 of the three-tier MCP system. Native MCPs created via `createBuiltinMcps(disabledMcps, config)`.
 
 ## BUILT-IN MCPs
 
 | Name | URL | Env Vars | Tools |
 |------|-----|----------|-------|
+| **serena** | local process | None | Code intelligence |
 | **websearch** | `mcp.exa.ai` (default) or `mcp.tavily.com` | `EXA_API_KEY` (optional), `TAVILY_API_KEY` (if tavily) | Web search |
 | **context7** | `mcp.context7.com/mcp` | `CONTEXT7_API_KEY` (optional) | Library documentation |
 | **grep_app** | `mcp.grep.app` | None | GitHub code search |
+| **hindsight** | `http://localhost:8888/mcp` | None | Temporal/project memory |
+| **openmemory** | `http://localhost:8080/mcp` | `OPENMEMORY_API_KEY` (optional, falls back to `local-dev-key`) | Durable/project memory |
 
 ## REGISTRATION PATTERN
 
@@ -43,7 +46,7 @@ export function createWebsearchConfig(config?: WebsearchConfig): RemoteMcpConfig
 
 | Tier | Source | Mechanism |
 |------|--------|-----------|
-| 1. Built-in | `src/mcp/` | 3 remote HTTP, created by `createBuiltinMcps()` |
+| 1. Built-in | `src/mcp/` | 6 native MCPs, created by `createBuiltinMcps()` |
 | 2. Claude Code | `.mcp.json` | `${VAR}` expansion via `claude-code-mcp-loader` |
 | 3. Skill-embedded | SKILL.md YAML | Managed by `SkillMcpManager` (stdio + HTTP) |
 
@@ -56,3 +59,5 @@ export function createWebsearchConfig(config?: WebsearchConfig): RemoteMcpConfig
 | `websearch.ts` | Exa/Tavily provider with config |
 | `context7.ts` | Context7 with optional auth header |
 | `grep-app.ts` | Grep.app (no auth) |
+| `hindsight.ts` | Local Hindsight MCP |
+| `openmemory.ts` | Local OpenMemory MCP |

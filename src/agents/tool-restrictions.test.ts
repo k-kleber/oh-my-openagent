@@ -4,6 +4,7 @@ import { createLibrarianAgent } from "./librarian"
 import { createExploreAgent } from "./explore"
 import { createMomusAgent } from "./momus"
 import { createMetisAgent } from "./metis"
+import { createTesterAgent } from "./tester"
 import { createAtlasAgent } from "./atlas"
 
 const TEST_MODEL = "anthropic/claude-sonnet-4-5"
@@ -109,6 +110,29 @@ describe("read-only agent tool restrictions", () => {
       // then
       expect(permission["task"]).toBeUndefined()
       expect(permission["call_omo_agent"]).toBeUndefined()
+    })
+  })
+
+  describe("Tester", () => {
+    test("allows only bash through wildcard-deny permission", () => {
+      const agent = createTesterAgent(TEST_MODEL)
+      const permission = (agent.permission ?? {}) as Record<string, unknown>
+      const bashPermission = permission["bash"] as Record<string, string>
+
+      expect(permission["*"]).toBe("deny")
+      expect(bashPermission).toEqual(expect.objectContaining({
+        bun: "allow",
+        npm: "allow",
+        pytest: "allow",
+        cargo: "allow",
+        ctest: "allow",
+        bazel: "allow",
+        catkin: "allow",
+        catkin_make: "allow",
+        rostest: "allow",
+      }))
+      expect(bashPermission.git).toBe("deny")
+      expect(bashPermission.rm).toBe("deny")
     })
   })
 })

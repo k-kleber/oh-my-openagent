@@ -7,6 +7,7 @@ export const AGENT_DISPLAY_NAMES: Record<string, string> = {
   sisyphus: "Sisyphus (Ultraworker)",
   hephaestus: "Hephaestus (Deep Agent)",
   debugger: "Debugger (Root Cause Hunter)",
+  tester: "tester",
   brainstormer: "Brainstormer (Fast Ideation)",
   researcher: "Researcher (Evidence Scout)",
   writer: "Writer (Content Partner)",
@@ -18,6 +19,7 @@ export const AGENT_DISPLAY_NAMES: Record<string, string> = {
   oracle: "oracle",
   librarian: "librarian",
   explore: "explore",
+  "deep-explorer": "deep-explorer",
   "multimodal-looker": "multimodal-looker",
 }
 

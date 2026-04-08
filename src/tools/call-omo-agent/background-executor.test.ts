@@ -4,8 +4,21 @@ import type { BackgroundManager } from "../../features/background-agent"
 import type { PluginInput } from "@opencode-ai/plugin"
 import { executeBackground } from "./background-executor"
 
+type LaunchResult = {
+  id: string
+  sessionID: string | null
+  description: string
+  agent: string
+  status: string
+}
+
+type LaunchInput = {
+  fallbackChain?: Array<{ providers: string[]; model: string; variant?: string }>
+  model?: { providerID: string; modelID: string; variant?: string }
+}
+
 describe("executeBackground", () => {
-  const launchMock = mock(() => Promise.resolve({
+  const launchMock = mock((_: LaunchInput): Promise<LaunchResult> => Promise.resolve({
     id: "test-task-id",
     sessionID: null,
     description: "Test task",
@@ -83,7 +96,51 @@ describe("executeBackground", () => {
     await executeBackground(testArgs, testContext, mockManager, mockClient, fallbackChain)
 
     //#then
-    const launchArgs = launchMock.mock.calls.at(-1)?.[0]
+    const launchArgs = launchMock.mock.calls[launchMock.mock.calls.length - 1]?.[0] as LaunchInput | undefined
+    if (!launchArgs) {
+      throw new Error("Expected launch args to be captured")
+    }
     expect(launchArgs.fallbackChain).toEqual(fallbackChain)
+  })
+
+  test("passes resolved model override to background manager launch and metadata", async () => {
+    //#given
+    const resolvedModel = {
+      providerID: "github-copilot",
+      modelID: "gemini-3-flash-preview",
+      variant: "high",
+    }
+    const metadata = mock(async () => {})
+    launchMock.mockResolvedValueOnce({
+      id: "test-task-id",
+      sessionID: "sub-session",
+      description: "Test task",
+      agent: "deep-explorer",
+      status: "pending",
+    })
+
+    //#when
+    await executeBackground(
+      { ...testArgs, subagent_type: "deep-explorer" },
+      { ...testContext, metadata },
+      mockManager,
+      mockClient,
+      undefined,
+      resolvedModel,
+    )
+
+    //#then
+    const launchArgs = launchMock.mock.calls[launchMock.mock.calls.length - 1]?.[0] as LaunchInput | undefined
+    if (!launchArgs) {
+      throw new Error("Expected launch args to be captured")
+    }
+    expect(launchArgs.model).toEqual(resolvedModel)
+    expect(metadata).toHaveBeenCalledWith({
+      title: "Test background task",
+      metadata: {
+        sessionId: "sub-session",
+        model: resolvedModel,
+      },
+    })
   })
 })

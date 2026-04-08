@@ -376,6 +376,47 @@ describe("promptWithModelSuggestionRetry", () => {
     // and should call promptAsync only once
     expect(promptMock).toHaveBeenCalledTimes(1)
   })
+
+  it("retries transient promptAsync transport failures before succeeding", async () => {
+    // given a client that fails with a transient socket error twice
+    const promptMock = mock()
+      .mockRejectedValueOnce(new Error("The socket connection was closed unexpectedly"))
+      .mockRejectedValueOnce(new Error("fetch failed"))
+      .mockResolvedValueOnce(undefined)
+    const client = { session: { promptAsync: promptMock } }
+
+    // when calling promptWithModelSuggestionRetry
+    await promptWithModelSuggestionRetry(client as any, {
+      path: { id: "session-transport" },
+      body: {
+        agent: "explore",
+        parts: [{ type: "text", text: "hello" }],
+      },
+    })
+
+    // then it retries until the transport call succeeds
+    expect(promptMock).toHaveBeenCalledTimes(3)
+  })
+
+  it("does not retry non-transport promptAsync failures", async () => {
+    // given a client that fails with a non-retryable validation-style error
+    const promptMock = mock().mockRejectedValueOnce(new Error("agent.name is required"))
+    const client = { session: { promptAsync: promptMock } }
+
+    // when calling promptWithModelSuggestionRetry
+    // then it should fail immediately
+    await expect(
+      promptWithModelSuggestionRetry(client as any, {
+        path: { id: "session-no-retry" },
+        body: {
+          agent: "explore",
+          parts: [{ type: "text", text: "hello" }],
+        },
+      })
+    ).rejects.toThrow("agent.name is required")
+
+    expect(promptMock).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe("promptSyncWithModelSuggestionRetry", () => {

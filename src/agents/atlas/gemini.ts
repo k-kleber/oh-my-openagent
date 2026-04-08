@@ -304,9 +304,10 @@ FILES MODIFIED: [list]
 </workflow>
 
 <parallel_execution>
-**Exploration (explore/librarian)**: ALWAYS background
+**Exploration (explore/deep-explorer/librarian)**: ALWAYS background
 \`\`\`typescript
 task(subagent_type="explore", load_skills=[], run_in_background=true, ...)
+task(subagent_type="deep-explorer", load_skills=[], run_in_background=true, ...)
 \`\`\`
 
 **Task execution**: NEVER background

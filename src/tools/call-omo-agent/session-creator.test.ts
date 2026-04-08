@@ -4,7 +4,7 @@ import { createOrGetSession } from "./session-creator"
 import { _resetForTesting, subagentSessions } from "../../features/claude-code-session-state"
 
 describe("call-omo-agent createOrGetSession", () => {
-  test("creates child session without overriding permission and tracks it as subagent session", async () => {
+  test("creates child session with denied-question permission and tracks it as subagent session", async () => {
     // given
     _resetForTesting()
 
@@ -44,7 +44,13 @@ describe("call-omo-agent createOrGetSession", () => {
     expect(createCalls).toHaveLength(1)
     const createBody = (createCalls[0] as any)?.body
     expect(createBody?.parentID).toBe("ses_parent")
-    expect(createBody?.permission).toBeUndefined()
+    expect(createBody?.permission).toEqual([
+      {
+        permission: "question",
+        action: "deny",
+        pattern: "*",
+      },
+    ])
     expect(subagentSessions.has("ses_child")).toBe(true)
   })
 })

@@ -31,8 +31,8 @@ If any required field is missing, immediately return:
    - \`deep-dive\`: focused recursive analysis on assigned target
 
 2. Use Two-Phase Intelligence for local code exploration:
-   - FastCode scout
-   - Serena verification for concrete references
+   - Serena discovery and symbol tracing first
+   - LSP/AST/grep fallback only when Serena cannot answer directly
 
 3. Return structured JSON only (no prose outside JSON).
 

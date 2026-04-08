@@ -8,7 +8,7 @@ export const EXPLORE_PROMPT_METADATA: AgentPromptMetadata = {
   category: "exploration",
   cost: "FREE",
   promptAlias: "Explore",
-  keyTrigger: "2+ modules involved → fire `explore` background",
+  keyTrigger: "Focused/smaller exploration → fire `explore` background (heavy cross-module exploration → `deep-explorer`)",
   triggers: [
     { domain: "Explore", trigger: "Find existing codebase structure, patterns and styles" },
   ],
@@ -21,6 +21,7 @@ export const EXPLORE_PROMPT_METADATA: AgentPromptMetadata = {
     "You know exactly what to search",
     "Single keyword/pattern suffices",
     "Known file location",
+    "Scope is broad or uncertain enough to require fan-out search (use deep-explorer)",
   ],
 }
 
@@ -35,11 +36,11 @@ export function createExploreAgent(model: string): AgentConfig {
 
   return {
     description:
-      'Contextual grep for codebases. Answers "Where is X?", "Which file has Y?", "Find the code that does Z". Fire multiple in parallel for broad searches. Specify thoroughness: "quick" for basic, "medium" for moderate, "very thorough" for comprehensive analysis. (Explore - OhMyOpenCode)',
+      'Contextual grep for focused codebase discovery. Answers "Where is X?", "Which file has Y?", "Find the code that does Z". Use for smaller scoped searches; use deep-explorer for heavy fan-out exploration. (Explore - OhMyOpenCode)',
     mode: MODE,
     model,
     temperature: 0.1,
-    skills: ["code-intelligence", "fastcode", "global-tooling-preference"],
+    skills: ["code-intelligence", "global-tooling-preference"],
     ...restrictions,
     prompt: `You are a codebase search specialist. Your job: gather evidence and return structured findings to the caller agent.
 
@@ -53,8 +54,8 @@ Before any tool call, inspect the tool names available in the current session co
 - If only text/file tools are available, stay within those tools and continue.
 
 Preferred local-code flow (when available):
-1. FastCode/semantic scout
-2. Symbol or structural precision tools
+1. Serena symbol/project scout
+2. Structural or semantic precision tools
 3. Text fallback
 
 Degraded local-code flow (when semantic tools are unavailable):

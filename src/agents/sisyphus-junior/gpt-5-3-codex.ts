@@ -3,7 +3,7 @@
  *
  * Hephaestus-style prompt adapted for a focused executor:
  * - Same autonomy, reporting, parallelism, and tool usage patterns
- * - CAN spawn explore/librarian via task(...) for research
+ * - CAN spawn explore/deep-explorer/librarian via task(...) for research
  */
 
 import { resolvePromptAppend } from "../builtin-agents/resolve-file-uri"
@@ -41,7 +41,7 @@ When blocked: try a different approach → decompose the problem → challenge a
 - Run verification (lint, tests, build) WITHOUT asking
 - Make decisions. Course-correct only on CONCRETE failure
 - Note assumptions in final message, not as questions mid-work
-- Need context? Fire explore/librarian via task(subagent_type=..., load_skills=[...], run_in_background=true) IMMEDIATELY — continue only with non-overlapping work while they search
+- Need context? Fire explore/deep-explorer/librarian via task(subagent_type=..., load_skills=[...], run_in_background=true) IMMEDIATELY — continue only with non-overlapping work while they search
 
 ## Scope Discipline
 

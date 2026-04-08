@@ -121,6 +121,32 @@ describe("AGENT_MODEL_REQUIREMENTS", () => {
     expect(fifth.model).toBe("gpt-5-nano")
   })
 
+  test("deep-explorer has valid fallbackChain with gpt-5.3-codex as primary", () => {
+    const deepExplorer = AGENT_MODEL_REQUIREMENTS["deep-explorer"]
+
+    expect(deepExplorer).toBeDefined()
+    expect(deepExplorer.fallbackChain).toBeArray()
+    expect(deepExplorer.fallbackChain).toHaveLength(5)
+
+    const primary = deepExplorer.fallbackChain[0]
+    expect(primary.providers).toContain("openai")
+    expect(primary.model).toBe("gpt-5.3-codex")
+    expect(primary.variant).toBe("medium")
+
+    const secondary = deepExplorer.fallbackChain[1]
+    expect(secondary.model).toBe("gpt-5.4")
+    expect(secondary.variant).toBe("high")
+
+    const tertiary = deepExplorer.fallbackChain[2]
+    expect(tertiary.model).toBe("claude-sonnet-4-6")
+
+    const quaternary = deepExplorer.fallbackChain[3]
+    expect(quaternary.model).toBe("minimax-m2.7")
+
+    const fifth = deepExplorer.fallbackChain[4]
+    expect(fifth.model).toBe("gpt-5-nano")
+  })
+
   test("researcher has valid fallbackChain with gemini-3.1-pro as primary", () => {
     const researcher = AGENT_MODEL_REQUIREMENTS["researcher"]
 
@@ -302,17 +328,38 @@ describe("AGENT_MODEL_REQUIREMENTS", () => {
     expect(primary.providers).toEqual(["openai", "venice", "opencode"])
   })
 
+  test("tester has free-tier fallbackChain with gpt-5-nano as primary", () => {
+    const tester = AGENT_MODEL_REQUIREMENTS["tester"]
+
+    expect(tester).toBeDefined()
+    expect(tester.fallbackChain).toHaveLength(3)
+
+    const primary = tester.fallbackChain[0]
+    expect(primary.providers).toEqual(["opencode"])
+    expect(primary.model).toBe("gpt-5-nano")
+
+    const secondary = tester.fallbackChain[1]
+    expect(secondary.providers).toEqual(["opencode"])
+    expect(secondary.model).toBe("minimax-m2.5")
+
+    const tertiary = tester.fallbackChain[2]
+    expect(tertiary.providers).toEqual(["opencode-go"])
+    expect(tertiary.model).toBe("minimax-m2.7")
+  })
+
   test("all configured agent requirements have valid fallbackChain arrays", () => {
     const expectedAgents = [
       "sisyphus",
       "hephaestus",
       "debugger",
+      "tester",
       "brainstormer",
       "researcher",
       "writer",
       "oracle",
       "librarian",
       "explore",
+      "deep-explorer",
       "memory-retrieval",
       "memory-store",
       "multimodal-looker",

@@ -27,6 +27,8 @@ export async function executeSyncTask(
   const toastManager = getTaskToastManager()
   let taskId: string | undefined
   let syncSessionID: string | undefined
+  let sessionRegistered = false
+  let promptDelivered = false
   let spawnReservation:
     | Awaited<ReturnType<ExecutorContext["manager"]["reserveSubagentSpawn"]>>
     | undefined
@@ -58,28 +60,12 @@ export async function executeSyncTask(
     }
 
     const sessionID = createSessionResult.sessionID
-    spawnReservation?.commit()
     syncSessionID = sessionID
     subagentSessions.add(sessionID)
     syncSubagentSessions.add(sessionID)
     setSessionAgent(sessionID, agentToUse)
     setSessionFallbackChain(sessionID, fallbackChain)
-
-    if (args.category) {
-      SessionCategoryRegistry.register(sessionID, args.category)
-    }
-
-    if (onSyncSessionCreated) {
-      log("[task] Invoking onSyncSessionCreated callback", { sessionID, parentID: parentContext.sessionID })
-      await onSyncSessionCreated({
-        sessionID,
-        parentID: parentContext.sessionID,
-        title: args.description,
-      }).catch((err) => {
-      log("[task] onSyncSessionCreated callback failed", { error: String(err) })
-      })
-      await new Promise(r => setTimeout(r, 200))
-    }
+    sessionRegistered = true
 
     taskId = `sync_${sessionID.slice(0, 8)}`
     const startTime = new Date()
@@ -95,6 +81,38 @@ export async function executeSyncTask(
         skills: args.load_skills,
         modelInfo,
       })
+    }
+
+    const promptError = await deps.sendSyncPrompt(client, {
+      sessionID,
+      agentToUse,
+      args,
+      systemContent,
+      categoryModel,
+      toastManager,
+      taskId,
+    })
+    if (promptError) {
+      spawnReservation?.rollback()
+      return promptError
+    }
+    promptDelivered = true
+    spawnReservation?.commit()
+
+    if (args.category) {
+      SessionCategoryRegistry.register(sessionID, args.category)
+    }
+
+    if (onSyncSessionCreated) {
+      log("[task] Invoking onSyncSessionCreated callback", { sessionID, parentID: parentContext.sessionID })
+      await onSyncSessionCreated({
+        sessionID,
+        parentID: parentContext.sessionID,
+        title: args.description,
+      }).catch((err) => {
+        log("[task] onSyncSessionCreated callback failed", { error: String(err) })
+      })
+      await new Promise(r => setTimeout(r, 200))
     }
 
     const syncTaskMeta = {
@@ -116,19 +134,6 @@ export async function executeSyncTask(
     await ctx.metadata?.(syncTaskMeta)
     if (ctx.callID) {
       storeToolMetadata(ctx.sessionID, ctx.callID, syncTaskMeta)
-    }
-
-    const promptError = await deps.sendSyncPrompt(client, {
-      sessionID,
-      agentToUse,
-      args,
-      systemContent,
-      categoryModel,
-      toastManager,
-      taskId,
-    })
-    if (promptError) {
-      return promptError
     }
 
     try {
@@ -190,6 +195,11 @@ session_id: ${sessionID}
     })
   } finally {
     if (syncSessionID) {
+      if (sessionRegistered && !promptDelivered) {
+        try {
+          await client.session.abort({ path: { id: syncSessionID } } as { path: { id: string } })
+        } catch {}
+      }
       subagentSessions.delete(syncSessionID)
       syncSubagentSessions.delete(syncSessionID)
       clearSessionFallbackChain(syncSessionID)

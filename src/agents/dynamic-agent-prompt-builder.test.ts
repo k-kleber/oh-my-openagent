@@ -7,6 +7,7 @@ import {
   buildParallelDelegationSection,
   buildNonClaudePlannerSection,
   buildExploreSection,
+  buildGraphifySection,
   getCavemanTierForAgent,
   buildCavemanSection,
   maybeBuildCavemanSection,
@@ -14,6 +15,9 @@ import {
   type AvailableCategory,
   type AvailableAgent,
 } from "./dynamic-agent-prompt-builder"
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 
 describe("buildCategorySkillsDelegationGuide", () => {
   const categories: AvailableCategory[] = [
@@ -141,6 +145,29 @@ describe("buildCategorySkillsDelegationGuide", () => {
     expect(result).toContain("Frontend, UI/UX")
     expect(result).toContain("`quick`")
     expect(result).toContain("Trivial tasks")
+  })
+})
+
+describe("buildGraphifySection", () => {
+  it("returns empty string when graphify artifacts are absent", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "graphify-miss-"))
+
+    const result = buildGraphifySection(tempDir)
+
+    expect(result).toBe("")
+  })
+
+  it("returns graphify-retrieval guidance when graphify-out exists", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "graphify-hit-"))
+    const graphifyDir = join(tempDir, "graphify-out")
+    mkdirSync(graphifyDir)
+    writeFileSync(join(graphifyDir, "graph.json"), "{}")
+
+    const result = buildGraphifySection(tempDir)
+
+    expect(result).toContain('task(subagent_type="graphify-retrieval"')
+    expect(result).toContain("before explore")
+    expect(result).not.toContain('skill("graphify")')
   })
 })
 

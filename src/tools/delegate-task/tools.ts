@@ -81,7 +81,7 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
     return desc ? `  - ${name}: ${desc}` : `  - ${name}`
   }).join("\n")
 
-  const brainstormerAllowedSubagents = new Set(["explore", "deep-explorer", "librarian", "memory-retrieval"])
+  const brainstormerAllowedSubagents = new Set(["explore", "deep-explorer", "librarian", "memory-retrieval", "graphify-retrieval"])
 
   const description = `Spawn agent task with category-based or direct agent selection.
   
@@ -194,16 +194,16 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
       const callerAgentConfigKey = getAgentConfigKey(ctx.agent ?? "")
       if (callerAgentConfigKey === "brainstormer") {
         if (args.category) {
-          return `Brainstormer cannot delegate implementation categories. Use subagent_type="explore", "deep-explorer", "librarian", or "memory-retrieval" only.`
+          return `Brainstormer cannot delegate implementation categories. Use subagent_type="explore", "deep-explorer", "librarian", "memory-retrieval", or "graphify-retrieval" only.`
         }
 
         const requestedSubagent = args.subagent_type?.trim().replace(/^@+/, "").toLowerCase()
         if (!requestedSubagent) {
-          return `Brainstormer must specify subagent_type. Allowed: explore, deep-explorer, librarian, memory-retrieval.`
+          return `Brainstormer must specify subagent_type. Allowed: explore, deep-explorer, librarian, memory-retrieval, graphify-retrieval.`
         }
 
         if (!brainstormerAllowedSubagents.has(requestedSubagent)) {
-          return `Brainstormer can only delegate to explore, deep-explorer, librarian, or memory-retrieval. Received: "${args.subagent_type}".`
+          return `Brainstormer can only delegate to explore, deep-explorer, librarian, memory-retrieval, or graphify-retrieval. Received: "${args.subagent_type}".`
         }
       }
 

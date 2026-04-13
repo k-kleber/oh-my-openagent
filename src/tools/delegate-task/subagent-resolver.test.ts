@@ -131,6 +131,22 @@ describe("resolveSubagentExecution", () => {
     expect(result.categoryModel).toEqual({ providerID: "opencode", modelID: "gpt-5-nano" })
   })
 
+  test("allows brainstormer to delegate to graphify-retrieval", async () => {
+    //#given
+    const args = createBaseArgs({ subagent_type: "graphify-retrieval" })
+    const executorCtx = createExecutorContext(async () => ([
+      { name: "graphify-retrieval", mode: "subagent", model: "github-copilot/gpt-5-mini" },
+    ]))
+
+    //#when
+    const result = await resolveSubagentExecution(args, executorCtx, "brainstormer", "quick")
+
+    //#then
+    expect(result.error).toBeUndefined()
+    expect(result.agentToUse).toBe("graphify-retrieval")
+    expect(result.categoryModel).toEqual({ providerID: "github-copilot", modelID: "gpt-5-mini" })
+  })
+
   test("logs failure details when subagent resolution throws", async () => {
     //#given
     const args = createBaseArgs({ subagent_type: "review" })

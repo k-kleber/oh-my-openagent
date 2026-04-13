@@ -187,6 +187,13 @@ export const AGENT_MODEL_REQUIREMENTS: Record<string, ModelRequirement> = {
       { providers: ["opencode"], model: "gpt-5-nano" },
     ],
   },
+  "graphify-retrieval": {
+    fallbackChain: [
+      { providers: ["github-copilot"], model: "gpt-5-mini" },
+      { providers: ["openai", "opencode"], model: "gpt-5-mini" },
+      { providers: ["opencode"], model: "gpt-5-nano" },
+    ],
+  },
   "memory-retrieval": {
     fallbackChain: [
       { providers: ["github-copilot"], model: "gpt-5-mini" },

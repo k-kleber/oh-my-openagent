@@ -188,15 +188,20 @@ Before delegating research to explore or librarian, delegate to a memory-retriev
 After completing significant work (architectural decisions, bug fixes with non-obvious cause, pattern discoveries), consider triggering memory capture: \`task(subagent_type="memory-store", load_skills=[], prompt="Project: <projectPath> (<projectName>)\\nObservations:\\n- <list of insights>", run_in_background=false)\`. Only capture high-signal, non-obvious, actionable insights.`
 }
 
-export function buildGraphifySection(directory?: string): string {
+export function buildGraphifySection(directory?: string, options?: { requiresTask?: boolean }): string {
   if (!directory) return ""
   const graphPath = join(directory, "graphify-out", "graph.json")
   if (!existsSync(graphPath)) return ""
+  const requiresTask = options?.requiresTask ?? true
   return `## Knowledge Graph (Graphify)
 
 If \`graphify-out/graph.json\` exists in the project root, you MUST:
-1. If \`task\` is available and you have not gathered Graphify context yet, run \`task(subagent_type="graphify-retrieval", load_skills=[], run_in_background=false, description="Read graphify context", prompt="Read graphify-out/GRAPH_REPORT.md and graphify-out/graph.json. Return a compact architecture summary focused on the current task before broader exploration.")\`
-2. If \`task\` is unavailable or Graphify context was already gathered by the caller, use that context first; otherwise read \`graphify-out/GRAPH_REPORT.md\` before broad file search
+1. ${requiresTask
+    ? `Before launching \`explore\`, \`deep-explorer\`, or broad repo search, run \`task(subagent_type="graphify-retrieval", load_skills=[], run_in_background=false, description="Read graphify context", prompt="Read graphify-out/GRAPH_REPORT.md and graphify-out/graph.json. Return a compact architecture summary focused on the current task before broader exploration.")\``
+    : `If \`task\` is unavailable, read \`graphify-out/GRAPH_REPORT.md\` first and state exactly what Graphify artifacts you used before broader repo search`}
+2. ${requiresTask
+    ? `Wait for the \`graphify-retrieval\` result before any dependent exploration or conclusions. Do not glob/read Graphify artifacts yourself unless the caller already supplied Graphify context.`
+    : `If Graphify context was already supplied by the caller, use that first instead of re-reading artifacts.`}
 3. Use Graphify context to narrow subsequent explore/deep-explorer work before broad repo search, and keep it in mind for later subagents and implementation decisions
 
 Graphify should be consulted before explore when present, so later repo search is more targeted.`

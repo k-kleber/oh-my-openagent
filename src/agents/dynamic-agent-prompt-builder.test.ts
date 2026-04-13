@@ -167,7 +167,22 @@ describe("buildGraphifySection", () => {
 
     expect(result).toContain('task(subagent_type="graphify-retrieval"')
     expect(result).toContain("before explore")
+    expect(result).toContain("Wait for the `graphify-retrieval` result")
+    expect(result).toContain("Do not glob/read Graphify artifacts yourself")
     expect(result).not.toContain('skill("graphify")')
+    expect(result).not.toContain("If `task` is unavailable")
+  })
+
+  it("supports explicit non-task fallback guidance when requested", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "graphify-notask-"))
+    const graphifyDir = join(tempDir, "graphify-out")
+    mkdirSync(graphifyDir)
+    writeFileSync(join(graphifyDir, "graph.json"), "{}")
+
+    const result = buildGraphifySection(tempDir, { requiresTask: false })
+
+    expect(result).toContain("If `task` is unavailable, read `graphify-out/GRAPH_REPORT.md` first")
+    expect(result).not.toContain("Wait for the `graphify-retrieval` result")
   })
 })
 

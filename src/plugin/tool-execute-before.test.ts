@@ -249,14 +249,19 @@ describe("createToolExecuteBeforeHandler", () => {
 })
 
 describe("createToolRegistry", () => {
-  function createRegistryInput(overrides = {}) {
+  function createRegistryInput(overrides: Record<string, unknown> = {}) {
+    const {
+      interactiveBashEnabled,
+      ...pluginConfigOverrides
+    } = overrides
+
     return {
       ctx: {
         directory: process.cwd(),
         client: {},
       },
       pluginConfig: {
-        ...overrides,
+        ...pluginConfigOverrides,
       },
       managers: {
         backgroundManager: {},
@@ -270,6 +275,7 @@ describe("createToolRegistry", () => {
         disabledSkills: new Set(),
       },
       availableCategories: [],
+      ...(interactiveBashEnabled !== undefined ? { interactiveBashEnabled } : {}),
     }
   }
 
@@ -293,6 +299,36 @@ describe("createToolRegistry", () => {
         )
 
         expect(result.filteredTools.edit).toBeDefined()
+      })
+    })
+  })
+
+  describe("#given tmux integration is disabled", () => {
+    describe("#when creating tool registry", () => {
+      test("#then should not register interactive_bash tool", () => {
+        const result = createToolRegistry(
+          createRegistryInput({
+            tmux: { enabled: false },
+            interactiveBashEnabled: false,
+          }),
+        )
+
+        expect(result.filteredTools.interactive_bash).toBeUndefined()
+      })
+    })
+  })
+
+  describe("#given tmux integration is enabled", () => {
+    describe("#when creating tool registry", () => {
+      test("#then should register interactive_bash tool", () => {
+        const result = createToolRegistry(
+          createRegistryInput({
+            tmux: { enabled: true },
+            interactiveBashEnabled: true,
+          }),
+        )
+
+        expect(result.filteredTools.interactive_bash).toBeDefined()
       })
     })
   })

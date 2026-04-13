@@ -211,4 +211,69 @@ describe("background-agent spawner fallback model promotion", () => {
     releasePrompt()
     await startPromise
   })
+
+  test("retries launch with fallback agent when original agent is missing", async () => {
+    //#given
+    const promptCalls: any[] = []
+    const client = {
+      session: {
+        get: async () => ({ data: { directory: "/parent/dir" } }),
+        create: async () => ({ data: { id: "ses_child_fallback" } }),
+        promptAsync: async (args?: any) => {
+          promptCalls.push(args)
+          if (promptCalls.length === 1) {
+            throw new Error("Agent not found: sisyphus-junior")
+          }
+          return {}
+        },
+      },
+    }
+
+    const onTaskError = mock(() => {})
+    const task = createTask({
+      description: "Test task",
+      prompt: "Do work",
+      agent: "sisyphus-junior",
+      parentSessionID: "ses_parent",
+      parentMessageID: "msg_parent",
+      model: { providerID: "openai", modelID: "gpt-5.4", variant: "medium" },
+    })
+
+    const item = {
+      task,
+      input: {
+        description: task.description,
+        prompt: task.prompt,
+        agent: task.agent,
+        parentSessionID: task.parentSessionID,
+        parentMessageID: task.parentMessageID,
+        parentModel: task.parentModel,
+        parentAgent: task.parentAgent,
+        model: task.model,
+      },
+    }
+
+    const ctx = {
+      client,
+      directory: "/fallback",
+      concurrencyManager: { release: () => {} },
+      tmuxEnabled: false,
+      onTaskError,
+    }
+
+    //#when
+    await startTask(item as any, ctx as any)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    //#then
+    expect(promptCalls).toHaveLength(2)
+    expect(promptCalls[0]?.body?.agent).toBe("sisyphus-junior")
+    expect(promptCalls[1]?.body?.agent).toBe("general")
+    expect(promptCalls[1]?.body?.model).toEqual({
+      providerID: "openai",
+      modelID: "gpt-5.4",
+    })
+    expect(task.status).toBe("running")
+    expect(onTaskError).not.toHaveBeenCalled()
+  })
 })

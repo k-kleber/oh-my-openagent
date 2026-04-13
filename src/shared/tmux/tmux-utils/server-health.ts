@@ -41,7 +41,14 @@ export async function isServerRunning(serverUrl: string): Promise<boolean> {
 	return false
 }
 
+export function markServerRunningInProcess(serverUrl?: string): void {
+  serverAvailable = true
+  if (serverUrl) {
+    serverCheckUrl = serverUrl
+  }
+}
+
 export function resetServerCheck(): void {
-	serverAvailable = null
-	serverCheckUrl = null
+  serverAvailable = null
+  serverCheckUrl = null
 }

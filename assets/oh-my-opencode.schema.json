@@ -88,6 +88,12 @@
         "type": "string"
       }
     },
+    "mcp_env_allowlist": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "hashline_edit": {
       "type": "boolean"
     },

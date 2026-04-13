@@ -194,6 +194,17 @@ describe("createHephaestusAgent", () => {
     expect(config.prompt).toContain("<tool_usage_rules>");
   });
 
+  test("GPT 5.4 prompt lets project instructions override opener defaults", () => {
+    // given
+    const model = "openai/gpt-5.4";
+
+    // when
+    const config = createHephaestusAgent(model);
+
+    // then
+    expect(config.prompt).toContain("unless a project/user instruction file explicitly asks for one");
+  });
+
   test("GPT 5.3-codex model includes GPT-5.3 specific prompt content", () => {
     // given
     const model = "openai/gpt-5.3-codex";
@@ -205,6 +216,17 @@ describe("createHephaestusAgent", () => {
     expect(config.prompt).toContain("Senior Staff Engineer");
     expect(config.prompt).toContain("Hard Constraints");
     expect(config.prompt).toContain("<tool_usage_rules>");
+  });
+
+  test("GPT 5.3-codex prompt lets project instructions override opener defaults", () => {
+    // given
+    const model = "openai/gpt-5.3-codex";
+
+    // when
+    const config = createHephaestusAgent(model);
+
+    // then
+    expect(config.prompt).toContain("unless a project/user instruction file explicitly asks for a greeting or opening phrase");
   });
 
   test("includes Hephaestus identity in prompt", () => {

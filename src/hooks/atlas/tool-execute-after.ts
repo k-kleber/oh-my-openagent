@@ -140,7 +140,7 @@ export function createToolExecuteAfterHandler(input: {
         const sessionState = toolInput.sessionID ? getState(toolInput.sessionID) : undefined
 
         if (toolInput.sessionID && !boulderState.session_ids?.includes(toolInput.sessionID)) {
-          appendSessionId(ctx.directory, toolInput.sessionID)
+          appendSessionId(ctx.directory, toolInput.sessionID, "direct")
           log(`[${HOOK_NAME}] Appended session to boulder`, {
             sessionID: toolInput.sessionID,
             plan: boulderState.plan_name,

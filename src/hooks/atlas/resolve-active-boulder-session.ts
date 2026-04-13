@@ -40,7 +40,7 @@ export async function resolveActiveBoulderSession(input: {
     return null
   }
 
-  const updatedBoulderState = appendSessionId(input.directory, input.sessionID)
+  const updatedBoulderState = appendSessionId(input.directory, input.sessionID, "appended")
   if (!updatedBoulderState?.session_ids.includes(input.sessionID)) {
     return null
   }

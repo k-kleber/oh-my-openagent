@@ -1,8 +1,8 @@
 import { basename } from "node:path"
 import type { PluginInput } from "@opencode-ai/plugin"
-import { getSessionAgent } from "../../features/claude-code-session-state"
+import { getSessionAgent, subagentSessions } from "../../features/claude-code-session-state"
 import type { MemoryConfig } from "../../config"
-import { getAgentConfigKey } from "../../shared/agent-display-names"
+import { AGENT_DISPLAY_NAMES, getAgentConfigKey } from "../../shared/agent-display-names"
 import { createInternalAgentTextPart } from "../../shared/internal-initiator-marker"
 import { log } from "../../shared/logger"
 import { createMemoryMetricsState, type MemoryMetricsState } from "./metrics"
@@ -10,15 +10,7 @@ import { persistMemoryMetrics } from "./persistent-metrics"
 import type { SkillMcpManager } from "../../features/skill-mcp-manager"
 import { MemoryOrchestrator } from "../../features/memory-orchestrator"
 
-const TARGET_AGENTS = new Set([
-  "sisyphus",
-  "sisyphus-junior",
-  "atlas",
-  "hephaestus",
-  "researcher",
-  "writer",
-  "brainstormer",
-])
+const TARGET_AGENTS = new Set(Object.keys(AGENT_DISPLAY_NAMES))
 
 const DISCOVERY_TOOLS = new Set([
   "read",
@@ -310,6 +302,7 @@ export function createMemoryAutoTriggerHook(ctx: PluginInput, memoryConfig?: Mem
   }
 
   function isTargetAgent(sessionID: string, inputAgent?: string): boolean {
+    if (subagentSessions.has(sessionID)) return true
     const resolvedAgent = getSessionAgent(sessionID) ?? inputAgent
     if (!resolvedAgent) return true
     return targetAgents.has(getAgentConfigKey(resolvedAgent))

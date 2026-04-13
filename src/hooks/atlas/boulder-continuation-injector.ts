@@ -1,11 +1,18 @@
 import type { PluginInput } from "@opencode-ai/plugin"
 import type { BackgroundManager } from "../../features/background-agent"
+import { getAgentConfigKey } from "../../shared/agent-display-names"
 import { log } from "../../shared/logger"
 import { createInternalAgentTextPart, resolveInheritedPromptTools } from "../../shared"
 import { HOOK_NAME } from "./hook-name"
 import { BOULDER_CONTINUATION_PROMPT } from "./system-reminder-templates"
 import { resolveRecentPromptContextForSession } from "./recent-model-resolver"
 import type { SessionState } from "./types"
+
+export type BoulderContinuationResult =
+  | "injected"
+  | "skipped_background_tasks"
+  | "skipped_agent_unavailable"
+  | "failed"
 
 export async function injectBoulderContinuation(input: {
   ctx: PluginInput
@@ -19,7 +26,7 @@ export async function injectBoulderContinuation(input: {
   preferredTaskTitle?: string
   backgroundManager?: BackgroundManager
   sessionState: SessionState
-}): Promise<void> {
+}): Promise<BoulderContinuationResult> {
   const {
     ctx,
     sessionID,
@@ -40,7 +47,7 @@ export async function injectBoulderContinuation(input: {
 
   if (hasRunningBgTasks) {
     log(`[${HOOK_NAME}] Skipped injection: background tasks running`, { sessionID })
-    return
+    return "skipped_background_tasks"
   }
 
   const worktreeContext = worktreePath ? `\n\n[Worktree: ${worktreePath}]` : ""
@@ -53,6 +60,9 @@ export async function injectBoulderContinuation(input: {
     preferredSessionContext +
     worktreeContext
 
+  const continuationAgent = agent ?? "atlas"
+  const normalizedAgent = getAgentConfigKey(continuationAgent)
+
   try {
     log(`[${HOOK_NAME}] Injecting boulder continuation`, { sessionID, planName, remaining })
 
@@ -62,7 +72,7 @@ export async function injectBoulderContinuation(input: {
     await ctx.client.session.promptAsync({
       path: { id: sessionID },
       body: {
-        agent: agent ?? "atlas",
+        agent: normalizedAgent,
         ...(promptContext.model !== undefined ? { model: promptContext.model } : {}),
         ...(inheritedTools ? { tools: inheritedTools } : {}),
         parts: [createInternalAgentTextPart(prompt)],
@@ -72,6 +82,7 @@ export async function injectBoulderContinuation(input: {
 
     sessionState.promptFailureCount = 0
     log(`[${HOOK_NAME}] Boulder continuation injected`, { sessionID })
+    return "injected"
   } catch (err) {
     sessionState.promptFailureCount += 1
     sessionState.lastFailureAt = Date.now()
@@ -80,5 +91,6 @@ export async function injectBoulderContinuation(input: {
       error: String(err),
       promptFailureCount: sessionState.promptFailureCount,
     })
+    return "failed"
   }
 }

@@ -10,6 +10,7 @@ import { TmuxSessionManager } from "./features/tmux-subagent"
 import { initLspSpawnToastNotifier } from "./tools/lsp/spawn-toast-notifier"
 import { createConfigHandler } from "./plugin-handlers"
 import { log } from "./shared"
+import { markServerRunningInProcess } from "./shared/tmux/tmux-utils/server-health"
 
 export type Managers = {
   tmuxSessionManager: TmuxSessionManager
@@ -26,6 +27,10 @@ export function createManagers(args: {
   backgroundNotificationHookEnabled: boolean
 }): Managers {
   const { ctx, pluginConfig, tmuxConfig, modelCacheState, backgroundNotificationHookEnabled } = args
+
+  if (tmuxConfig.enabled) {
+    markServerRunningInProcess()
+  }
 
   const tmuxSessionManager = new TmuxSessionManager(ctx, tmuxConfig)
 

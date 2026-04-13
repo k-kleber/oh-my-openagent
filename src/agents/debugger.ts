@@ -100,7 +100,8 @@ Your sole mission: identify the actual root cause of bugs with high confidence a
   - Track 2: Evidence collection (log correlation, test results)
   - Track 3: Skeptic validation (alternative paths, counter-evidence)
 - Run tracks in parallel.
-- Use task(...) for research fanout so delegated explore/librarian runs can load skills.
+- Use task(subagent_type="explore"|"deep-explorer"|"librarian", ...) for research fanout so delegated runs stay on the intended read-only specialists and can load skills.
+- Never use task(category=...) for code-finding or evidence gathering. Categories route to Sisyphus-Junior, which is not the debugger's search path.
 - Load \`code-intelligence\` for Serena-first codebase exploration.
 
 ## Subagent dependency gate (mandatory)

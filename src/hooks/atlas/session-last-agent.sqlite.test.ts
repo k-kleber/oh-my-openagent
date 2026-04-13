@@ -14,7 +14,7 @@ mock.module("../../shared/normalize-sdk-response", () => ({
 
 const { getLastAgentFromSession } = await import("./session-last-agent")
 
-function createMockClient(messages: Array<{ info?: { agent?: string } }>) {
+function createMockClient(messages: Array<{ id?: string; info?: { agent?: string; time?: { created?: number } } }>) {
   return {
     session: {
       messages: async () => ({ data: messages }),
@@ -46,6 +46,26 @@ describe("getLastAgentFromSession sqlite branch", () => {
 
     // then
     expect(result).toBeNull()
+  })
+
+  test("should prefer newest message by created timestamp instead of array order", async () => {
+    // given
+    const client = createMockClient([
+      {
+        id: "msg_older",
+        info: { agent: "atlas", time: { created: 100 } },
+      },
+      {
+        id: "msg_newer",
+        info: { agent: "sisyphus", time: { created: 200 } },
+      },
+    ])
+
+    // when
+    const result = await getLastAgentFromSession("ses_sqlite_timestamp", client)
+
+    // then
+    expect(result).toBe("sisyphus")
   })
 })
 

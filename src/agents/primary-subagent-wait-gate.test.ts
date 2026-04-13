@@ -11,6 +11,7 @@ describe("primary agent subagent wait gate instructions", () => {
     expect(prompt).toContain("Subagent dependency gate")
     expect(prompt).toContain("background_output(task_id=\"...\")")
     expect(prompt).toContain("Do NOT continue with main-thread code reading")
+    expect(prompt).toContain("Never use task(category=...) for code-finding or evidence gathering")
   })
 
   it("#given brainstormer prompt #when optional checks are delegated #then enforces wait before dependent recommendations", () => {

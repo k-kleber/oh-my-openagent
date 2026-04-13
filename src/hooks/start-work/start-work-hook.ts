@@ -166,13 +166,18 @@ No incomplete plans available. Create a new plan with: /plan "your task"`
             const updatedSessions = existingState.session_ids.includes(sessionId)
               ? existingState.session_ids
               : [...existingState.session_ids, sessionId]
+            const updatedOrigins = {
+              ...(existingState.session_origins ?? {}),
+              [sessionId]: "direct" as const,
+            }
             writeBoulderState(ctx.directory, {
               ...existingState,
               worktree_path: worktreePath,
               session_ids: updatedSessions,
+              session_origins: updatedOrigins,
             })
           } else {
-            appendSessionId(ctx.directory, sessionId)
+            appendSessionId(ctx.directory, sessionId, "direct")
           }
 
           const worktreeDisplay = effectiveWorktree ? createWorktreeActiveBlock(effectiveWorktree) : worktreeBlock

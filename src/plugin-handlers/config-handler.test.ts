@@ -46,6 +46,7 @@ beforeEach(() => {
   spyOn(agentLoader, "loadProjectAgents" as any).mockReturnValue({})
 
   spyOn(mcpLoader, "loadMcpConfigs" as any).mockResolvedValue({ servers: {} })
+  spyOn(mcpLoader, "setAdditionalAllowedMcpEnvVars").mockImplementation(() => {})
 
   spyOn(pluginLoader, "loadAllPluginComponents" as any).mockResolvedValue({
     commands: {},
@@ -92,6 +93,7 @@ afterEach(() => {
   ;(agentLoader.loadUserAgents as any)?.mockRestore?.()
   ;(agentLoader.loadProjectAgents as any)?.mockRestore?.()
   ;(mcpLoader.loadMcpConfigs as any)?.mockRestore?.()
+  ;(mcpLoader.setAdditionalAllowedMcpEnvVars as any)?.mockRestore?.()
   ;(pluginLoader.loadAllPluginComponents as any)?.mockRestore?.()
   ;(mcpModule.createBuiltinMcps as any)?.mockRestore?.()
   ;(shared.log as any)?.mockRestore?.()
@@ -159,6 +161,36 @@ describe("Sisyphus-Junior model inheritance", () => {
     expect(agentConfig[getAgentDisplayName("sisyphus-junior")]?.model).toBe(
       "openai/gpt-5.3-codex"
     )
+  })
+})
+
+describe("MCP env allowlist initialization", () => {
+  test("sets the configured MCP env allowlist before plugin loading", async () => {
+    // given
+    const pluginConfig: OhMyOpenCodeConfig = {
+      mcp_env_allowlist: ["CUSTOM_API_KEY", "CUSTOM_AUTH_TOKEN"],
+    }
+    const config: Record<string, unknown> = {
+      model: "anthropic/claude-opus-4-6",
+      agent: {},
+    }
+    const handler = createConfigHandler({
+      ctx: { directory: "/tmp" },
+      pluginConfig,
+      modelCacheState: {
+        anthropicContext1MEnabled: false,
+        modelContextLimitsCache: new Map(),
+      },
+    })
+
+    // when
+    await handler(config)
+
+    // then
+    expect(mcpLoader.setAdditionalAllowedMcpEnvVars).toHaveBeenCalledWith([
+      "CUSTOM_API_KEY",
+      "CUSTOM_AUTH_TOKEN",
+    ])
   })
 })
 
@@ -1310,7 +1342,7 @@ describe("disable_omo_env pass-through", () => {
     const lastCall =
       createBuiltinAgentsMock.mock.calls[createBuiltinAgentsMock.mock.calls.length - 1]
     expect(lastCall).toBeDefined()
-    expect(lastCall?.[12]).toBe(true)
+    expect(lastCall?.[13]).toBe(true)
   })
 
   test("passes disable_omo_env=false to createBuiltinAgents when omitted", async () => {

@@ -400,7 +400,7 @@ describe("createEventHandler - event forwarding", () => {
 		const deletedSessions: string[] = []
 		const eventHandler = createEventHandler({
 			ctx: {} as never,
-			pluginConfig: {} as never,
+			pluginConfig: { tmux: { enabled: true } } as never,
 			firstMessageVariantGate: {
 				markSessionCreated: () => {},
 				clear: () => {},
@@ -447,7 +447,7 @@ describe("createEventHandler - event forwarding", () => {
 		//#given
 		const eventHandler = createEventHandler({
 			ctx: {} as never,
-			pluginConfig: {} as never,
+			pluginConfig: { tmux: { enabled: true } } as never,
 			firstMessageVariantGate: {
 				markSessionCreated: () => {},
 				clear: () => {},
@@ -480,6 +480,53 @@ describe("createEventHandler - event forwarding", () => {
 
 		//#then
 		expect(getSessionPromptParams(sessionID)).toBeUndefined()
+	})
+
+	it("does not forward tmux events when tmux integration is disabled", async () => {
+		//#given
+		const createdSessions: string[] = []
+		const deletedSessions: string[] = []
+		const eventHandler = createEventHandler({
+			ctx: {} as never,
+			pluginConfig: { tmux: { enabled: false } } as never,
+			firstMessageVariantGate: {
+				markSessionCreated: () => {},
+				clear: () => {},
+			},
+			managers: {
+				skillMcpManager: {
+					disconnectSession: async () => {},
+				},
+				tmuxSessionManager: {
+					onSessionCreated: async ({ properties }: { properties?: { info?: { id?: string } } }) => {
+						createdSessions.push(properties?.info?.id ?? "")
+					},
+					onSessionDeleted: async ({ sessionID }: { sessionID: string }) => {
+						deletedSessions.push(sessionID)
+					},
+				},
+			} as never,
+			hooks: {} as never,
+		})
+
+		//#when
+		await eventHandler({
+			event: {
+				type: "session.created",
+				properties: { info: { id: "ses_tmux_disabled" } },
+			},
+		} as any)
+
+		await eventHandler({
+			event: {
+				type: "session.deleted",
+				properties: { info: { id: "ses_tmux_disabled" } },
+			},
+		} as any)
+
+		//#then
+		expect(createdSessions).toEqual([])
+		expect(deletedSessions).toEqual([])
 	})
 })
 

@@ -1,15 +1,29 @@
-import { describe, expect, it } from "bun:test"
+import { afterEach, beforeEach, describe, expect, it } from "bun:test"
+import { subagentSessions, _resetForTesting } from "../../features/claude-code-session-state/state"
 import { createMemoryAutoTriggerHook } from "./hook"
 
 describe("memory-auto-trigger hook", () => {
+  beforeEach(() => {
+    _resetForTesting()
+  })
+
+  afterEach(() => {
+    _resetForTesting()
+  })
+
   const ctx = { directory: "/repo/project" } as never
   const mcpManager = {
     callTool: async (_info: unknown, _context: unknown, toolName: string, args: Record<string, unknown>) => {
       if (toolName === "recall") {
-        return [{ text: `recall:${String(args.query ?? "")}` }]
+        return {
+          results: [{
+            content: `Verified memory for ${String(args.query ?? "")}`,
+            mentioned_at: "2026-04-10T07:00:00Z",
+          }],
+        }
       }
       if (toolName === "openmemory_query") {
-        return [{ text: `memory:${String(args.query ?? "")}` }]
+        return { results: [] }
       }
       if (toolName === "retain") {
         return [{ ok: true, args }]
@@ -24,12 +38,12 @@ describe("memory-auto-trigger hook", () => {
   it("injects recall once per session", async () => {
     const hook = createMemoryAutoTriggerHook(ctx, {
       budget: { session_chars: 4000 },
-    }, mcpManager)
+    })
     const output = { parts: [{ type: "text", text: "Investigate auth regressions" }] }
 
     await hook["chat.message"]?.({ sessionID: "ses-1", agent: "sisyphus" }, output)
     expect(output.parts[0]?.text).toContain("MEMORY AUTO-RECALL")
-    expect(output.parts[0]?.text).toContain("verified")
+    expect(output.parts[0]?.text).toContain("memory-retrieval")
 
     const output2 = { parts: [{ type: "text", text: "Continue" }] }
     await hook["chat.message"]?.({ sessionID: "ses-1", agent: "sisyphus" }, output2)
@@ -169,5 +183,46 @@ describe("memory-auto-trigger hook", () => {
     )
 
     expect(second.output).toContain("memory-orchestrator")
+  })
+
+  it("captures completed subagent sessions even when the subagent agent name is not in target_agents", async () => {
+    const hook = createMemoryAutoTriggerHook(ctx, {
+      budget: { session_chars: 4000 },
+      target_agents: ["sisyphus", "hephaestus", "atlas"],
+      reducer: { min_evidence_count: 1 },
+    }, mcpManager)
+
+    const sessionID = "ses-subagent-memory"
+    subagentSessions.add(sessionID)
+
+    const output = { title: "ok", output: "x".repeat(500), metadata: {} as Record<string, unknown> }
+    await hook["tool.execute.after"]?.(
+      { tool: "task", sessionID, callID: "sub-1", agent: "explore" },
+      output,
+    )
+
+    expect(output.output).toContain("memory-orchestrator")
+  })
+
+  it("captures default non-main registered agents like writer and researcher", async () => {
+    const hook = createMemoryAutoTriggerHook(ctx, {
+      budget: { session_chars: 4000 },
+      reducer: { min_evidence_count: 1 },
+    }, mcpManager)
+
+    const writerOutput = { title: "ok", output: "w".repeat(500), metadata: {} as Record<string, unknown> }
+    await hook["tool.execute.after"]?.(
+      { tool: "task", sessionID: "ses-writer", callID: "writer-1", agent: "writer" },
+      writerOutput,
+    )
+
+    const researcherOutput = { title: "ok", output: "r".repeat(500), metadata: {} as Record<string, unknown> }
+    await hook["tool.execute.after"]?.(
+      { tool: "task", sessionID: "ses-researcher", callID: "researcher-1", agent: "researcher" },
+      researcherOutput,
+    )
+
+    expect(writerOutput.output).toContain("memory-orchestrator")
+    expect(researcherOutput.output).toContain("memory-orchestrator")
   })
 })

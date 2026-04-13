@@ -5277,4 +5277,104 @@ describe("BackgroundManager - tool permission spread order", () => {
 
     manager.shutdown()
   })
+
+  test("startTask retries with fallback agent when original agent is missing", async () => {
+    //#given
+    const promptCalls: Array<{ path: { id: string }; body: Record<string, unknown> }> = []
+    const client = {
+      session: {
+        get: async () => ({ data: { directory: "/test/dir" } }),
+        create: async () => ({ data: { id: "session-fallback-agent" } }),
+        promptAsync: async (args: { path: { id: string }; body: Record<string, unknown> }) => {
+          promptCalls.push(args)
+          if (promptCalls.length === 1) {
+            throw new Error("Agent not found: sisyphus-junior")
+          }
+          return {}
+        },
+      },
+    }
+    const manager = new BackgroundManager({ client, directory: tmpdir() } as unknown as PluginInput)
+    const task: BackgroundTask = {
+      id: "task-fallback-agent",
+      status: "pending",
+      queuedAt: new Date(),
+      description: "test task",
+      prompt: "test prompt",
+      agent: "sisyphus-junior",
+      parentSessionID: "parent-session",
+      parentMessageID: "parent-message",
+      model: { providerID: "openai", modelID: "gpt-5.4", variant: "medium" },
+    }
+    const input: import("./types").LaunchInput = {
+      description: task.description,
+      prompt: task.prompt,
+      agent: task.agent,
+      parentSessionID: task.parentSessionID,
+      parentMessageID: task.parentMessageID,
+      model: task.model,
+    }
+
+    //#when
+    await (manager as unknown as { startTask: (item: { task: BackgroundTask; input: import("./types").LaunchInput }) => Promise<void> })
+      .startTask({ task, input })
+
+    //#then
+    expect(promptCalls).toHaveLength(2)
+    expect(promptCalls[0].body.agent).toBe("sisyphus-junior")
+    expect(promptCalls[1].body.agent).toBe("general")
+    expect(task.sessionID).toBe("session-fallback-agent")
+    expect(task.status).toBe("running")
+
+    manager.shutdown()
+  })
+
+  test("resume retries with fallback agent when original agent is missing", async () => {
+    //#given
+    const promptCalls: Array<{ path: { id: string }; body: Record<string, unknown> }> = []
+    const client = {
+      session: {
+        promptAsync: async (args: { path: { id: string }; body: Record<string, unknown> }) => {
+          promptCalls.push(args)
+          if (promptCalls.length === 1) {
+            throw new Error("Agent not found: explore")
+          }
+          return {}
+        },
+        abort: async () => ({}),
+      },
+    }
+    const manager = new BackgroundManager({ client, directory: tmpdir() } as unknown as PluginInput)
+    const task: BackgroundTask = {
+      id: "task-resume-fallback-agent",
+      sessionID: "session-resume-fallback",
+      parentSessionID: "parent-session",
+      parentMessageID: "parent-message",
+      description: "resume task",
+      prompt: "resume prompt",
+      agent: "explore",
+      status: "completed",
+      startedAt: new Date(),
+      completedAt: new Date(),
+      model: { providerID: "anthropic", modelID: "claude-sonnet-4-20250514" },
+    }
+    getTaskMap(manager).set(task.id, task)
+
+    //#when
+    await manager.resume({
+      sessionId: task.sessionID,
+      prompt: "continue",
+      parentSessionID: task.parentSessionID,
+      parentMessageID: task.parentMessageID,
+    })
+
+    //#then
+    expect(promptCalls).toHaveLength(2)
+    expect(promptCalls[0].body.agent).toBe("explore")
+    expect(promptCalls[1].body.agent).toBe("general")
+    expect(task.status).toBe("running")
+    expect(task.error).toBeUndefined()
+
+    manager.shutdown()
+  })
 })

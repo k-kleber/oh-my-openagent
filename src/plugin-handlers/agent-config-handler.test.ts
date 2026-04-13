@@ -293,6 +293,39 @@ describe("applyAgentConfig builtin override protection", () => {
     expect(createSisyphusJuniorAgentSpy).toHaveBeenCalledWith(undefined, "openai/gpt-5.4", false)
   })
 
+  test("preserves an explicit Atlas minimax override instead of falling back to Claude", async () => {
+    // given
+    createBuiltinAgentsSpy.mockResolvedValueOnce({
+      sisyphus: builtinSisyphusConfig,
+      oracle: builtinOracleConfig,
+      "multimodal-looker": builtinMultimodalLookerConfig,
+      atlas: {
+        ...builtinAtlasConfig,
+        model: "opencode-go/minimax-m2.7",
+      },
+    })
+
+    // when
+    const result = await applyAgentConfig({
+      config: createBaseConfig(),
+      pluginConfig: {
+        ...createPluginConfig(),
+        agents: {
+          atlas: {
+            model: "opencode-go/minimax-m2.7",
+          },
+        },
+      },
+      ctx: { directory: "/tmp" },
+      pluginComponents: createPluginComponents(),
+    })
+
+    // then
+    const atlasDisplayName = getAgentDisplayName("atlas")
+    expect((result[atlasDisplayName] as AgentConfig | undefined)?.model).toBe("opencode-go/minimax-m2.7")
+    expect(createSisyphusJuniorAgentSpy).toHaveBeenCalledWith(undefined, "opencode-go/minimax-m2.7", false)
+  })
+
   test("includes project and global .agents skills in builtin agent awareness", async () => {
     // given
     const projectAgentsSkill = {

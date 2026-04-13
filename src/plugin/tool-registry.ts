@@ -33,6 +33,7 @@ import { log } from "../shared"
 import type { Managers } from "../create-managers"
 import type { SkillContext } from "./skill-context"
 import { normalizeToolArgSchemas } from "./normalize-tool-arg-schemas"
+import { isInsideTmux } from "../shared/tmux"
 
 export type ToolRegistryResult = {
   filteredTools: ToolsRecord
@@ -45,8 +46,16 @@ export function createToolRegistry(args: {
   managers: Pick<Managers, "backgroundManager" | "tmuxSessionManager" | "skillMcpManager">
   skillContext: SkillContext
   availableCategories: AvailableCategory[]
+  interactiveBashEnabled?: boolean
 }): ToolRegistryResult {
-  const { ctx, pluginConfig, managers, skillContext, availableCategories } = args
+  const {
+    ctx,
+    pluginConfig,
+    managers,
+    skillContext,
+    availableCategories,
+    interactiveBashEnabled = !!pluginConfig.tmux?.enabled && isInsideTmux(),
+  } = args
 
   const backgroundTools = createBackgroundTools(managers.backgroundManager, ctx.client)
   const callOmoAgent = createCallOmoAgent(
@@ -145,7 +154,7 @@ export function createToolRegistry(args: {
     task: delegateTask,
     skill_mcp: skillMcpTool,
     skill: skillTool,
-    interactive_bash,
+    ...(interactiveBashEnabled ? { interactive_bash } : {}),
     ...taskToolsRecord,
     ...hashlineToolsRecord,
   }

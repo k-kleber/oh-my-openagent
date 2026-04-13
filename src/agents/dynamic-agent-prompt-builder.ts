@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs"
+import { join } from "node:path"
 import type { AgentPromptMetadata } from "./types"
 import type { AvailableSpecialist } from "../features/opencode-skill-loader/types"
 import { formatSpecialistCatalog } from "../features/opencode-skill-loader/specialist-catalog"
@@ -18,6 +20,8 @@ export interface AvailableSkill {
   description: string
   location: "user" | "project" | "plugin"
 }
+
+export type CavemanTier = "lite" | "full" | "ultra"
 
 export interface AvailableCategory {
   name: string
@@ -182,6 +186,20 @@ export function buildMemorySection(): string {
 Before delegating research to explore or librarian, delegate to a memory-retrieval subagent to surface relevant prior context: \`task(subagent_type="memory-retrieval", load_skills=[], prompt="Recall and verify memory relevant to: <user's request>\\nProject: <projectPath> (<projectName>)", run_in_background=false)\`. Hindsight and OpenMemory are native always-on MCPs, so no memory skill needs to be mounted first. Memory retrieval is memory-only: on memory miss, do not perform fallback repo discovery; return a concise no-memory result. Treat recalled memory as advisory until verified against current code.
 
 After completing significant work (architectural decisions, bug fixes with non-obvious cause, pattern discoveries), consider triggering memory capture: \`task(subagent_type="memory-store", load_skills=[], prompt="Project: <projectPath> (<projectName>)\\nObservations:\\n- <list of insights>", run_in_background=false)\`. Only capture high-signal, non-obvious, actionable insights.`
+}
+
+export function buildGraphifySection(directory?: string): string {
+  if (!directory) return ""
+  const graphPath = join(directory, "graphify-out", "graph.json")
+  if (!existsSync(graphPath)) return ""
+  return `## Knowledge Graph (Graphify)
+
+If \`graphify-out/graph.json\` exists in the project root, you MUST:
+1. Load the graphify skill: \`skill("graphify")\`
+2. Read \`graphify-out/GRAPH_REPORT.md\` for architecture context before exploring the codebase
+3. Use graph queries to understand module boundaries and dependencies before searching
+
+This gives you a persistent map of the codebase structure across sessions.`
 }
 
 export function buildCategorySkillsDelegationGuide(categories: AvailableCategory[], skills: AvailableSkill[], specialists: AvailableSpecialist[] = []): string {
@@ -591,4 +609,91 @@ task(subagent_type="explore", run_in_background=true, ...)
 // End your response and wait for the notification
 \`\`\`
 </Anti_Duplication>`
+}
+
+const CAVEMAN_TIER_ROUTING: Record<string, CavemanTier> = {
+  // LITE: sisyphus, brainstormer, researcher, writer, atlas, multimodal-looker, metis, memory-retrieval, memory-store
+  sisyphus: "lite",
+  brainstormer: "lite",
+  researcher: "lite",
+  writer: "lite",
+  atlas: "lite",
+  "multimodal-looker": "lite",
+  metis: "lite",
+  "memory-retrieval": "lite",
+  "memory-store": "lite",
+
+  // FULL: explore, librarian, deep-explorer, debugger, oracle, momus, hephaestus
+  explore: "full",
+  librarian: "full",
+  "deep-explorer": "full",
+  debugger: "full",
+  oracle: "full",
+  momus: "full",
+  hephaestus: "full",
+
+  // ULTRA: sisyphus-junior, tester
+  "sisyphus-junior": "ultra",
+  tester: "ultra",
+}
+
+/**
+ * Returns the Caveman tier for a given agent name.
+ * Returns null if the agent is not mapped for Caveman support.
+ */
+export function getCavemanTierForAgent(agentName: string): CavemanTier | null {
+  return CAVEMAN_TIER_ROUTING[agentName] || null
+}
+
+/**
+ * Returns the verbatim Caveman prompt block for the given tier.
+ */
+export function buildCavemanSection(tier: CavemanTier): string {
+  if (tier === "lite") {
+    return `<Caveman_Rules>
+## Grunt Level: lite
+
+No filler/hedging. Keep articles + full sentences. Professional but tight
+
+### Example:
+Your component re-renders because you create a new object reference each render. Inline object props fail shallow comparison every time. Wrap it in useMemo.
+</Caveman_Rules>`
+  }
+
+  if (tier === "full") {
+    return `<Caveman_Rules>
+## Grunt Level: full
+
+Drop articles, fragments OK, short synonyms. Classic caveman
+
+### Example:
+New object ref each render. Inline object prop = new ref = re-render. Wrap in useMemo.
+</Caveman_Rules>`
+  }
+
+  if (tier === "ultra") {
+    return `<Caveman_Rules>
+## Grunt Level: ultra
+
+Abbreviate (DB/auth/config/req/res/fn/impl), strip conjunctions, arrows for causality (X → Y), one word when one word enough
+
+### Example:
+Inline obj prop → new ref → re-render. useMemo.
+</Caveman_Rules>`
+  }
+
+  return ""
+}
+
+/**
+ * Gated helper: returns empty string if disabled or agent not mapped,
+ * otherwise returns the appropriate tier block.
+ */
+export function maybeBuildCavemanSection(agentName: string, cavemanEnabled: boolean): string {
+  if (!cavemanEnabled) return ""
+
+  const tier = getCavemanTierForAgent(agentName)
+  if (!tier) return ""
+
+  return buildCavemanSection(tier)
 }

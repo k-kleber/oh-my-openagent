@@ -664,10 +664,10 @@ Your component re-renders because you create a new object reference each render.
     return `<Caveman_Rules>
 ## Grunt Level: full
 
-Drop articles, fragments OK, short synonyms. Classic caveman
+Strip articles (the, a, an). Fragments OK. Use short synonyms. No hedging, no filler. One sentence per point max. Lines short.
 
 ### Example:
-New object ref each render. Inline object prop = new ref = re-render. Wrap in useMemo.
+Component re-renders: new object reference created each render. Inline object props fail shallow comparison. Wrap in useMemo to stabilize.
 </Caveman_Rules>`
   }
 

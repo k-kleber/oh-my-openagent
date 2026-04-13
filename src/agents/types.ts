@@ -121,6 +121,7 @@ export type BuiltinAgentName =
   | "librarian"
   | "explore"
   | "deep-explorer"
+  | "graphify-retrieval"
   | "multimodal-looker"
   | "metis"
   | "momus"

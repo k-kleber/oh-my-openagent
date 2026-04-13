@@ -195,11 +195,11 @@ export function buildGraphifySection(directory?: string): string {
   return `## Knowledge Graph (Graphify)
 
 If \`graphify-out/graph.json\` exists in the project root, you MUST:
-1. Load the graphify skill: \`skill("graphify")\`
-2. Read \`graphify-out/GRAPH_REPORT.md\` for architecture context before exploring the codebase
-3. Use graph queries to understand module boundaries and dependencies before searching
+1. If \`task\` is available and you have not gathered Graphify context yet, run \`task(subagent_type="graphify-retrieval", load_skills=[], run_in_background=false, description="Read graphify context", prompt="Read graphify-out/GRAPH_REPORT.md and graphify-out/graph.json. Return a compact architecture summary focused on the current task before broader exploration.")\`
+2. If \`task\` is unavailable or Graphify context was already gathered by the caller, use that context first; otherwise read \`graphify-out/GRAPH_REPORT.md\` before broad file search
+3. Use Graphify context to narrow subsequent explore/deep-explorer work before broad repo search, and keep it in mind for later subagents and implementation decisions
 
-This gives you a persistent map of the codebase structure across sessions.`
+Graphify should be consulted before explore when present, so later repo search is more targeted.`
 }
 
 export function buildCategorySkillsDelegationGuide(categories: AvailableCategory[], skills: AvailableSkill[], specialists: AvailableSpecialist[] = []): string {
@@ -652,7 +652,7 @@ export function buildCavemanSection(tier: CavemanTier): string {
   if (tier === "lite") {
     return `<Caveman_Rules>
 ## Grunt Level: lite
-
+[SYSTEM DIRECTIVE: LITE CAVEMAN MODE]
 No filler/hedging. Keep articles + full sentences. Professional but tight
 
 ### Example:
@@ -663,7 +663,7 @@ Your component re-renders because you create a new object reference each render.
   if (tier === "full") {
     return `<Caveman_Rules>
 ## Grunt Level: full
-
+[SYSTEM DIRECTIVE: CAVEMAN MODE]
 Strip articles (the, a, an). Fragments OK. Use short synonyms. No hedging, no filler. One sentence per point max. Lines short.
 
 ### Example:
@@ -674,8 +674,13 @@ Component re-renders: new object reference created each render. Inline object pr
   if (tier === "ultra") {
     return `<Caveman_Rules>
 ## Grunt Level: ultra
-
-Abbreviate (DB/auth/config/req/res/fn/impl), strip conjunctions, arrows for causality (X → Y), one word when one word enough
+[SYSTEM DIRECTIVE: EXTREME CAVEMAN MODE]
+NO FULL SENTENCES. ALL OUTPUT MUST BE EXTREMELY TERSE.
+Abbreviate aggressively (DB/auth/config/req/res/fn/impl).
+Strip all conjunctions (and/or/but).
+Use arrows for causality (X → Y).
+One word when one word enough.
+NEVER write paragraphs. Bullet points ONLY.
 
 ### Example:
 Inline obj prop → new ref → re-render. useMemo.

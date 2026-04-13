@@ -82,6 +82,7 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
   }).join("\n")
 
   const brainstormerAllowedSubagents = new Set(["explore", "deep-explorer", "librarian", "memory-retrieval", "graphify-retrieval"])
+  const debuggerAllowedSubagents = new Set(["explore", "deep-explorer", "librarian", "memory-retrieval", "graphify-retrieval"])
 
   const description = `Spawn agent task with category-based or direct agent selection.
   
@@ -204,6 +205,21 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
 
         if (!brainstormerAllowedSubagents.has(requestedSubagent)) {
           return `Brainstormer can only delegate to explore, deep-explorer, librarian, memory-retrieval, or graphify-retrieval. Received: "${args.subagent_type}".`
+        }
+      }
+
+      if (callerAgentConfigKey === "debugger") {
+        if (args.category) {
+          return `Debugger cannot delegate implementation categories. Use subagent_type="explore", "deep-explorer", "librarian", "memory-retrieval", or "graphify-retrieval" only.`
+        }
+
+        const requestedSubagent = args.subagent_type?.trim().replace(/^@+/, "").toLowerCase()
+        if (!requestedSubagent) {
+          return `Debugger must specify subagent_type. Allowed: explore, deep-explorer, librarian, memory-retrieval, graphify-retrieval.`
+        }
+
+        if (!debuggerAllowedSubagents.has(requestedSubagent)) {
+          return `Debugger can only delegate to explore, deep-explorer, librarian, memory-retrieval, or graphify-retrieval. Received: "${args.subagent_type}".`
         }
       }
 

@@ -1970,6 +1970,112 @@ describe("sisyphus-task", () => {
       expect(result).toContain("Done")
     }, { timeout: 10000 })
 
+    test("debugger rejects category delegation to implementation agents", async () => {
+      // given
+      const { createDelegateTask } = require("./tools")
+      const mockManager = { launch: async () => ({}) }
+      const mockClient = {
+        app: {
+          agents: async () => ({ data: [] }),
+        },
+        config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
+        session: {
+          get: async () => ({ data: { directory: "/project" } }),
+        },
+      }
+      const tool = createDelegateTask({ manager: mockManager, client: mockClient })
+
+      // when
+      const result = await tool.execute(
+        {
+          description: "Category from debugger",
+          prompt: "Do work",
+          category: "quick",
+          run_in_background: false,
+          load_skills: [],
+        },
+        { sessionID: "parent-session", messageID: "parent-message", agent: "debugger", abort: new AbortController().signal },
+      )
+
+      // then
+      expect(result).toContain("Debugger cannot delegate implementation categories")
+    })
+
+    test("debugger rejects write-capable direct subagents", async () => {
+      // given
+      const { createDelegateTask } = require("./tools")
+      const mockManager = { launch: async () => ({}) }
+      const mockClient = {
+        app: {
+          agents: async () => ({ data: [] }),
+        },
+        config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
+        session: {
+          get: async () => ({ data: { directory: "/project" } }),
+        },
+      }
+      const tool = createDelegateTask({ manager: mockManager, client: mockClient })
+
+      // when
+      const result = await tool.execute(
+        {
+          description: "Direct impl agent",
+          prompt: "Do work",
+          subagent_type: "sisyphus-junior",
+          run_in_background: false,
+          load_skills: [],
+        },
+        { sessionID: "parent-session", messageID: "parent-message", agent: "debugger", abort: new AbortController().signal },
+      )
+
+      // then
+      expect(result).toContain("Debugger can only delegate to explore, deep-explorer, librarian, memory-retrieval, or graphify-retrieval")
+    })
+
+    test("debugger allows graphify-retrieval delegation", async () => {
+      // given
+      const { createDelegateTask } = require("./tools")
+      let promptCalled = false
+      const mockManager = { launch: async () => ({}) }
+      const mockClient = {
+        app: {
+          agents: async () => ({ data: [{ name: "graphify-retrieval", mode: "subagent", model: { providerID: "github-copilot", modelID: "gpt-5-mini" } }] }),
+        },
+        config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
+        session: {
+          get: async () => ({ data: { directory: "/project" } }),
+          create: async () => ({ data: { id: "ses_debugger_graphify_ok" } }),
+          prompt: async () => {
+            promptCalled = true
+            return { data: {} }
+          },
+          promptAsync: async () => {
+            promptCalled = true
+            return { data: {} }
+          },
+          messages: async () => ({ data: [{ info: { role: "assistant" }, parts: [{ type: "text", text: "Graphify done" }] }] }),
+          status: async () => ({ data: { ses_debugger_graphify_ok: { type: "idle" } } }),
+        },
+      }
+      const tool = createDelegateTask({ manager: mockManager, client: mockClient })
+
+      // when
+      const result = await tool.execute(
+        {
+          description: "Graphify retrieval",
+          prompt: "Read graph context",
+          subagent_type: "graphify-retrieval",
+          run_in_background: false,
+          load_skills: [],
+        },
+        { sessionID: "parent-session", messageID: "parent-message", agent: "debugger", abort: new AbortController().signal },
+      )
+
+      // then
+      expect(promptCalled).toBe(true)
+      expect(result).toContain("Graphify done")
+    }, { timeout: 10000 })
+
     test("#given category without run_in_background #when executing #then throws required parameter error", async () => {
       // given
       const { createDelegateTask } = require("./tools")

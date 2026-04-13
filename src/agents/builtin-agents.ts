@@ -111,7 +111,8 @@ export async function createBuiltinAgents(
   uiSelectedModel?: string,
   disabledSkills?: Set<string>,
   useTaskSystem = false,
-  disableOmoEnv = false
+  disableOmoEnv = false,
+  cavemanEnabled = false
 ): Promise<Record<string, AgentConfig>> {
 
   const connectedProviders = readConnectedProvidersCache()
@@ -157,7 +158,9 @@ export async function createBuiltinAgents(
     isFirstRunNoCache,
     disabledSkills,
     disableOmoEnv,
+    cavemanEnabled,
   })
+
 
   const registeredAgents = parseRegisteredAgentSummaries(customAgentSummaries)
   const builtinAgentNames = new Set(Object.keys(agentSources).map((name) => name.toLowerCase()))
@@ -191,6 +194,7 @@ export async function createBuiltinAgents(
     userCategories: categories,
     useTaskSystem,
     disableOmoEnv,
+    cavemanEnabled,
   })
   if (sisyphusConfig) {
     result["sisyphus"] = sisyphusConfig
@@ -209,6 +213,7 @@ export async function createBuiltinAgents(
     directory,
     useTaskSystem,
     disableOmoEnv,
+    cavemanEnabled,
   })
   if (hephaestusConfig) {
     result["hephaestus"] = hephaestusConfig
@@ -222,6 +227,7 @@ export async function createBuiltinAgents(
     isFirstRunNoCache,
     mergedCategories,
     directory,
+    cavemanEnabled,
   })
   if (debuggerConfig) {
     result["debugger"] = debuggerConfig
@@ -235,6 +241,7 @@ export async function createBuiltinAgents(
     isFirstRunNoCache,
     mergedCategories,
     directory,
+    cavemanEnabled,
   })
   if (brainstormerConfig) {
     result["brainstormer"] = brainstormerConfig
@@ -248,6 +255,7 @@ export async function createBuiltinAgents(
     isFirstRunNoCache,
     mergedCategories,
     directory,
+    cavemanEnabled,
   })
   if (researcherConfig) {
     result["researcher"] = researcherConfig
@@ -261,6 +269,7 @@ export async function createBuiltinAgents(
     isFirstRunNoCache,
     mergedCategories,
     directory,
+    cavemanEnabled,
   })
   if (writerConfig) {
     result["writer"] = writerConfig
@@ -282,6 +291,7 @@ export async function createBuiltinAgents(
     mergedCategories,
     directory,
     userCategories: categories,
+    cavemanEnabled,
   })
   if (atlasConfig) {
     result["atlas"] = atlasConfig

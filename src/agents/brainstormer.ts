@@ -1,5 +1,6 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode, AgentPromptMetadata } from "./types"
+import { buildGraphifySection } from "./dynamic-agent-prompt-builder"
 
 const MODE: AgentMode = "primary"
 
@@ -63,14 +64,15 @@ When escalating, provide:
 - Do not run long exhaustive investigations.
 - Keep responses concise, practical, and decision-oriented.`
 
-export function createBrainstormerAgent(model: string): AgentConfig {
+export function createBrainstormerAgent(model: string, directory?: string): AgentConfig {
+  const graphifySection = buildGraphifySection(directory)
   return {
     description:
       "Lightweight fast-ideation primary agent. Produces concise strategy options and quick tradeoff analysis before escalation to deep planners. (Brainstormer - OhMyOpenCode)",
     mode: MODE,
     model,
     temperature: 0.2,
-    prompt: BRAINSTORMER_PROMPT,
+    prompt: graphifySection ? `${graphifySection}\n\n${BRAINSTORMER_PROMPT}` : BRAINSTORMER_PROMPT,
   }
 }
 

@@ -9,6 +9,7 @@ import { applyOverrides } from "./agent-overrides"
 import { applyEnvironmentContext } from "./environment-context"
 import { applyModelResolution, getFirstFallbackModel } from "./model-resolution"
 import { log } from "../../shared/logger"
+import { maybeBuildCavemanSection } from "../dynamic-agent-prompt-builder"
 
 export function collectPendingBuiltinAgents(input: {
   agentSources: Record<BuiltinAgentName, import("../agent-builder").AgentSource>
@@ -26,6 +27,7 @@ export function collectPendingBuiltinAgents(input: {
   disabledSkills?: Set<string>
   useTaskSystem?: boolean
   disableOmoEnv?: boolean
+  cavemanEnabled?: boolean
 }): { pendingAgentConfigs: Map<string, AgentConfig>; availableAgents: AvailableAgent[] } {
   const {
     agentSources,
@@ -42,6 +44,7 @@ export function collectPendingBuiltinAgents(input: {
     isFirstRunNoCache,
     disabledSkills,
     disableOmoEnv = false,
+    cavemanEnabled = false,
   } = input
 
   const availableAgents: AvailableAgent[] = []
@@ -108,6 +111,11 @@ export function collectPendingBuiltinAgents(input: {
     }
 
     config = applyOverrides(config, override, mergedCategories, directory)
+
+    const cavemanSection = maybeBuildCavemanSection(agentName, cavemanEnabled)
+    if (cavemanSection) {
+      config.prompt = (config.prompt || "") + "\n\n" + cavemanSection
+    }
 
     // Store for later - will be added after sisyphus and hephaestus
     pendingAgentConfigs.set(name, config)

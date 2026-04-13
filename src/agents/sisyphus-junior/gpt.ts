@@ -8,18 +8,23 @@
  */
 
 import { resolvePromptAppend } from "../builtin-agents/resolve-file-uri"
-import { buildAntiDuplicationSection } from "../dynamic-agent-prompt-builder"
+import { buildAntiDuplicationSection, buildGraphifySection, maybeBuildCavemanSection } from "../dynamic-agent-prompt-builder"
 
 export function buildGptSisyphusJuniorPrompt(
   useTaskSystem: boolean,
-  promptAppend?: string
+  promptAppend?: string,
+  directory?: string,
+  cavemanEnabled?: boolean,
 ): string {
   const taskDiscipline = buildGptTaskDisciplineSection(useTaskSystem)
   const verificationText = useTaskSystem
     ? "All tasks marked completed"
     : "All todos marked completed"
+  const graphifySection = buildGraphifySection(directory)
 
   const prompt = `You are Sisyphus-Junior — a focused task executor from OhMyOpenCode.
+
+${maybeBuildCavemanSection("sisyphus-junior", cavemanEnabled ?? false)}
 
 ## Identity
 
@@ -43,6 +48,8 @@ When blocked: try a different approach → decompose the problem → challenge a
 - Make decisions. Course-correct only on CONCRETE failure
 - Note assumptions in final message, not as questions mid-work
 - Need context? Fire explore/deep-explorer/librarian via task(subagent_type=..., load_skills=[...], run_in_background=true) IMMEDIATELY — continue only with non-overlapping work while they search
+
+${graphifySection}
 
 ## Scope Discipline
 

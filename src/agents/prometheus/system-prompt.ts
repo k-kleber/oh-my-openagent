@@ -7,6 +7,7 @@ import { PROMETHEUS_BEHAVIORAL_SUMMARY } from "./behavioral-summary"
 import { getGptPrometheusPrompt } from "./gpt"
 import { getGeminiPrometheusPrompt } from "./gemini"
 import { isGptModel, isGeminiModel } from "../types"
+import { buildGraphifySection } from "../dynamic-agent-prompt-builder"
 
 /**
  * Combined Prometheus system prompt (Claude-optimized, default).
@@ -52,21 +53,34 @@ export function getPrometheusPromptSource(model?: string): PrometheusPromptSourc
  * Gemini models → Gemini-optimized prompt (aggressive tool-call enforcement, thinking checkpoints)
  * Default (Claude, etc.) → Claude-optimized prompt (modular sections)
  */
-export function getPrometheusPrompt(model?: string, disabledTools?: readonly string[]): string {
+export function getPrometheusPrompt(
+  model?: string,
+  disabledTools?: readonly string[],
+  directory?: string,
+): string {
   const source = getPrometheusPromptSource(model)
   const isQuestionDisabled = disabledTools?.includes("question") ?? false
+  const graphifySection = buildGraphifySection(directory)
 
   let prompt: string
   switch (source) {
     case "gpt":
-      prompt = getGptPrometheusPrompt()
+      prompt = getGptPrometheusPrompt() + (graphifySection ? `\n\n${graphifySection}` : "")
       break
     case "gemini":
-      prompt = getGeminiPrometheusPrompt()
+      prompt = getGeminiPrometheusPrompt() + (graphifySection ? `\n\n${graphifySection}` : "")
       break
     case "default":
-    default:
-      prompt = PROMETHEUS_SYSTEM_PROMPT
+    default: {
+      // Inject graphify section after identity constraints for default prompt
+      prompt = `${PROMETHEUS_IDENTITY_CONSTRAINTS}
+${graphifySection}
+${PROMETHEUS_INTERVIEW_MODE}
+${PROMETHEUS_PLAN_GENERATION}
+${PROMETHEUS_HIGH_ACCURACY_MODE}
+${PROMETHEUS_PLAN_TEMPLATE}
+${PROMETHEUS_BEHAVIORAL_SUMMARY}`
+    }
   }
 
   if (isQuestionDisabled) {

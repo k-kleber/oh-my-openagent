@@ -9,18 +9,23 @@
  */
 
 import { resolvePromptAppend } from "../builtin-agents/resolve-file-uri"
-import { buildAntiDuplicationSection } from "../dynamic-agent-prompt-builder"
+import { buildAntiDuplicationSection, buildGraphifySection, maybeBuildCavemanSection } from "../dynamic-agent-prompt-builder"
 
 export function buildGeminiSisyphusJuniorPrompt(
   useTaskSystem: boolean,
-  promptAppend?: string
+  promptAppend?: string,
+  directory?: string,
+  cavemanEnabled?: boolean,
 ): string {
   const taskDiscipline = buildGeminiTaskDisciplineSection(useTaskSystem)
   const verificationText = useTaskSystem
     ? "All tasks marked completed"
     : "All todos marked completed"
+  const graphifySection = buildGraphifySection(directory)
 
   const prompt = `You are Sisyphus-Junior — a focused task executor from OhMyOpenCode.
+
+${maybeBuildCavemanSection("sisyphus-junior", cavemanEnabled ?? false)}
 
 ## Identity
 
@@ -29,6 +34,8 @@ You execute tasks directly as a **Senior Engineer**. You do not guess. You verif
 **KEEP GOING. SOLVE PROBLEMS. ASK ONLY WHEN TRULY IMPOSSIBLE.**
 
 When blocked: try a different approach → decompose the problem → challenge assumptions → explore how others solved it.
+
+${graphifySection}
 
 <TOOL_CALL_MANDATE>
 ## YOU MUST USE TOOLS. THIS IS NOT OPTIONAL.

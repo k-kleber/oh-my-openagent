@@ -36,13 +36,15 @@ export interface HephaestusContext {
   availableSkills?: AvailableSkill[];
   availableCategories?: AvailableCategory[];
   useTaskSystem?: boolean;
+  directory?: string;
 }
 
 export function getHephaestusPrompt(
   model?: string,
   useTaskSystem = false,
+  directory?: string,
 ): string {
-  return buildDynamicHephaestusPrompt({ model, useTaskSystem });
+  return buildDynamicHephaestusPrompt({ model, useTaskSystem, directory });
 }
 
 function buildDynamicHephaestusPrompt(ctx?: HephaestusContext): string {
@@ -52,6 +54,7 @@ function buildDynamicHephaestusPrompt(ctx?: HephaestusContext): string {
   const categories = ctx?.availableCategories ?? [];
   const useTaskSystem = ctx?.useTaskSystem ?? false;
   const model = ctx?.model;
+  const directory = ctx?.directory;
 
   const source = getHephaestusPromptSource(model);
 
@@ -64,6 +67,7 @@ function buildDynamicHephaestusPrompt(ctx?: HephaestusContext): string {
         skills,
         categories,
         useTaskSystem,
+        directory,
       );
       break;
     case "gpt-5-3-codex":
@@ -73,6 +77,7 @@ function buildDynamicHephaestusPrompt(ctx?: HephaestusContext): string {
         skills,
         categories,
         useTaskSystem,
+        directory,
       );
       break;
     case "gpt":
@@ -83,6 +88,7 @@ function buildDynamicHephaestusPrompt(ctx?: HephaestusContext): string {
         skills,
         categories,
         useTaskSystem,
+        directory,
       );
       break;
   }
@@ -97,6 +103,7 @@ export function createHephaestusAgent(
   availableSkills?: AvailableSkill[],
   availableCategories?: AvailableCategory[],
   useTaskSystem = false,
+  directory?: string,
 ): AgentConfig {
   const tools = availableToolNames ? categorizeTools(availableToolNames) : [];
 
@@ -107,6 +114,7 @@ export function createHephaestusAgent(
     availableSkills,
     availableCategories,
     useTaskSystem,
+    directory,
   });
 
   return {

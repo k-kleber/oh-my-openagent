@@ -5,6 +5,7 @@ import { AGENT_MODEL_REQUIREMENTS } from "../../shared"
 import { createDebuggerAgent } from "../debugger"
 import { applyOverrides } from "./agent-overrides"
 import { applyModelResolution, getFirstFallbackModel } from "./model-resolution"
+import { maybeBuildCavemanSection } from "../dynamic-agent-prompt-builder"
 
 export function maybeCreateDebuggerConfig(input: {
   disabledAgents: string[]
@@ -14,6 +15,7 @@ export function maybeCreateDebuggerConfig(input: {
   isFirstRunNoCache: boolean
   mergedCategories: Record<string, CategoryConfig>
   directory?: string
+  cavemanEnabled?: boolean
 }): AgentConfig | undefined {
   const {
     disabledAgents,
@@ -23,6 +25,7 @@ export function maybeCreateDebuggerConfig(input: {
     isFirstRunNoCache,
     mergedCategories,
     directory,
+    cavemanEnabled = false,
   } = input
 
   if (disabledAgents.includes("debugger")) return undefined
@@ -44,7 +47,7 @@ export function maybeCreateDebuggerConfig(input: {
   if (!debuggerResolution) return undefined
   const { model: debuggerModel, variant: debuggerResolvedVariant } = debuggerResolution
 
-  let debuggerConfig = createDebuggerAgent(debuggerModel)
+  let debuggerConfig = createDebuggerAgent(debuggerModel, directory)
 
   if (debuggerResolvedVariant) {
     debuggerConfig = { ...debuggerConfig, variant: debuggerResolvedVariant }
@@ -56,6 +59,11 @@ export function maybeCreateDebuggerConfig(input: {
     mergedCategories,
     directory,
   )
+
+  const cavemanSection = maybeBuildCavemanSection("debugger", cavemanEnabled)
+  if (cavemanSection) {
+    debuggerConfig.prompt = (debuggerConfig.prompt || "") + "\n\n" + cavemanSection
+  }
 
   return debuggerConfig
 }

@@ -13,6 +13,7 @@ export type {
   SisyphusAgentConfig,
   ExperimentalConfig,
   DynamicContextPruningConfig,
+  CavemanConfig,
   RalphLoopConfig,
   TmuxConfig,
   TmuxLayout,

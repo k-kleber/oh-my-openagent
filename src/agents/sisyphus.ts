@@ -38,6 +38,7 @@ import {
   buildParallelDelegationSection,
   buildNonClaudePlannerSection,
   buildAntiDuplicationSection,
+  buildGraphifySection,
   categorizeTools,
 } from "./dynamic-agent-prompt-builder";
 
@@ -48,6 +49,7 @@ function buildDynamicSisyphusPrompt(
   availableSkills: AvailableSkill[] = [],
   availableCategories: AvailableCategory[] = [],
   useTaskSystem = false,
+  directory?: string,
 ): string {
   const keyTriggers = buildKeyTriggersSection(availableAgents, availableSkills);
   const toolSelection = buildToolSelectionTable(
@@ -68,6 +70,7 @@ function buildDynamicSisyphusPrompt(
   const parallelDelegationSection = buildParallelDelegationSection(model, availableCategories);
   const nonClaudePlannerSection = buildNonClaudePlannerSection(model);
   const taskManagementSection = buildTaskManagementSection(useTaskSystem);
+  const graphifySection = buildGraphifySection(directory);
   const todoHookNote = useTaskSystem
     ? "YOUR TASK CREATION WOULD BE TRACKED BY HOOK([SYSTEM REMINDER - TASK CONTINUATION])"
     : "YOUR TODO CREATION WOULD BE TRACKED BY HOOK([SYSTEM REMINDER - TODO CONTINUATION])";
@@ -187,6 +190,8 @@ IMPORTANT: If codebase appears undisciplined, verify before assuming:
 - You might be looking at the wrong reference files
 
 ---
+
+${graphifySection}
 
 ## Phase 2A - Exploration & Research
 
@@ -450,6 +455,7 @@ export function createSisyphusAgent(
   availableSkills?: AvailableSkill[],
   availableCategories?: AvailableCategory[],
   useTaskSystem = false,
+  directory?: string,
 ): AgentConfig {
   const tools = availableToolNames ? categorizeTools(availableToolNames) : [];
   const skills = availableSkills ?? [];
@@ -464,6 +470,7 @@ export function createSisyphusAgent(
       skills,
       categories,
       useTaskSystem,
+      directory,
     );
     return {
       description:
@@ -488,6 +495,7 @@ export function createSisyphusAgent(
     skills,
     categories,
     useTaskSystem,
+    directory,
   );
 
   if (isGeminiModel(model)) {

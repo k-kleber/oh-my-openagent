@@ -68,4 +68,12 @@
   },
 
   "experimental": { "aggressive_truncation": true },
+
+  // Enable Caveman prompt terseness mode.
+  // When enabled, subagents receive tiered Caveman instructions (lite/full/ultra)
+  // that enforce a more direct, abbreviated communication style.
+  // - Lite (sisyphus, brainstormer, researcher, writer, atlas, metis, multimodal-looker, memory-*): minimal terseness
+  // - Full (explore, librarian, deep-explorer, debugger, oracle, momus, hephaestus): moderate terseness
+  // - Ultra (sisyphus-junior, tester): maximum terseness with abbreviations
+  // "caveman": { "enabled": true },
 }

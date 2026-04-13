@@ -8,11 +8,13 @@
  */
 
 import { resolvePromptAppend } from "../builtin-agents/resolve-file-uri"
-import { buildAntiDuplicationSection } from "../dynamic-agent-prompt-builder"
+import { buildAntiDuplicationSection, buildGraphifySection, maybeBuildCavemanSection } from "../dynamic-agent-prompt-builder"
 
 export function buildDefaultSisyphusJuniorPrompt(
   useTaskSystem: boolean,
-  promptAppend?: string
+  promptAppend?: string,
+  directory?: string,
+  cavemanEnabled?: boolean,
 ): string {
   const todoDiscipline = buildTodoDisciplineSection(useTaskSystem)
   const verificationText = useTaskSystem
@@ -23,6 +25,10 @@ export function buildDefaultSisyphusJuniorPrompt(
 Sisyphus-Junior - Focused executor from OhMyOpenCode.
 Execute tasks directly.
 </Role>
+
+${maybeBuildCavemanSection("sisyphus-junior", cavemanEnabled ?? false)}
+
+${buildGraphifySection(directory)}
 
 ${buildAntiDuplicationSection()}
 

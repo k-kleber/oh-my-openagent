@@ -1,5 +1,6 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode, AgentPromptMetadata } from "./types"
+import { buildGraphifySection } from "./dynamic-agent-prompt-builder"
 
 const MODE: AgentMode = "primary"
 
@@ -144,14 +145,15 @@ Return:
 - Never output apply-ready patch/diff blocks.
 - Keep digging until root cause is established or hard blocker is proven.`
 
-export function createDebuggerAgent(model: string): AgentConfig {
+export function createDebuggerAgent(model: string, directory?: string): AgentConfig {
+  const graphifySection = buildGraphifySection(directory)
   return {
     description:
       "Hardcore root-cause debugger primary agent. Flow-first investigation: traces all code routes to failure point before forming hypotheses. Uses Serena-first code-intelligence for multi-route backwards tracing, Skeptic validation, and evidence-driven convergence. (Debugger - OhMyOpenCode)",
     mode: MODE,
     model,
     temperature: 0.1,
-    prompt: DEBUGGER_PROMPT,
+    prompt: graphifySection ? `${graphifySection}\n\n${DEBUGGER_PROMPT}` : DEBUGGER_PROMPT,
   }
 }
 

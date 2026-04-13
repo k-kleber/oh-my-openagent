@@ -5,6 +5,7 @@ import { AGENT_MODEL_REQUIREMENTS } from "../../shared"
 import { createWriterAgent } from "../writer"
 import { applyOverrides } from "./agent-overrides"
 import { applyModelResolution, getFirstFallbackModel } from "./model-resolution"
+import { maybeBuildCavemanSection } from "../dynamic-agent-prompt-builder"
 
 export function maybeCreateWriterConfig(input: {
   disabledAgents: string[]
@@ -14,6 +15,7 @@ export function maybeCreateWriterConfig(input: {
   isFirstRunNoCache: boolean
   mergedCategories: Record<string, CategoryConfig>
   directory?: string
+  cavemanEnabled?: boolean
 }): AgentConfig | undefined {
   const {
     disabledAgents,
@@ -23,6 +25,7 @@ export function maybeCreateWriterConfig(input: {
     isFirstRunNoCache,
     mergedCategories,
     directory,
+    cavemanEnabled = false,
   } = input
 
   if (disabledAgents.includes("writer")) return undefined
@@ -51,6 +54,11 @@ export function maybeCreateWriterConfig(input: {
   }
 
   writerConfig = applyOverrides(writerConfig, writerOverride, mergedCategories, directory)
+
+  const cavemanSection = maybeBuildCavemanSection("writer", cavemanEnabled)
+  if (cavemanSection) {
+    writerConfig.prompt = (writerConfig.prompt || "") + "\n\n" + cavemanSection
+  }
 
   return writerConfig
 }

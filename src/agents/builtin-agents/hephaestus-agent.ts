@@ -7,6 +7,7 @@ import { createHephaestusAgent } from "../hephaestus"
 import { applyEnvironmentContext } from "./environment-context"
 import { applyCategoryOverride, mergeAgentConfig } from "./agent-overrides"
 import { applyModelResolution, getFirstFallbackModel } from "./model-resolution"
+import { maybeBuildCavemanSection } from "../dynamic-agent-prompt-builder"
 
 export function maybeCreateHephaestusConfig(input: {
   disabledAgents: string[]
@@ -21,6 +22,7 @@ export function maybeCreateHephaestusConfig(input: {
   directory?: string
   useTaskSystem: boolean
   disableOmoEnv?: boolean
+  cavemanEnabled?: boolean
 }): AgentConfig | undefined {
   const {
     disabledAgents,
@@ -35,6 +37,7 @@ export function maybeCreateHephaestusConfig(input: {
     directory,
     useTaskSystem,
     disableOmoEnv = false,
+    cavemanEnabled = false,
   } = input
 
   if (disabledAgents.includes("hephaestus")) return undefined
@@ -71,7 +74,8 @@ export function maybeCreateHephaestusConfig(input: {
     undefined,
     availableSkills,
     availableCategories,
-    useTaskSystem
+    useTaskSystem,
+    directory,
   )
 
   hephaestusConfig = { ...hephaestusConfig, variant: hephaestusResolvedVariant ?? "medium" }
@@ -86,5 +90,11 @@ export function maybeCreateHephaestusConfig(input: {
   if (hephaestusOverride) {
     hephaestusConfig = mergeAgentConfig(hephaestusConfig, hephaestusOverride, directory)
   }
+
+  const cavemanSection = maybeBuildCavemanSection("hephaestus", cavemanEnabled)
+  if (cavemanSection) {
+    hephaestusConfig.prompt = (hephaestusConfig.prompt || "") + "\n\n" + cavemanSection
+  }
+
   return hephaestusConfig
 }

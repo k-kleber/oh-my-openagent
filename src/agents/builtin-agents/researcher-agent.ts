@@ -5,6 +5,7 @@ import { AGENT_MODEL_REQUIREMENTS } from "../../shared"
 import { createResearcherAgent } from "../researcher"
 import { applyOverrides } from "./agent-overrides"
 import { applyModelResolution, getFirstFallbackModel } from "./model-resolution"
+import { maybeBuildCavemanSection } from "../dynamic-agent-prompt-builder"
 
 export function maybeCreateResearcherConfig(input: {
   disabledAgents: string[]
@@ -14,6 +15,7 @@ export function maybeCreateResearcherConfig(input: {
   isFirstRunNoCache: boolean
   mergedCategories: Record<string, CategoryConfig>
   directory?: string
+  cavemanEnabled?: boolean
 }): AgentConfig | undefined {
   const {
     disabledAgents,
@@ -23,6 +25,7 @@ export function maybeCreateResearcherConfig(input: {
     isFirstRunNoCache,
     mergedCategories,
     directory,
+    cavemanEnabled = false,
   } = input
 
   if (disabledAgents.includes("researcher")) return undefined
@@ -56,6 +59,11 @@ export function maybeCreateResearcherConfig(input: {
     mergedCategories,
     directory,
   )
+
+  const cavemanSection = maybeBuildCavemanSection("researcher", cavemanEnabled)
+  if (cavemanSection) {
+    researcherConfig.prompt = (researcherConfig.prompt || "") + "\n\n" + cavemanSection
+  }
 
   return researcherConfig
 }

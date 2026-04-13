@@ -56,29 +56,33 @@ export function getSisyphusJuniorPromptSource(model?: string): SisyphusJuniorPro
 export function buildSisyphusJuniorPrompt(
   model: string | undefined,
   useTaskSystem: boolean,
-  promptAppend?: string
+  promptAppend?: string,
+  directory?: string,
+  cavemanEnabled?: boolean,
 ): string {
-  const source = getSisyphusJuniorPromptSource(model)
+  const source = getSisyphusJuniorPromptSource(model);
 
   switch (source) {
     case "gpt-5-4":
-      return buildGpt54SisyphusJuniorPrompt(useTaskSystem, promptAppend)
+      return buildGpt54SisyphusJuniorPrompt(useTaskSystem, promptAppend, directory, cavemanEnabled)
     case "gpt-5-3-codex":
-      return buildGpt53CodexSisyphusJuniorPrompt(useTaskSystem, promptAppend)
+      return buildGpt53CodexSisyphusJuniorPrompt(useTaskSystem, promptAppend, directory, cavemanEnabled)
     case "gpt":
-      return buildGptSisyphusJuniorPrompt(useTaskSystem, promptAppend)
+      return buildGptSisyphusJuniorPrompt(useTaskSystem, promptAppend, directory, cavemanEnabled)
     case "gemini":
-      return buildGeminiSisyphusJuniorPrompt(useTaskSystem, promptAppend)
+      return buildGeminiSisyphusJuniorPrompt(useTaskSystem, promptAppend, directory, cavemanEnabled)
     case "default":
     default:
-      return buildDefaultSisyphusJuniorPrompt(useTaskSystem, promptAppend)
+      return buildDefaultSisyphusJuniorPrompt(useTaskSystem, promptAppend, directory, cavemanEnabled)
   }
 }
 
 export function createSisyphusJuniorAgentWithOverrides(
   override: AgentOverrideConfig | undefined,
   systemDefaultModel?: string,
-  useTaskSystem = false
+  useTaskSystem = false,
+  directory?: string,
+  cavemanEnabled?: boolean,
 ): AgentConfig {
   if (override?.disable) {
     override = undefined
@@ -89,7 +93,7 @@ export function createSisyphusJuniorAgentWithOverrides(
   const temperature = override?.temperature ?? SISYPHUS_JUNIOR_DEFAULTS.temperature
 
   const promptAppend = override?.prompt_append
-  const prompt = buildSisyphusJuniorPrompt(model, useTaskSystem, promptAppend)
+  const prompt = buildSisyphusJuniorPrompt(model, useTaskSystem, promptAppend, directory, cavemanEnabled)
 
   const baseRestrictions = createAgentToolRestrictions(BLOCKED_TOOLS)
 

@@ -271,6 +271,44 @@ describe("createSisyphusJuniorAgentWithOverrides", () => {
       expect(result.prompt).toContain("todowrite")
       expect(result.prompt).not.toContain("task_create")
     })
+
+    test("cavemanEnabled=true includes ultra Caveman block in prompts", () => {
+      //#given
+      const override = { model: "anthropic/claude-sonnet-4-6" }
+
+      //#when
+      const result = createSisyphusJuniorAgentWithOverrides(override, undefined, false, undefined, true)
+
+      //#then
+      expect(result.prompt).toContain("<Caveman_Rules>")
+      expect(result.prompt).toContain("## Grunt Level: ultra")
+      expect(result.prompt).toContain("Abbreviate (DB/auth/config/req/res/fn/impl)")
+      expect(result.prompt).toContain("Inline obj prop → new ref → re-render. useMemo.")
+    })
+
+    test("cavemanEnabled=true includes ultra Caveman block in prompts for GPT-5.4", () => {
+      //#given
+      const override = { model: "openai/gpt-5.4" }
+
+      //#when
+      const result = createSisyphusJuniorAgentWithOverrides(override, undefined, false, undefined, true)
+
+      //#then
+      expect(result.prompt).toContain("<Caveman_Rules>")
+      expect(result.prompt).toContain("## Grunt Level: ultra")
+    })
+
+    test("cavemanEnabled=true includes ultra Caveman block in prompts for Gemini", () => {
+      //#given
+      const override = { model: "google/gemini-pro" }
+
+      //#when
+      const result = createSisyphusJuniorAgentWithOverrides(override, undefined, false, undefined, true)
+
+      //#then
+      expect(result.prompt).toContain("<Caveman_Rules>")
+      expect(result.prompt).toContain("## Grunt Level: ultra")
+    })
   })
 
   describe("prompt composition", () => {

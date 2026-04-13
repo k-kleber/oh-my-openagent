@@ -32,12 +32,13 @@ import {
   buildToolSelectionTable,
   buildExploreSection,
   buildLibrarianSection,
-  buildDelegationTable,
   buildCategorySkillsDelegationGuide,
-  buildOracleSection,
+  buildDelegationTable,
   buildHardBlocksSection,
   buildAntiPatternsSection,
   buildAntiDuplicationSection,
+  buildGraphifySection,
+  buildOracleSection,
   buildNonClaudePlannerSection,
   categorizeTools,
 } from "../dynamic-agent-prompt-builder";
@@ -83,6 +84,7 @@ export function buildGpt54SisyphusPrompt(
   availableSkills: AvailableSkill[] = [],
   availableCategories: AvailableCategory[] = [],
   useTaskSystem = false,
+  directory?: string,
 ): string {
   const keyTriggers = buildKeyTriggersSection(availableAgents, availableSkills);
   const toolSelection = buildToolSelectionTable(
@@ -102,6 +104,7 @@ export function buildGpt54SisyphusPrompt(
   const antiPatterns = buildAntiPatternsSection();
   const nonClaudePlannerSection = buildNonClaudePlannerSection(model);
   const tasksSection = buildGpt54TasksSection(useTaskSystem);
+  const graphifySection = buildGraphifySection(directory);
   const todoHookNote = useTaskSystem
     ? "YOUR TASK CREATION WOULD BE TRACKED BY HOOK([SYSTEM REMINDER - TASK CONTINUATION])"
     : "YOUR TODO CREATION WOULD BE TRACKED BY HOOK([SYSTEM REMINDER - TODO CONTINUATION])";
@@ -194,6 +197,7 @@ If proceeding, briefly state what you did and what remains.
 </intent>`;
 
   const exploreBlock = `<explore>
+${graphifySection}
 ## Exploration & Research
 
 ### Codebase maturity (assess on first encounter with a new repo or module)

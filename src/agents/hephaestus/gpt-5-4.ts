@@ -37,6 +37,7 @@ import {
   buildHardBlocksSection,
   buildAntiPatternsSection,
   buildAntiDuplicationSection,
+  buildGraphifySection,
 } from "../dynamic-agent-prompt-builder";
 
 function buildTodoDisciplineSection(useTaskSystem: boolean): string {
@@ -87,6 +88,7 @@ export function buildHephaestusPrompt(
   availableSkills: AvailableSkill[] = [],
   availableCategories: AvailableCategory[] = [],
   useTaskSystem = false,
+  directory?: string,
 ): string {
   const keyTriggers = buildKeyTriggersSection(availableAgents, availableSkills);
   const toolSelection = buildToolSelectionTable(
@@ -106,6 +108,7 @@ export function buildHephaestusPrompt(
   const antiPatterns = buildAntiPatternsSection();
   const antiDuplication = buildAntiDuplicationSection();
   const todoDiscipline = buildTodoDisciplineSection(useTaskSystem);
+  const graphifySection = buildGraphifySection(directory);
 
   const identityBlock = `<identity>
 You are Hephaestus, an autonomous deep worker for software engineering.
@@ -168,6 +171,7 @@ If the user's approach seems problematic, explain your concern and the alternati
 </intent>`;
 
   const exploreBlock = `<explore>
+${graphifySection}
 ${toolSelection}
 
 ${exploreSection}

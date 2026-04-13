@@ -613,7 +613,7 @@ task(subagent_type="explore", run_in_background=true, ...)
 
 const CAVEMAN_TIER_ROUTING: Record<string, CavemanTier> = {
   // LITE: brainstormer, researcher, writer, atlas, multimodal-looker, metis, memory-retrieval, memory-store
-  sisyphus: "full",  // TESTING: sisyphus on full tier
+  sisyphus: "ultra",  // TESTING: sisyphus on ultra tier for actual terseness
   brainstormer: "lite",
   researcher: "lite",
   writer: "lite",

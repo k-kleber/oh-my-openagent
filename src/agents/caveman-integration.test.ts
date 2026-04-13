@@ -40,7 +40,7 @@ describe("Caveman Integration", () => {
     }
   })
 
-  test("When cavemanEnabled=true, Sisyphus (Lite) receives correct Caveman block", async () => {
+  test("When cavemanEnabled=true, Sisyphus (Ultra) receives correct Caveman block", async () => {
     // #given
     const fetchSpy = spyOn(shared, "fetchAvailableModels").mockResolvedValue(
       new Set(["anthropic/claude-opus-4-6"])
@@ -68,7 +68,7 @@ describe("Caveman Integration", () => {
 
       // #then
       expect(agents.sisyphus.prompt).toContain("<Caveman_Rules>")
-      expect(agents.sisyphus.prompt).toContain("Grunt Level: lite")
+      expect(agents.sisyphus.prompt).toContain("Grunt Level: ultra")
     } finally {
       fetchSpy.mockRestore()
     }

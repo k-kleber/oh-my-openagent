@@ -21,8 +21,6 @@ export interface AvailableSkill {
   location: "user" | "project" | "plugin"
 }
 
-export type CavemanTier = "lite" | "full" | "ultra"
-
 export interface AvailableCategory {
   name: string
   description: string
@@ -616,94 +614,3 @@ task(subagent_type="explore", run_in_background=true, ...)
 </Anti_Duplication>`
 }
 
-const CAVEMAN_TIER_ROUTING: Record<string, CavemanTier> = {
-  // LITE: brainstormer, researcher, writer, atlas, multimodal-looker, metis, memory-retrieval, memory-store
-  sisyphus: "ultra",  // TESTING: sisyphus on ultra tier for actual terseness
-  brainstormer: "lite",
-  researcher: "lite",
-  writer: "lite",
-  atlas: "lite",
-  "multimodal-looker": "lite",
-  metis: "lite",
-  "memory-retrieval": "lite",
-  "memory-store": "lite",
-
-  // FULL: explore, librarian, deep-explorer, debugger, oracle, momus, hephaestus
-  explore: "full",
-  librarian: "full",
-  "deep-explorer": "full",
-  debugger: "full",
-  oracle: "full",
-  momus: "full",
-  hephaestus: "full",
-
-  // ULTRA: sisyphus-junior, tester
-  "sisyphus-junior": "ultra",
-  tester: "ultra",
-}
-
-/**
- * Returns the Caveman tier for a given agent name.
- * Returns null if the agent is not mapped for Caveman support.
- */
-export function getCavemanTierForAgent(agentName: string): CavemanTier | null {
-  return CAVEMAN_TIER_ROUTING[agentName] || null
-}
-
-/**
- * Returns the verbatim Caveman prompt block for the given tier.
- */
-export function buildCavemanSection(tier: CavemanTier): string {
-  if (tier === "lite") {
-    return `<Caveman_Rules>
-## Grunt Level: lite
-[SYSTEM DIRECTIVE: LITE CAVEMAN MODE]
-No filler/hedging. Keep articles + full sentences. Professional but tight
-
-### Example:
-Your component re-renders because you create a new object reference each render. Inline object props fail shallow comparison every time. Wrap it in useMemo.
-</Caveman_Rules>`
-  }
-
-  if (tier === "full") {
-    return `<Caveman_Rules>
-## Grunt Level: full
-[SYSTEM DIRECTIVE: CAVEMAN MODE]
-Strip articles (the, a, an). Fragments OK. Use short synonyms. No hedging, no filler. One sentence per point max. Lines short.
-
-### Example:
-Component re-renders: new object reference created each render. Inline object props fail shallow comparison. Wrap in useMemo to stabilize.
-</Caveman_Rules>`
-  }
-
-  if (tier === "ultra") {
-    return `<Caveman_Rules>
-## Grunt Level: ultra
-[SYSTEM DIRECTIVE: EXTREME CAVEMAN MODE]
-NO FULL SENTENCES. ALL OUTPUT MUST BE EXTREMELY TERSE.
-Abbreviate aggressively (DB/auth/config/req/res/fn/impl).
-Strip all conjunctions (and/or/but).
-Use arrows for causality (X → Y).
-One word when one word enough.
-NEVER write paragraphs. Bullet points ONLY.
-
-### Example:
-Inline obj prop → new ref → re-render. useMemo.
-</Caveman_Rules>`
-  }
-
-  return ""
-}
-
-/**
- * Gated helper: returns empty string if disabled or agent not mapped,
- * otherwise returns the appropriate tier block.
- */
-export function maybeBuildCavemanSection(agentName: string, cavemanEnabled: boolean): string {
-  if (!cavemanEnabled) return ""
-
-  const tier = getCavemanTierForAgent(agentName)
-  if (!tier) return ""
-
-  return buildCavemanSection(tier)
-}

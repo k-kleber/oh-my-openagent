@@ -1,8 +1,12 @@
-import { afterEach, describe, test, expect } from "bun:test"
+import { afterEach, beforeEach, describe, test, expect } from "bun:test"
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 
 import { createChatMessageHandler } from "./chat-message"
 import { _resetForTesting, setMainSession, subagentSessions } from "../features/claude-code-session-state"
 import { clearSessionModel, getSessionModel, setSessionModel } from "../shared/session-model-state"
+import { contextCollector } from "../features/context-injector"
 
 type ChatMessagePart = { type: string; text?: string; [key: string]: unknown }
 type ChatMessageHandlerOutput = { message: Record<string, unknown>; parts: ChatMessagePart[] }
@@ -10,10 +14,11 @@ type ChatMessageHandlerOutput = { message: Record<string, unknown>; parts: ChatM
 function createMockHandlerArgs(overrides?: {
   pluginConfig?: Record<string, unknown>
   shouldOverride?: boolean
+  directory?: string
 }) {
   const appliedSessions: string[] = []
   return {
-    ctx: { client: { tui: { showToast: async () => {} } } } as any,
+    ctx: { directory: overrides?.directory ?? tmpdir(), client: { tui: { showToast: async () => {} } } } as any,
     pluginConfig: (overrides?.pluginConfig ?? {}) as any,
     firstMessageVariantGate: {
       shouldOverride: () => overrides?.shouldOverride ?? false,
@@ -32,11 +37,18 @@ function createMockHandlerArgs(overrides?: {
   }
 }
 
+let graphifyTestDir: string
+
+beforeEach(() => {
+  graphifyTestDir = mkdtempSync(join(tmpdir(), "omo-graphify-chat-"))
+})
+
 afterEach(() => {
   _resetForTesting()
   clearSessionModel("test-session")
   clearSessionModel("main-session")
   clearSessionModel("subagent-session")
+  contextCollector.clear("test-session")
 })
 
 function createMockInput(agent?: string, model?: { providerID: string; modelID: string }) {
@@ -150,6 +162,40 @@ describe("createChatMessageHandler - TUI variant passthrough", () => {
     //#then
     expect(output.parts).toHaveLength(1)
     expect(output.parts[0].text).toContain("[BACKGROUND TASK COMPLETED]")
+  })
+
+  test("registers Graphify context for sessions when graphify-out exists", async () => {
+    //#given
+    const graphifyDir = join(graphifyTestDir, "graphify-out")
+    mkdirSync(graphifyDir)
+    writeFileSync(join(graphifyDir, "graph.json"), "{}")
+    const args = createMockHandlerArgs({ directory: graphifyTestDir })
+    const handler = createChatMessageHandler(args)
+    const input = createMockInput("sisyphus", { providerID: "openai", modelID: "gpt-5.4" })
+    const output = createMockOutput()
+
+    //#when
+    await handler(input, output)
+
+    //#then
+    expect(output.parts).toHaveLength(1)
+    expect(output.parts[0].text).toContain("## Knowledge Graph (Graphify)")
+    expect(output.parts[0].text).toContain('task(subagent_type="graphify-retrieval"')
+    expect(output.parts[0].text).toContain("Wait for the `graphify-retrieval` result")
+  })
+
+  test("does not register Graphify context when graphify-out is absent", async () => {
+    //#given
+    const args = createMockHandlerArgs({ directory: graphifyTestDir })
+    const handler = createChatMessageHandler(args)
+    const input = createMockInput("sisyphus", { providerID: "openai", modelID: "gpt-5.4" })
+    const output = createMockOutput()
+
+    //#when
+    await handler(input, output)
+
+    //#then
+    expect(contextCollector.hasPending("test-session")).toBe(false)
   })
 
   test("reuses the stored model for subsequent messages in the main session when the UI sends none", async () => {

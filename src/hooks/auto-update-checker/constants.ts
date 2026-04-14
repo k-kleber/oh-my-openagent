@@ -4,6 +4,7 @@ import { getOpenCodeCacheDir } from "../../shared/data-path"
 import { getOpenCodeConfigDir } from "../../shared/opencode-config-dir"
 
 export const PACKAGE_NAME = "oh-my-opencode"
+export const ACCEPTED_PACKAGE_NAMES = ["oh-my-opencode", "oh-my-openagent"] as const
 export const NPM_REGISTRY_URL = `https://registry.npmjs.org/-/package/${PACKAGE_NAME}/dist-tags`
 export const NPM_FETCH_TIMEOUT = 5000
 
@@ -24,4 +25,8 @@ export const INSTALLED_PACKAGE_JSON = path.join(
   "node_modules",
   PACKAGE_NAME,
   "package.json"
+)
+
+export const INSTALLED_PACKAGE_JSON_CANDIDATES = ACCEPTED_PACKAGE_NAMES.map(
+  name => path.join(CACHE_DIR, "node_modules", name, "package.json")
 )

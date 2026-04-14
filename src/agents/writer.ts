@@ -1,5 +1,6 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode, AgentPromptMetadata } from "./types"
+import { buildAntiDuplicationSection } from "./dynamic-agent-prompt-builder"
 
 const MODE: AgentMode = "primary"
 
@@ -66,13 +67,14 @@ For missing facts, request a minimal research follow-up from Researcher.
 - Keep writing aligned to user-provided audience and goals.`
 
 export function createWriterAgent(model: string): AgentConfig {
+  const antiDuplicationSection = buildAntiDuplicationSection()
   return {
     description:
       "Collaborative writing primary agent that performs conversational intake, then drafts audience-specific text with quality guardrails. (Writer - OhMyOpenCode)",
     mode: MODE,
     model,
     temperature: 0.2,
-    prompt: WRITER_PROMPT,
+    prompt: `${WRITER_PROMPT}\n\n${antiDuplicationSection}`,
   }
 }
 

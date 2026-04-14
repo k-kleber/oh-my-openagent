@@ -1,6 +1,6 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode, AgentPromptMetadata } from "./types"
-import { buildGraphifySection } from "./dynamic-agent-prompt-builder"
+import { buildGraphifySection, buildAntiDuplicationSection } from "./dynamic-agent-prompt-builder"
 
 const MODE: AgentMode = "primary"
 
@@ -66,13 +66,16 @@ When escalating, provide:
 
 export function createBrainstormerAgent(model: string, directory?: string): AgentConfig {
   const graphifySection = buildGraphifySection(directory)
+  const antiDuplicationSection = buildAntiDuplicationSection()
   return {
     description:
       "Lightweight fast-ideation primary agent. Produces concise strategy options and quick tradeoff analysis before escalation to deep planners. (Brainstormer - OhMyOpenCode)",
     mode: MODE,
     model,
     temperature: 0.2,
-    prompt: graphifySection ? `${graphifySection}\n\n${BRAINSTORMER_PROMPT}` : BRAINSTORMER_PROMPT,
+    prompt: graphifySection
+      ? `${graphifySection}\n\n${BRAINSTORMER_PROMPT}\n\n${antiDuplicationSection}`
+      : `${BRAINSTORMER_PROMPT}\n\n${antiDuplicationSection}`,
   }
 }
 

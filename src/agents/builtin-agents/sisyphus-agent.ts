@@ -7,7 +7,6 @@ import { applyEnvironmentContext } from "./environment-context"
 import { applyOverrides } from "./agent-overrides"
 import { applyModelResolution, getFirstFallbackModel } from "./model-resolution"
 import { createSisyphusAgent } from "../sisyphus"
-import { maybeBuildCavemanSection } from "../dynamic-agent-prompt-builder"
 
 export function maybeCreateSisyphusConfig(input: {
   disabledAgents: string[]
@@ -24,7 +23,6 @@ export function maybeCreateSisyphusConfig(input: {
   userCategories?: CategoriesConfig
   useTaskSystem: boolean
   disableOmoEnv?: boolean
-  cavemanEnabled?: boolean
 }): AgentConfig | undefined {
   const {
     disabledAgents,
@@ -40,7 +38,6 @@ export function maybeCreateSisyphusConfig(input: {
     directory,
     useTaskSystem,
     disableOmoEnv = false,
-    cavemanEnabled = false,
   } = input
 
   const sisyphusOverride = agentOverrides["sisyphus"]
@@ -88,10 +85,6 @@ export function maybeCreateSisyphusConfig(input: {
     disableOmoEnv,
   })
 
-  const cavemanSection = maybeBuildCavemanSection("sisyphus", cavemanEnabled)
-  if (cavemanSection) {
-    sisyphusConfig.prompt = (sisyphusConfig.prompt || "") + "\n\n" + cavemanSection
-  }
 
   return sisyphusConfig
 }

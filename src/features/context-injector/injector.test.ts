@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from "bun:test"
 import { ContextCollector } from "./collector"
 import {
+  injectPendingContext,
   createContextInjectorMessagesTransformHook,
 } from "./injector"
 
@@ -122,6 +123,28 @@ describe("createContextInjectorMessagesTransformHook", () => {
 
     // then
     expect(output.messages.length).toBe(1)
+  })
+
+  it("creates a text part when injecting pending context into empty chat parts", () => {
+    // given
+    const sessionID = "ses_chat_inject_empty"
+    collector.register(sessionID, {
+      id: "graphify",
+      source: "custom",
+      content: "Graphify context",
+      priority: "critical",
+    })
+    const parts: Array<{ type: string; text?: string }> = []
+
+    // when
+    const result = injectPendingContext(collector, sessionID, parts)
+
+    // then
+    expect(result.injected).toBe(true)
+    expect(parts).toHaveLength(1)
+    expect(parts[0].type).toBe("text")
+    expect(parts[0].text).toBe("Graphify context")
+    expect(collector.hasPending(sessionID)).toBe(false)
   })
 
   it("does nothing when no user messages", async () => {

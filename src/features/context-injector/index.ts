@@ -1,5 +1,6 @@
 export { ContextCollector, contextCollector } from "./collector"
 export {
+  injectPendingContext,
   createContextInjectorMessagesTransformHook,
 } from "./injector"
 export type {

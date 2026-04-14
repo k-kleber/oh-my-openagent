@@ -7,7 +7,6 @@ import {
   BrowserAutomationProviderSchema,
   BuiltinCategoryNameSchema,
   CategoryConfigSchema,
-  CavemanConfigSchema,
   ExperimentalConfigSchema,
   GitMasterConfigSchema,
   HookNameSchema,
@@ -148,97 +147,6 @@ describe("disabled_mcps schema", () => {
   })
 })
 
-describe("CavemanConfigSchema", () => {
-  test("accepts enabled as boolean", () => {
-    // given
-    const config = { enabled: true }
-
-    // when
-    const result = CavemanConfigSchema.safeParse(config)
-
-    // then
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data.enabled).toBe(true)
-    }
-  })
-
-  test("is optional", () => {
-    // given
-    const config = {}
-
-    // when
-    const result = CavemanConfigSchema.safeParse(config)
-
-    // then
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data.enabled).toBeUndefined()
-    }
-  })
-
-  test("rejects non-boolean values", () => {
-    // given
-    const config = { enabled: "true" }
-
-    // when
-    const result = CavemanConfigSchema.safeParse(config)
-
-    // then
-    expect(result.success).toBe(false)
-  })
-})
-
-describe("OhMyOpenCodeConfigSchema - caveman", () => {
-  test("accepts caveman config", () => {
-    // given
-    const input = {
-      caveman: {
-        enabled: true,
-      },
-    }
-
-    // when
-    const result = OhMyOpenCodeConfigSchema.safeParse(input)
-
-    // then
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data.caveman).toEqual(input.caveman)
-    }
-  })
-
-  test("still succeeds without caveman field", () => {
-    // given
-    const input = {
-      auto_update: true,
-    }
-
-    // when
-    const result = OhMyOpenCodeConfigSchema.safeParse(input)
-
-    // then
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data.caveman).toBeUndefined()
-    }
-  })
-
-  test("rejects invalid caveman values", () => {
-    // given
-    const input = {
-      caveman: {
-        enabled: 123,
-      },
-    }
-
-    // when
-    const result = OhMyOpenCodeConfigSchema.safeParse(input)
-
-    // then
-    expect(result.success).toBe(false)
-  })
-})
 
 describe("OhMyOpenCodeConfigSchema - model_capabilities", () => {
   test("accepts valid model capabilities config", () => {

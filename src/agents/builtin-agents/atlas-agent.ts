@@ -6,7 +6,6 @@ import { AGENT_MODEL_REQUIREMENTS } from "../../shared"
 import { applyOverrides } from "./agent-overrides"
 import { applyModelResolution } from "./model-resolution"
 import { createAtlasAgent } from "../atlas"
-import { maybeBuildCavemanSection } from "../dynamic-agent-prompt-builder"
 
 export function maybeCreateAtlasConfig(input: {
   disabledAgents: string[]
@@ -20,7 +19,6 @@ export function maybeCreateAtlasConfig(input: {
   directory?: string
   userCategories?: CategoriesConfig
   useTaskSystem?: boolean
-  cavemanEnabled?: boolean
 }): AgentConfig | undefined {
   const {
     disabledAgents,
@@ -33,7 +31,6 @@ export function maybeCreateAtlasConfig(input: {
     mergedCategories,
     directory,
     userCategories,
-    cavemanEnabled = false,
   } = input
 
   if (disabledAgents.includes("atlas")) return undefined
@@ -65,10 +62,6 @@ export function maybeCreateAtlasConfig(input: {
 
   orchestratorConfig = applyOverrides(orchestratorConfig, orchestratorOverride, mergedCategories, directory)
 
-  const cavemanSection = maybeBuildCavemanSection("atlas", cavemanEnabled)
-  if (cavemanSection) {
-    orchestratorConfig.prompt = (orchestratorConfig.prompt || "") + "\n\n" + cavemanSection
-  }
 
   return orchestratorConfig
 }

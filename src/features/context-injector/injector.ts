@@ -25,7 +25,15 @@ export function injectPendingContext(
 
   const textPartIndex = parts.findIndex((p) => p.type === "text" && p.text !== undefined)
   if (textPartIndex === -1) {
-    return { injected: false, contextLength: 0 }
+    const pending = collector.consume(sessionID)
+    parts.unshift({
+      type: "text",
+      text: pending.merged,
+    })
+    return {
+      injected: true,
+      contextLength: pending.merged.length,
+    }
   }
 
   const pending = collector.consume(sessionID)

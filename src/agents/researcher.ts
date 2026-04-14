@@ -1,5 +1,6 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode, AgentPromptMetadata } from "./types"
+import { buildAntiDuplicationSection } from "./dynamic-agent-prompt-builder"
 
 const MODE: AgentMode = "primary"
 
@@ -65,13 +66,14 @@ When asked to handoff for writing:
 - Do not modify source code files.`
 
 export function createResearcherAgent(model: string): AgentConfig {
+  const antiDuplicationSection = buildAntiDuplicationSection()
   return {
     description:
       "Focused research primary agent for fast, source-backed evidence gathering and handoff preparation. (Researcher - OhMyOpenCode)",
     mode: MODE,
     model,
     temperature: 0.1,
-    prompt: RESEARCHER_PROMPT,
+    prompt: `${RESEARCHER_PROMPT}\n\n${antiDuplicationSection}`,
   }
 }
 

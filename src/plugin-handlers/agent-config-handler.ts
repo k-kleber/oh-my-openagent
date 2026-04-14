@@ -106,7 +106,6 @@ export async function applyAgentConfig(params: {
   const disabledSkills = new Set<string>(params.pluginConfig.disabled_skills ?? []);
   const useTaskSystem = params.pluginConfig.experimental?.task_system ?? false;
   const disableOmoEnv = params.pluginConfig.experimental?.disable_omo_env ?? false;
-  const cavemanEnabled = params.pluginConfig.caveman?.enabled ?? false;
 
   const includeClaudeAgents = params.pluginConfig.claude_code?.agents ?? true;
   const userAgents = includeClaudeAgents ? loadUserAgents() : {};
@@ -151,7 +150,6 @@ export async function applyAgentConfig(params: {
     disabledSkills,
     useTaskSystem,
     disableOmoEnv,
-    params.pluginConfig.caveman?.enabled ?? false,
   );
 
   const disabledAgentNames = new Set(
@@ -189,7 +187,6 @@ export async function applyAgentConfig(params: {
       (builtinAgents.atlas as { model?: string } | undefined)?.model,
       useTaskSystem,
       params.ctx.directory,
-      cavemanEnabled,
     );
 
     if (builderEnabled) {

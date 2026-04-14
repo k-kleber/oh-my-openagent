@@ -58,22 +58,21 @@ export function buildSisyphusJuniorPrompt(
   useTaskSystem: boolean,
   promptAppend?: string,
   directory?: string,
-  cavemanEnabled?: boolean,
 ): string {
   const source = getSisyphusJuniorPromptSource(model);
 
   switch (source) {
     case "gpt-5-4":
-      return buildGpt54SisyphusJuniorPrompt(useTaskSystem, promptAppend, directory, cavemanEnabled)
+      return buildGpt54SisyphusJuniorPrompt(useTaskSystem, promptAppend, directory)
     case "gpt-5-3-codex":
-      return buildGpt53CodexSisyphusJuniorPrompt(useTaskSystem, promptAppend, directory, cavemanEnabled)
+      return buildGpt53CodexSisyphusJuniorPrompt(useTaskSystem, promptAppend, directory)
     case "gpt":
-      return buildGptSisyphusJuniorPrompt(useTaskSystem, promptAppend, directory, cavemanEnabled)
+      return buildGptSisyphusJuniorPrompt(useTaskSystem, promptAppend, directory)
     case "gemini":
-      return buildGeminiSisyphusJuniorPrompt(useTaskSystem, promptAppend, directory, cavemanEnabled)
+      return buildGeminiSisyphusJuniorPrompt(useTaskSystem, promptAppend, directory)
     case "default":
     default:
-      return buildDefaultSisyphusJuniorPrompt(useTaskSystem, promptAppend, directory, cavemanEnabled)
+      return buildDefaultSisyphusJuniorPrompt(useTaskSystem, promptAppend, directory)
   }
 }
 
@@ -82,7 +81,6 @@ export function createSisyphusJuniorAgentWithOverrides(
   systemDefaultModel?: string,
   useTaskSystem = false,
   directory?: string,
-  cavemanEnabled?: boolean,
 ): AgentConfig {
   if (override?.disable) {
     override = undefined
@@ -93,7 +91,7 @@ export function createSisyphusJuniorAgentWithOverrides(
   const temperature = override?.temperature ?? SISYPHUS_JUNIOR_DEFAULTS.temperature
 
   const promptAppend = override?.prompt_append
-  const prompt = buildSisyphusJuniorPrompt(model, useTaskSystem, promptAppend, directory, cavemanEnabled)
+  const prompt = buildSisyphusJuniorPrompt(model, useTaskSystem, promptAppend, directory)
 
   const baseRestrictions = createAgentToolRestrictions(BLOCKED_TOOLS)
 

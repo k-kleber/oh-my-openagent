@@ -1,9 +1,12 @@
 import type { OhMyOpenCodeConfig } from "../config"
 import type { PluginContext } from "./types"
+import { existsSync } from "node:fs"
+import { join } from "node:path"
 
 import { hasConnectedProvidersCache } from "../shared"
 import { getSessionModel, setSessionModel } from "../shared/session-model-state"
 import { getMainSessionID, setSessionAgent, subagentSessions } from "../features/claude-code-session-state"
+import { contextCollector, injectPendingContext } from "../features/context-injector"
 import { applyUltraworkModelOverrideOnMessage } from "./ultrawork-model-override"
 import { parseRalphLoopArguments } from "../hooks/ralph-loop/command-arguments"
 
@@ -24,6 +27,23 @@ export type ChatMessageInput = {
 type StartWorkHookOutput = { parts: Array<{ type: string; text?: string }> }
 
 type SessionModelOverride = { providerID: string; modelID: string }
+const GRAPHIFY_CONTEXT_ID = "session-context"
+
+function buildGraphifySessionContext(directory: string): string | null {
+  const graphPath = join(directory, "graphify-out", "graph.json")
+  if (!existsSync(graphPath)) {
+    return null
+  }
+
+  return [
+    "## Knowledge Graph (Graphify)",
+    "",
+    "This project has Graphify artifacts available in `graphify-out/`.",
+    "Before launching `explore`, `deep-explorer`, or broad repo search, run `task(subagent_type=\"graphify-retrieval\", load_skills=[], run_in_background=false, description=\"Read graphify context\", prompt=\"Read graphify-out/GRAPH_REPORT.md and graphify-out/graph.json. Return a compact architecture summary focused on the current task before broader exploration.\")`.",
+    "Wait for the `graphify-retrieval` result before dependent exploration or conclusions.",
+    "Do not glob/read Graphify artifacts yourself unless Graphify context was already provided by the caller.",
+  ].join("\n")
+}
 
 function isStartWorkHookOutput(value: unknown): value is StartWorkHookOutput {
   if (typeof value !== "object" || value === null) return false
@@ -119,6 +139,19 @@ export function createChatMessageHandler(args: {
     input: ChatMessageInput,
     output: ChatMessageHandlerOutput
   ): Promise<void> => {
+    if (typeof ctx.directory === "string") {
+      const graphifyContext = buildGraphifySessionContext(ctx.directory)
+      if (graphifyContext) {
+        contextCollector.register(input.sessionID, {
+          id: GRAPHIFY_CONTEXT_ID,
+          source: "custom",
+          content: graphifyContext,
+          priority: "critical",
+        })
+        injectPendingContext(contextCollector, input.sessionID, output.parts)
+      }
+    }
+
     if (input.agent) {
       setSessionAgent(input.sessionID, input.agent)
     }

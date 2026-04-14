@@ -8,9 +8,6 @@ import {
   buildNonClaudePlannerSection,
   buildExploreSection,
   buildGraphifySection,
-  getCavemanTierForAgent,
-  buildCavemanSection,
-  maybeBuildCavemanSection,
   type AvailableSkill,
   type AvailableCategory,
   type AvailableAgent,
@@ -353,65 +350,3 @@ describe("buildExploreSection", () => {
   })
 })
 
-describe("Caveman helpers", () => {
-  describe("getCavemanTierForAgent", () => {
-    it("returns correct tier for lite agents", () => {
-      expect(getCavemanTierForAgent("sisyphus")).toBe("lite")
-      expect(getCavemanTierForAgent("brainstormer")).toBe("lite")
-      expect(getCavemanTierForAgent("atlas")).toBe("lite")
-    })
-
-    it("returns correct tier for full agents", () => {
-      expect(getCavemanTierForAgent("explore")).toBe("full")
-      expect(getCavemanTierForAgent("librarian")).toBe("full")
-      expect(getCavemanTierForAgent("oracle")).toBe("full")
-    })
-
-    it("returns correct tier for ultra agents", () => {
-      expect(getCavemanTierForAgent("sisyphus-junior")).toBe("ultra")
-      expect(getCavemanTierForAgent("tester")).toBe("ultra")
-    })
-
-    it("returns null for unmapped agents", () => {
-      expect(getCavemanTierForAgent("unknown-agent")).toBeNull()
-    })
-  })
-
-  describe("buildCavemanSection", () => {
-    it("returns correct verbatim block for lite tier", () => {
-      const result = buildCavemanSection("lite")
-      expect(result).toContain("## Grunt Level: lite")
-      expect(result).toContain("No filler/hedging. Keep articles + full sentences. Professional but tight")
-      expect(result).toContain("Your component re-renders because you create a new object reference each render. Inline object props fail shallow comparison every time. Wrap it in useMemo.")
-    })
-
-    it("returns correct verbatim block for full tier", () => {
-      const result = buildCavemanSection("full")
-      expect(result).toContain("## Grunt Level: full")
-      expect(result).toContain("Drop articles, fragments OK, short synonyms. Classic caveman")
-      expect(result).toContain("New object ref each render. Inline object prop = new ref = re-render. Wrap in useMemo.")
-    })
-
-    it("returns correct verbatim block for ultra tier", () => {
-      const result = buildCavemanSection("ultra")
-      expect(result).toContain("## Grunt Level: ultra")
-      expect(result).toContain("Abbreviate (DB/auth/config/req/res/fn/impl), strip conjunctions, arrows for causality (X → Y), one word when one word enough")
-      expect(result).toContain("Inline obj prop → new ref → re-render. useMemo.")
-    })
-  })
-
-  describe("maybeBuildCavemanSection", () => {
-    it("returns empty when disabled", () => {
-      expect(maybeBuildCavemanSection("sisyphus", false)).toBe("")
-    })
-
-    it("returns empty when agent not mapped", () => {
-      expect(maybeBuildCavemanSection("unknown-agent", true)).toBe("")
-    })
-
-    it("returns tier block when enabled and agent is mapped", () => {
-      const result = maybeBuildCavemanSection("sisyphus", true)
-      expect(result).toContain("## Grunt Level: lite")
-    })
-  })
-})

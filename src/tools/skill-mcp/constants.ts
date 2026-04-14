@@ -8,4 +8,5 @@ export const BUILTIN_MCP_TOOL_HINTS: Record<string, string[]> = {
   grep_app: ["grep_app_searchGitHub"],
   hindsight: ["hindsight_recall", "hindsight_retain", "hindsight_list_banks", "hindsight_create_bank"],
   openmemory: ["openmemory_query", "openmemory_store", "openmemory_reinforce", "openmemory_list"],
+  serena: ["serena_read_file", "serena_find_symbol", "serena_search_for_pattern", "serena_list_dir"],
 }

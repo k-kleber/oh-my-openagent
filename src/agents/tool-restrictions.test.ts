@@ -124,12 +124,21 @@ describe("read-only agent tool restrictions", () => {
         bun: "allow",
         npm: "allow",
         pytest: "allow",
+        "*pytest*": "allow",
+        ruff: "allow",
+        "*ruff check*": "allow",
+        pyright: "allow",
+        "*pyright*": "allow",
         cargo: "allow",
         ctest: "allow",
+        "*ctest*": "allow",
         bazel: "allow",
         catkin: "allow",
         catkin_make: "allow",
         rostest: "allow",
+        source: "allow",
+        timeout: "allow",
+        env: "allow",
       }))
       expect(bashPermission.git).toBe("deny")
       expect(bashPermission.rm).toBe("deny")

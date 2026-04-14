@@ -61,3 +61,34 @@ export function createWebsearchConfig(config?: WebsearchConfig): RemoteMcpConfig
 | `grep-app.ts` | Grep.app (no auth) |
 | `hindsight.ts` | Local Hindsight MCP |
 | `openmemory.ts` | Local OpenMemory MCP |
+
+## ROUTING GUIDE
+
+### Native MCPs (use directly, never skill_mcp)
+
+These MCPs are built-in and must be called via their native tool names:
+
+| MCP | Native Tools | Use Instead of skill_mcp |
+|-----|-------------|--------------------------|
+| hindsight | `hindsight_recall`, `hindsight_retain` | Never use `skill_mcp(mcp_name="hindsight", ...)` |
+| openmemory | `openmemory_query`, `openmemory_store` | Never use `skill_mcp(mcp_name="openmemory", ...)` |
+| serena | `serena_*` tools | Never use `skill_mcp(mcp_name="serena", ...)` |
+
+### Skill-Embedded MCPs (use skill_mcp)
+
+These require `skill(name="...")` first, then `skill_mcp`:
+
+| MCP | Example Call |
+|-----|--------------|
+| context7 | `skill_mcp(mcp_name="context7", tool_name="resolve-library-id", ...)` |
+| websearch | `skill_mcp(mcp_name="websearch", tool_name="websearch_web_search_exa", ...)` |
+
+### Why This Matters
+
+Using `skill_mcp` for native MCPs produces:
+```
+"hindsight" is a builtin MCP, not a skill MCP.
+Use the native tools directly: hindsight_recall, hindsight_retain, ...
+```
+
+The `skill_mcp` tool already detects this and provides helpful hints.

@@ -6788,15 +6788,6 @@
         "additionalProperties": false
       }
     },
-    "caveman": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "type": "boolean"
-        }
-      },
-      "additionalProperties": false
-    },
     "claude_code": {
       "type": "object",
       "properties": {

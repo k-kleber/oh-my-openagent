@@ -11,6 +11,10 @@ type PromptContext = {
   tools?: Record<string, boolean>
 }
 
+function isCompactionAgent(agent: unknown): boolean {
+  return typeof agent === "string" && agent.toLowerCase() === "compaction"
+}
+
 export async function resolveRecentPromptContextForSession(
   ctx: PluginInput,
   sessionID: string
@@ -19,6 +23,7 @@ export async function resolveRecentPromptContextForSession(
     const messagesResp = await ctx.client.session.messages({ path: { id: sessionID } })
     const messages = normalizeSDKResponse(messagesResp, [] as Array<{
       info?: {
+        agent?: string
         model?: ModelInfo
         modelID?: string
         providerID?: string
@@ -28,6 +33,9 @@ export async function resolveRecentPromptContextForSession(
 
     for (let i = messages.length - 1; i >= 0; i--) {
       const info = messages[i].info
+      if (isCompactionAgent(info?.agent)) {
+        continue
+      }
       const model = info?.model
       const tools = normalizePromptTools(info?.tools)
       if (model?.providerID && model?.modelID) {

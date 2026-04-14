@@ -614,3 +614,40 @@ task(subagent_type="explore", run_in_background=true, ...)
 </Anti_Duplication>`
 }
 
+/**
+ * Builds instructions for native MCP routing to prevent incorrect skill_mcp usage.
+ */
+export function buildNativeMcpRoutingSection(): string {
+  return `<Native_MCP_Routing>
+## Native MCP Tools - Direct Access (No skill_mcp wrapper)
+
+Some MCP servers are built-in/native and must be called DIRECTLY via their native tool names, NOT via skill_mcp.
+
+### Native MCPs (call directly, never via skill_mcp):
+| MCP Server | Native Tools |
+|---|---|
+| **hindsight** | hindsight_recall, hindsight_retain, hindsight_sync_retain |
+| **openmemory** | openmemory_query, openmemory_store |
+| **serena** | serena_* (all tools starting with serena_) |
+
+**CORRECT**: hindsight_recall(query="...")
+**WRONG**: skill_mcp(mcp_name="hindsight", tool_name="hindsight_recall", ...) - this will fail.
+</Native_MCP_Routing>`
+}
+
+/**
+ * Builds instructions for handling absent/empty results from subagents.
+ */
+export function buildSubagentResultHandlingSection(): string {
+  return `<Subagent_Result_Handling>
+## Subagent Result Handling - Graceful Degradation
+
+When subagents return "absent", "miss", or no results:
+
+1. **Graphify Absent**: If graphify-retrieval returns "absent", proceed with direct tools immediately. Do NOT retry via shell or workarounds.
+2. **Memory Miss**: If memory-retrieval returns no results, proceed with the task using available context. A miss is not a failure.
+3. **No Retries**: Never attempt to "force" a subagent result through shell commands if the specialized subagent found nothing.
+</Subagent_Result_Handling>`
+}
+
+

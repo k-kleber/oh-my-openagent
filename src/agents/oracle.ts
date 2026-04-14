@@ -2,6 +2,12 @@ import type { AgentConfig } from "@opencode-ai/sdk";
 import type { AgentMode, AgentPromptMetadata } from "./types";
 import { isGptModel } from "./types";
 import { createAgentToolRestrictions } from "../shared/permission-compat";
+import {
+  buildGraphifySection,
+  buildAntiDuplicationSection,
+  buildNativeMcpRoutingSection,
+  buildSubagentResultHandlingSection,
+} from "./dynamic-agent-prompt-builder";
 
 const MODE: AgentMode = "subagent";
 
@@ -242,13 +248,25 @@ Before finalizing answers on architecture, security, or performance: re-scan for
 Your response goes directly to the user with no intermediate processing. Make your final message self-contained: a clear recommendation they can act on immediately, covering both what to do and why. Dense and useful beats long and thorough. Deliver actionable insight, not exhaustive analysis.
 </delivery>`;
 
-export function createOracleAgent(model: string): AgentConfig {
+export function createOracleAgent(model: string, directory?: string): AgentConfig {
   const restrictions = createAgentToolRestrictions([
     "write",
     "edit",
     "apply_patch",
     "task",
   ]);
+
+  const graphifySection = buildGraphifySection(directory);
+  const antiDuplicationSection = buildAntiDuplicationSection();
+  const routingSection = buildNativeMcpRoutingSection();
+  const handlingSection = buildSubagentResultHandlingSection();
+
+  const sharedSections = [
+    graphifySection,
+    routingSection,
+    handlingSection,
+    antiDuplicationSection
+  ].filter(Boolean).join("\n\n");
 
   const base = {
     description:
@@ -257,13 +275,13 @@ export function createOracleAgent(model: string): AgentConfig {
     model,
     temperature: 0.1,
     ...restrictions,
-    prompt: ORACLE_DEFAULT_PROMPT,
+    prompt: sharedSections ? `${sharedSections}\n\n${ORACLE_DEFAULT_PROMPT}` : ORACLE_DEFAULT_PROMPT,
   } as AgentConfig;
 
   if (isGptModel(model)) {
     return {
       ...base,
-      prompt: ORACLE_GPT_PROMPT,
+      prompt: sharedSections ? `${sharedSections}\n\n${ORACLE_GPT_PROMPT}` : ORACLE_GPT_PROMPT,
       reasoningEffort: "medium",
       textVerbosity: "high",
     } as AgentConfig;

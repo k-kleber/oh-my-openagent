@@ -47,6 +47,33 @@ describe("matchesToolMatcher", () => {
     test("single asterisk matches any tool", () => {
       expect(matchesToolMatcher("anything", "*")).toBe(true)
     })
+
+    test("matches wrapped pytest command with environment and timeout prefixes", () => {
+      expect(
+        matchesToolMatcher(
+          "source ../.venv/bin/activate && SKIP_DB_BOOTSTRAP=1 timeout 60 pytest -m unit tests/ -v 2>&1",
+          "*pytest*",
+        ),
+      ).toBe(true)
+    })
+
+    test("matches wrapped ruff command", () => {
+      expect(
+        matchesToolMatcher(
+          "source .venv/bin/activate && ruff check OpsCore/tests/ utils/ database_init/ 2>&1 | head -50",
+          "*ruff check*",
+        ),
+      ).toBe(true)
+    })
+
+    test("matches wrapped pyright command", () => {
+      expect(
+        matchesToolMatcher(
+          "source .venv/bin/activate && pyright OpsCore/tests/ 2>&1 | tail -20",
+          "*pyright*",
+        ),
+      ).toBe(true)
+    })
   })
 
   describe("pipe-separated patterns", () => {

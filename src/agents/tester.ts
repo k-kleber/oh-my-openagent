@@ -49,11 +49,12 @@ Your entire job is to run the requested test/build commands and report the resul
 - Bash is allowed only to run test or build commands.
 - Allowed intent: running commands such as test runners, package-manager test/build scripts, C++/GoogleTest commands, catkin test commands, and compile/check steps needed for tests.
 - Forbidden intent: git operations, file mutation, cleanup commands, environment changes, downloads, or any destructive action.
+- Common non-destructive wrappers like virtualenv activation, simple environment-variable prefixes, and timeout wrappers are allowed only when they lead directly into an in-scope verification command.
 - If a requested shell command is not clearly a test/build command, do not run it.
 
 ### Explicitly in scope
 - JavaScript/TypeScript: \`bun test\`, \`npm test\`, \`pnpm test\`, \`yarn test\`, \`vitest\`, \`jest\`
-- Python: \`pytest\`, \`python -m pytest\`, \`tox\`, \`nox\`, \`uv run pytest\`, \`poetry run pytest\`
+- Python: \`pytest\`, \`python -m pytest\`, \`tox\`, \`nox\`, \`uv run pytest\`, \`poetry run pytest\`, \`ruff check\`, \`pyright\`
 - C/C++ and GoogleTest: \`ctest\`, GoogleTest binaries, \`cmake --build\`, \`make test\`, \`bazel test\`
 - ROS/catkin: \`catkin run_tests\`, \`catkin build ... --catkin-make-args run_tests\`, \`catkin_make run_tests\`, \`rostest\`
 
@@ -78,6 +79,18 @@ export function createTesterAgent(model: string): AgentConfig {
     permission: {
       "*": "deny",
       bash: {
+        "*pytest*": "allow",
+        "*py.test*": "allow",
+        "*ruff check*": "allow",
+        "*pyright*": "allow",
+        "*ctest*": "allow",
+        "*cmake --build*": "allow",
+        "*make test*": "allow",
+        "*bazel test*": "allow",
+        "*catkin run_tests*": "allow",
+        "*catkin build*run_tests*": "allow",
+        "*catkin_make run_tests*": "allow",
+        "*rostest*": "allow",
         bun: "allow",
         npm: "allow",
         pnpm: "allow",
@@ -91,6 +104,8 @@ export function createTesterAgent(model: string): AgentConfig {
         poetry: "allow",
         tox: "allow",
         nox: "allow",
+        ruff: "allow",
+        pyright: "allow",
         jest: "allow",
         vitest: "allow",
         ava: "allow",
@@ -112,6 +127,9 @@ export function createTesterAgent(model: string): AgentConfig {
         catkin_make_isolated: "allow",
         rostest: "allow",
         colcon: "allow",
+        source: "allow",
+        timeout: "allow",
+        env: "allow",
         git: "deny",
         rm: "deny",
         mv: "deny",

@@ -1,6 +1,11 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode, AgentPromptMetadata } from "./types"
-import { buildGraphifySection, buildAntiDuplicationSection } from "./dynamic-agent-prompt-builder"
+import {
+  buildGraphifySection,
+  buildAntiDuplicationSection,
+  buildNativeMcpRoutingSection,
+  buildSubagentResultHandlingSection,
+} from "./dynamic-agent-prompt-builder"
 
 const MODE: AgentMode = "primary"
 
@@ -148,15 +153,25 @@ Return:
 export function createDebuggerAgent(model: string, directory?: string): AgentConfig {
   const graphifySection = buildGraphifySection(directory)
   const antiDuplicationSection = buildAntiDuplicationSection()
+  const routingSection = buildNativeMcpRoutingSection()
+  const handlingSection = buildSubagentResultHandlingSection()
+
+  const sharedSections = [
+    graphifySection,
+    routingSection,
+    handlingSection,
+    antiDuplicationSection
+  ].filter(Boolean).join("\n\n")
+
   return {
     description:
       "Hardcore root-cause debugger primary agent. Flow-first investigation: traces all code routes to failure point before forming hypotheses. Uses Serena-first code-intelligence for multi-route backwards tracing, Skeptic validation, and evidence-driven convergence. (Debugger - OhMyOpenCode)",
     mode: MODE,
     model,
     temperature: 0.1,
-    prompt: graphifySection
-      ? `${graphifySection}\n\n${DEBUGGER_PROMPT}\n\n${antiDuplicationSection}`
-      : `${DEBUGGER_PROMPT}\n\n${antiDuplicationSection}`,
+    prompt: sharedSections
+      ? `${sharedSections}\n\n${DEBUGGER_PROMPT}`
+      : DEBUGGER_PROMPT,
   }
 }
 

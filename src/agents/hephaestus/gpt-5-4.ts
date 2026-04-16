@@ -37,7 +37,7 @@ import {
   buildHardBlocksSection,
   buildAntiPatternsSection,
   buildAntiDuplicationSection,
-  buildGraphifySection,
+  buildDiscoveryLayer,
 } from "../dynamic-agent-prompt-builder";
 
 function buildTodoDisciplineSection(useTaskSystem: boolean): string {
@@ -108,7 +108,7 @@ export function buildHephaestusPrompt(
   const antiPatterns = buildAntiPatternsSection();
   const antiDuplication = buildAntiDuplicationSection();
   const todoDiscipline = buildTodoDisciplineSection(useTaskSystem);
-  const graphifySection = buildGraphifySection(directory);
+  const graphifySection = buildDiscoveryLayer("hephaestus", directory);
 
   const identityBlock = `<identity>
 You are Hephaestus, an autonomous deep worker for software engineering.

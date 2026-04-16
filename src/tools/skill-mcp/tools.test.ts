@@ -143,7 +143,7 @@ describe("skill_mcp tool", () => {
     it("blocks serena mutation tools for read-only agents", async () => {
       // given
       loadedSkills = [
-        createMockSkillWithMcp("code-intelligence", {
+        createMockSkillWithMcp("some-skill", {
           serena: { command: "uvx", args: ["serena-mcp-server"] },
         }),
       ]
@@ -170,7 +170,7 @@ describe("skill_mcp tool", () => {
     it("allows serena read tools for read-only agents", async () => {
       // given
       loadedSkills = [
-        createMockSkillWithMcp("code-intelligence", {
+        createMockSkillWithMcp("some-skill", {
           serena: { command: "uvx", args: ["serena-mcp-server"] },
         }),
       ]
@@ -201,7 +201,7 @@ describe("skill_mcp tool", () => {
     it("allows serena mutation tools for writer agents", async () => {
       // given
       loadedSkills = [
-        createMockSkillWithMcp("code-intelligence", {
+        createMockSkillWithMcp("some-skill", {
           serena: { command: "uvx", args: ["serena-mcp-server"] },
         }),
       ]

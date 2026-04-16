@@ -180,8 +180,7 @@ describe("createChatMessageHandler - TUI variant passthrough", () => {
     //#then
     expect(output.parts).toHaveLength(1)
     expect(output.parts[0].text).toContain("## Knowledge Graph (Graphify)")
-    expect(output.parts[0].text).toContain('task(subagent_type="graphify-retrieval"')
-    expect(output.parts[0].text).toContain("Wait for the `graphify-retrieval` result")
+    expect(output.parts[0].text).toContain("Use the built-in `graphify` MCP tools directly")
   })
 
   test("does not register Graphify context when graphify-out is absent", async () => {

@@ -151,7 +151,7 @@ describe("Agent Config Integration", () => {
 
     test("model requirements include all builtin agents", () => {
       // given - expected builtin agents
-      const expectedAgents = ["sisyphus", "debugger", "tester", "brainstormer", "researcher", "writer", "atlas", "prometheus", "metis", "momus", "oracle", "librarian", "explore", "deep-explorer", "graphify-retrieval", "multimodal-looker", "memory-retrieval", "memory-store"]
+      const expectedAgents = ["sisyphus", "debugger", "tester", "brainstormer", "researcher", "writer", "atlas", "prometheus", "metis", "momus", "oracle", "librarian", "explore", "deep-explorer",       "multimodal-looker", "memory-retrieval", "memory-store"]
 
       // when - checking AGENT_MODEL_REQUIREMENTS
       const agentKeys = Object.keys(AGENT_MODEL_REQUIREMENTS)

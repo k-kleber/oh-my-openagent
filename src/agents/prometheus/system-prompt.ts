@@ -7,7 +7,7 @@ import { PROMETHEUS_BEHAVIORAL_SUMMARY } from "./behavioral-summary"
 import { getGptPrometheusPrompt } from "./gpt"
 import { getGeminiPrometheusPrompt } from "./gemini"
 import { isGptModel, isGeminiModel } from "../types"
-import { buildGraphifySection } from "../dynamic-agent-prompt-builder"
+import { buildDiscoveryLayer } from "../dynamic-agent-prompt-builder"
 
 /**
  * Combined Prometheus system prompt (Claude-optimized, default).
@@ -60,7 +60,7 @@ export function getPrometheusPrompt(
 ): string {
   const source = getPrometheusPromptSource(model)
   const isQuestionDisabled = disabledTools?.includes("question") ?? false
-  const graphifySection = buildGraphifySection(directory)
+  const graphifySection = buildDiscoveryLayer("prometheus", directory)
 
   let prompt: string
   switch (source) {

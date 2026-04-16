@@ -1,7 +1,7 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode, AgentPromptMetadata } from "./types"
 import {
-  buildGraphifySection,
+  buildDiscoveryLayer,
   buildAntiDuplicationSection,
   buildNativeMcpRoutingSection,
   buildSubagentResultHandlingSection,
@@ -70,7 +70,7 @@ When escalating, provide:
 - Keep responses concise, practical, and decision-oriented.`
 
 export function createBrainstormerAgent(model: string, directory?: string): AgentConfig {
-  const graphifySection = buildGraphifySection(directory)
+  const graphifySection = buildDiscoveryLayer("brainstormer", directory)
   const antiDuplicationSection = buildAntiDuplicationSection()
   const routingSection = buildNativeMcpRoutingSection()
   const handlingSection = buildSubagentResultHandlingSection()

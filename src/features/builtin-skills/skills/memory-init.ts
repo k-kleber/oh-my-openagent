@@ -20,7 +20,7 @@ At the start of a project session: "init memory", "set up memory for this projec
 - Note detected languages.
 - Pre-warm LSP cache: \`serena_execute_shell_command(command="serena project index <projectName> --language <language>")\`.
 
-### 2.a Verify code-intelligence readiness
+### 2.a Verify Serena readiness
 
 - Verify Serena activation for this project.
 - If Serena is not ready, run:

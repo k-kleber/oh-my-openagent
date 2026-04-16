@@ -8,7 +8,7 @@ import { createOracleAgent, ORACLE_PROMPT_METADATA } from "./oracle"
 import { createLibrarianAgent, LIBRARIAN_PROMPT_METADATA } from "./librarian"
 import { createExploreAgent, EXPLORE_PROMPT_METADATA } from "./explore"
 import { createDeepExplorerAgent, DEEP_EXPLORER_PROMPT_METADATA } from "./deep-explorer"
-import { createGraphifyRetrievalAgent, GRAPHIFY_RETRIEVAL_PROMPT_METADATA } from "./graphify-retrieval"
+
 import { createMultimodalLookerAgent, MULTIMODAL_LOOKER_PROMPT_METADATA } from "./multimodal-looker"
 import { createMetisAgent, metisPromptMetadata } from "./metis"
 import { createAtlasAgent, atlasPromptMetadata } from "./atlas"
@@ -55,7 +55,6 @@ const agentSources: Record<BuiltinAgentName, AgentSource> = {
   librarian: createLibrarianAgent,
   explore: createExploreAgent,
   "deep-explorer": createDeepExplorerAgent,
-  "graphify-retrieval": createGraphifyRetrievalAgent,
   "multimodal-looker": createMultimodalLookerAgent,
   metis: createMetisAgent,
   momus: createMomusAgent,
@@ -76,7 +75,6 @@ const agentMetadata: Partial<Record<BuiltinAgentName, AgentPromptMetadata>> = {
   librarian: LIBRARIAN_PROMPT_METADATA,
   explore: EXPLORE_PROMPT_METADATA,
   "deep-explorer": DEEP_EXPLORER_PROMPT_METADATA,
-  "graphify-retrieval": GRAPHIFY_RETRIEVAL_PROMPT_METADATA,
   "multimodal-looker": MULTIMODAL_LOOKER_PROMPT_METADATA,
   metis: metisPromptMetadata,
   momus: momusPromptMetadata,

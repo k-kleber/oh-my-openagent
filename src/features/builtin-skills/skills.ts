@@ -9,7 +9,6 @@ import {
   frontendUiUxSkill,
   gitMasterSkill,
   devBrowserSkill,
-  codeIntelligenceSkill,
   codeIntelligenceInitSkill,
   memoryMcpSkill,
   memoryCaptureSkill,
@@ -49,7 +48,6 @@ export function createBuiltinSkills(options: CreateBuiltinSkillsOptions = {}): B
 
   const skills = [
     browserSkill,
-    codeIntelligenceSkill,
     codeIntelligenceInitSkill,
     globalToolingPreferenceSkill,
     toolDocRipgrepSkill,

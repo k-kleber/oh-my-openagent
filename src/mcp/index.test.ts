@@ -16,7 +16,8 @@ describe("createBuiltinMcps", () => {
     expect(result).toHaveProperty("serena")
     expect(result).toHaveProperty("hindsight")
     expect(result).toHaveProperty("openmemory")
-    expect(Object.keys(result)).toHaveLength(6)
+    expect(result).toHaveProperty("graphify")
+    expect(Object.keys(result)).toHaveLength(7)
   })
 
   test("should filter out disabled built-in MCPs", () => {
@@ -33,12 +34,13 @@ describe("createBuiltinMcps", () => {
     expect(result).toHaveProperty("serena")
     expect(result).toHaveProperty("hindsight")
     expect(result).toHaveProperty("openmemory")
-    expect(Object.keys(result)).toHaveLength(5)
+    expect(result).toHaveProperty("graphify")
+    expect(Object.keys(result)).toHaveLength(6)
   })
 
   test("should filter out all built-in MCPs when all disabled", () => {
     // given
-    const disabledMcps = ["websearch", "context7", "grep_app", "serena", "hindsight", "openmemory"]
+    const disabledMcps = ["websearch", "context7", "grep_app", "serena", "hindsight", "openmemory", "graphify"]
 
     // when
     const result = createBuiltinMcps(disabledMcps)
@@ -50,6 +52,7 @@ describe("createBuiltinMcps", () => {
     expect(result).not.toHaveProperty("serena")
     expect(result).not.toHaveProperty("hindsight")
     expect(result).not.toHaveProperty("openmemory")
+    expect(result).not.toHaveProperty("graphify")
     expect(Object.keys(result)).toHaveLength(0)
   })
 
@@ -67,7 +70,8 @@ describe("createBuiltinMcps", () => {
     expect(result).toHaveProperty("serena")
     expect(result).toHaveProperty("hindsight")
     expect(result).toHaveProperty("openmemory")
-    expect(Object.keys(result)).toHaveLength(5)
+    expect(result).toHaveProperty("graphify")
+    expect(Object.keys(result)).toHaveLength(6)
   })
 
   test("should handle empty disabled_mcps by default", () => {
@@ -82,7 +86,8 @@ describe("createBuiltinMcps", () => {
     expect(result).toHaveProperty("serena")
     expect(result).toHaveProperty("hindsight")
     expect(result).toHaveProperty("openmemory")
-    expect(Object.keys(result)).toHaveLength(6)
+    expect(result).toHaveProperty("graphify")
+    expect(Object.keys(result)).toHaveLength(7)
   })
 
   test("should only filter built-in MCPs, ignoring unknown names", () => {
@@ -99,7 +104,8 @@ describe("createBuiltinMcps", () => {
     expect(result).toHaveProperty("serena")
     expect(result).toHaveProperty("hindsight")
     expect(result).toHaveProperty("openmemory")
-    expect(Object.keys(result)).toHaveLength(6)
+    expect(result).toHaveProperty("graphify")
+    expect(Object.keys(result)).toHaveLength(7)
   })
 
   test("should not throw when websearch disabled even if tavily configured without API key", () => {

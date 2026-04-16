@@ -37,7 +37,7 @@ import {
   buildHardBlocksSection,
   buildAntiPatternsSection,
   buildAntiDuplicationSection,
-  buildGraphifySection,
+  buildDiscoveryLayer,
   buildOracleSection,
   buildNonClaudePlannerSection,
   categorizeTools,
@@ -104,7 +104,7 @@ export function buildGpt54SisyphusPrompt(
   const antiPatterns = buildAntiPatternsSection();
   const nonClaudePlannerSection = buildNonClaudePlannerSection(model);
   const tasksSection = buildGpt54TasksSection(useTaskSystem);
-  const graphifySection = buildGraphifySection(directory);
+  const graphifySection = buildDiscoveryLayer("sisyphus", directory);
   const todoHookNote = useTaskSystem
     ? "YOUR TASK CREATION WOULD BE TRACKED BY HOOK([SYSTEM REMINDER - TASK CONTINUATION])"
     : "YOUR TODO CREATION WOULD BE TRACKED BY HOOK([SYSTEM REMINDER - TODO CONTINUATION])";

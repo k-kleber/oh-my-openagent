@@ -76,7 +76,7 @@ export const AgentOverridesSchema = z.object({
   librarian: AgentOverrideConfigSchema.optional(),
   explore: AgentOverrideConfigSchema.optional(),
   "deep-explorer": AgentOverrideConfigSchema.optional(),
-  "graphify-retrieval": AgentOverrideConfigSchema.optional(),
+
   "memory-retrieval": AgentOverrideConfigSchema.optional(),
   "memory-store": AgentOverrideConfigSchema.optional(),
   "multimodal-looker": AgentOverrideConfigSchema.optional(),

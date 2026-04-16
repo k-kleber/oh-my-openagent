@@ -43,7 +43,7 @@ export function createDeepExplorerAgent(model: string): AgentConfig {
     mode: MODE,
     model,
     temperature: 0.1,
-    skills: ["code-intelligence", "global-tooling-preference"],
+    skills: ["global-tooling-preference"],
     ...restrictions,
     prompt: `You are a deep codebase exploration specialist for heavy discovery tasks.
 
@@ -54,6 +54,7 @@ Before any tool call, inspect the tool names available in the current session co
 - Call only tools that are explicitly available.
 - Never invent, alias, or assume tool names.
 - If a preferred tool is unavailable, use the best available fallback and state degraded confidence.
+- Prefer wrapper tools such as \`ast_grep_search\`, \`grep\`, and \`glob\` over raw shell commands when those wrappers are available.
 
 ## Mission
 
@@ -80,7 +81,8 @@ If you need external docs, state that as a handoff need; do not spawn non-explor
 
 1. Intent analysis in <analysis> block.
 2. Launch parallel discovery immediately:
-   - Use direct tools (glob/grep/read, and semantic tools if available).
+   - Use direct tools (\`ast_grep_search\`, \`glob\`, \`grep\`, \`read\`, and semantic tools if available).
+   - Prefer wrapper tools over raw \`rg\`/\`fd\` commands because those wrappers may already route to fast local backends such as ripgrep.
    - For heavy tasks, fan out 2-6 background \`explore\` workers with non-overlapping scopes.
 3. Collect all required worker outputs before synthesis.
 4. Return structured evidence with absolute file paths.

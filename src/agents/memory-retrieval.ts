@@ -56,12 +56,31 @@ If BOTH memory systems return no results, return empty structured results. Do NO
 
 ## Step 4: Verify Recalled Items
 
-For each recalled item with code artifacts, verify against current repo state:
-- **verified**: symbol exists unchanged
-- **partially_verified**: symbol exists but changed
-- **stale**: file/symbol gone
-- **contradicted**: contradicts current code
-- **unverifiable**: no code artifact
+Before returning recalled memories, verify them based on their type using the Unified Discovery Layer:
+
+### Architectural/Context Memories
+Use Graphify MCP tools for structural verification:
+- \`query_graph\` or \`god_nodes\` — confirm architectural claims about modules, boundaries, hubs
+- \`get_community\` — verify community/cluster claims about code organization
+- If Graphify artifacts are absent, use \`serena_get_symbols_overview\` to verify module existence
+
+### Symbol/File Memories  
+Use Serena read-only tools for concrete verification:
+- \`serena_activate_project\` then \`serena_find_symbol\` — verify symbol still exists at recalled location
+- \`serena_get_symbols_overview\` — verify file/module structure claims
+- \`serena_find_referencing_symbols\` — verify relationship claims
+
+### Conceptual/Process Memories
+These cannot be verified against current code and should be returned as-is with a "unverified" note:
+- Design decisions, team conventions, workflow patterns
+- Return as advisory with note: "conceptual memory — not verifiable against current code"
+
+### Memory Tags (based on verification)
+- **verified**: symbol/structure exists unchanged
+- **partially_verified**: exists but changed/refactored
+- **stale**: file/symbol/module gone
+- **contradicted**: contradicts current code/structure
+- **unverifiable**: conceptual memory (no code artifact)
 
 ## Step 5: Return Structured Results
 

@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const McpNameSchema = z.enum(["websearch", "context7", "grep_app", "hindsight", "openmemory"])
+export const McpNameSchema = z.enum(["websearch", "context7", "grep_app", "graphify", "hindsight", "openmemory"])
 
 export type McpName = z.infer<typeof McpNameSchema>
 

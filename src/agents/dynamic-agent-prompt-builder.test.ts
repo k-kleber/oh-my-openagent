@@ -8,9 +8,11 @@ import {
   buildNonClaudePlannerSection,
   buildExploreSection,
   buildGraphifySection,
+  buildDiscoveryLayer,
   type AvailableSkill,
   type AvailableCategory,
   type AvailableAgent,
+  type DiscoveryLayerOptions,
 } from "./dynamic-agent-prompt-builder"
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -154,7 +156,7 @@ describe("buildGraphifySection", () => {
     expect(result).toBe("")
   })
 
-  it("returns graphify-retrieval guidance when graphify-out exists", () => {
+  it("returns Set B (Tactical Navigation) guidance when graph exists — delegates to buildDiscoveryLayer(hephaestus)", () => {
     const tempDir = mkdtempSync(join(tmpdir(), "graphify-hit-"))
     const graphifyDir = join(tempDir, "graphify-out")
     mkdirSync(graphifyDir)
@@ -162,15 +164,23 @@ describe("buildGraphifySection", () => {
 
     const result = buildGraphifySection(tempDir)
 
-    expect(result).toContain('task(subagent_type="graphify-retrieval"')
-    expect(result).toContain("before explore")
-    expect(result).toContain("Wait for the `graphify-retrieval` result")
-    expect(result).toContain("Do not glob/read Graphify artifacts yourself")
+    // Should contain Set B (Tactical Navigation) content
+    expect(result).toContain("Set B: Tactical Navigation")
+    expect(result).toContain("`shortest_path`")
+    expect(result).toContain("`get_node`")
+    expect(result).toContain("`get_neighbors`")
+    expect(result).toContain("Map → Microscope → Trace")
+    // Hephaestus gets quick-lookup exception
+    expect(result).toContain("Hephaestus quick-lookup exception")
+    // Should NOT contain old graphify-retrieval subagent instructions
+    expect(result).not.toContain('task(subagent_type="graphify-retrieval"')
+    expect(result).not.toContain("Wait for the `graphify-retrieval` result")
+    expect(result).not.toContain("Do not glob/read Graphify artifacts yourself")
+    expect(result).not.toContain("before explore")
     expect(result).not.toContain('skill("graphify")')
-    expect(result).not.toContain("If `task` is unavailable")
   })
 
-  it("supports explicit non-task fallback guidance when requested", () => {
+  it("returns Set B guidance even when requiresTask is false — buildDiscoveryLayer handles options", () => {
     const tempDir = mkdtempSync(join(tmpdir(), "graphify-notask-"))
     const graphifyDir = join(tempDir, "graphify-out")
     mkdirSync(graphifyDir)
@@ -178,7 +188,11 @@ describe("buildGraphifySection", () => {
 
     const result = buildGraphifySection(tempDir, { requiresTask: false })
 
-    expect(result).toContain("If `task` is unavailable, read `graphify-out/GRAPH_REPORT.md` first")
+    // Still produces Set B content (requiresTask is passed through but buildDiscoveryLayer
+    // produces the same content regardless — old "If task is unavailable" text is gone)
+    expect(result).toContain("Set B: Tactical Navigation")
+    expect(result).toContain("`shortest_path`")
+    expect(result).not.toContain('task(subagent_type="graphify-retrieval"')
     expect(result).not.toContain("Wait for the `graphify-retrieval` result")
   })
 })
@@ -347,6 +361,272 @@ describe("buildExploreSection", () => {
     expect(result).toContain("Use `explore` for smaller scoped discovery")
     expect(result).toContain("Use `deep-explorer` when scope is broad/uncertain")
     expect(result).toContain("deep-explorer may spawn `explore` only")
+  })
+})
+
+describe("buildDiscoveryLayer", () => {
+  describe("utility agents", () => {
+    const utilityAgents = [
+      "memory-retrieval",
+      "memory-store",
+      "librarian",
+      "multimodal-looker",
+      "momus",
+      "metis",
+      "atlas",
+      "flash",
+      "tester",
+    ]
+
+    for (const agentName of utilityAgents) {
+      it(`returns empty string for ${agentName}`, () => {
+        const result = buildDiscoveryLayer(agentName)
+        expect(result).toBe("")
+      })
+    }
+  })
+
+  describe("Set A agents (Macro-Survey)", () => {
+    const setAAgents = ["sisyphus", "prometheus", "sisyphus-junior"]
+
+    for (const agentName of setAAgents) {
+      it(`returns Set A guidance for ${agentName} when graph present`, () => {
+        const tempDir = mkdtempSync(join(tmpdir(), "discovery-set-a-"))
+        const graphifyDir = join(tempDir, "graphify-out")
+        mkdirSync(graphifyDir)
+        writeFileSync(join(graphifyDir, "graph.json"), "{}")
+
+        const result = buildDiscoveryLayer(agentName, tempDir)
+
+        expect(result).toContain("Set A: Macro-Survey")
+        expect(result).toContain("`query_graph`")
+        expect(result).toContain("`god_nodes`")
+        expect(result).toContain("`graph_stats`")
+        expect(result).toContain("`get_community`")
+        expect(result).toContain("Map → Microscope → Trace")
+      })
+
+      it(`returns Serena-only fallback for ${agentName} when graph absent`, () => {
+        const result = buildDiscoveryLayer(agentName)
+        expect(result).toContain("Discovery Layer (Serena — Read-Only Navigation)")
+        expect(result).toContain("`serena_activate_project`")
+        expect(result).toContain("serena_get_symbols_overview")
+        expect(result).not.toContain("graphify-retrieval")
+      })
+    }
+  })
+
+  describe("Set B agents (Tactical Navigation)", () => {
+    const setBAgents = ["hephaestus", "oracle", "debugger", "brainstormer"]
+
+    for (const agentName of setBAgents) {
+      it(`returns Set B guidance for ${agentName} when graph present`, () => {
+        const tempDir = mkdtempSync(join(tmpdir(), "discovery-set-b-"))
+        const graphifyDir = join(tempDir, "graphify-out")
+        mkdirSync(graphifyDir)
+        writeFileSync(join(graphifyDir, "graph.json"), "{}")
+
+        const result = buildDiscoveryLayer(agentName, tempDir)
+
+        expect(result).toContain("Set B: Tactical Navigation")
+        expect(result).toContain("`shortest_path`")
+        expect(result).toContain("`get_node`")
+        expect(result).toContain("`get_neighbors`")
+        expect(result).toContain("Map → Microscope → Trace")
+      })
+
+      it(`returns Serena-only fallback for ${agentName} when graph absent`, () => {
+        const result = buildDiscoveryLayer(agentName)
+        expect(result).toContain("Discovery Layer (Serena — Read-Only Navigation)")
+        expect(result).toContain("`serena_activate_project`")
+        expect(result).toContain("serena_get_symbols_overview")
+      })
+    }
+  })
+
+  describe("Set C agents (Impact Check)", () => {
+    const setCAgents = ["explore", "deep-explorer"]
+
+    for (const agentName of setCAgents) {
+      it(`returns Set C guidance for ${agentName} when graph present`, () => {
+        const tempDir = mkdtempSync(join(tmpdir(), "discovery-set-c-"))
+        const graphifyDir = join(tempDir, "graphify-out")
+        mkdirSync(graphifyDir)
+        writeFileSync(join(graphifyDir, "graph.json"), "{}")
+
+        const result = buildDiscoveryLayer(agentName, tempDir)
+
+        expect(result).toContain("Set C: Impact Check")
+        expect(result).toContain("`get_neighbors`")
+        expect(result).toContain("`shortest_path`")
+        expect(result).toContain("Map → Microscope → Trace")
+      })
+
+      it(`returns Serena-only fallback for ${agentName} when graph absent`, () => {
+        const result = buildDiscoveryLayer(agentName)
+        expect(result).toContain("Discovery Layer (Serena — Read-Only Navigation)")
+        expect(result).toContain("`serena_activate_project`")
+        expect(result).toContain("serena_get_symbols_overview")
+      })
+    }
+  })
+
+  describe("role-based injection", () => {
+    it("includes hybrid search rule for prometheus", () => {
+      const tempDir = mkdtempSync(join(tmpdir(), "discovery-prometheus-"))
+      const graphifyDir = join(tempDir, "graphify-out")
+      mkdirSync(graphifyDir)
+      writeFileSync(join(graphifyDir, "graph.json"), "{}")
+
+      const result = buildDiscoveryLayer("prometheus", tempDir)
+
+      expect(result).toContain("Prometheus quick-lookup exception")
+    })
+
+    it("includes hybrid search rule for hephaestus", () => {
+      const tempDir = mkdtempSync(join(tmpdir(), "discovery-hephaestus-"))
+      const graphifyDir = join(tempDir, "graphify-out")
+      mkdirSync(graphifyDir)
+      writeFileSync(join(graphifyDir, "graph.json"), "{}")
+
+      const result = buildDiscoveryLayer("hephaestus", tempDir)
+
+      expect(result).toContain("Hephaestus quick-lookup exception")
+    })
+
+    it("does NOT include hybrid search exception for sisyphus (non-quick-lookup agent)", () => {
+      const tempDir = mkdtempSync(join(tmpdir(), "discovery-sisyphus-"))
+      const graphifyDir = join(tempDir, "graphify-out")
+      mkdirSync(graphifyDir)
+      writeFileSync(join(graphifyDir, "graph.json"), "{}")
+
+      const result = buildDiscoveryLayer("sisyphus", tempDir)
+
+      expect(result).not.toContain("quick-lookup exception")
+      expect(result).toContain("Heavy or broad search MUST delegate")
+    })
+  })
+
+  describe("graph absence fallback", () => {
+    it("returns Serena-only fallback when directory is undefined", () => {
+      const result = buildDiscoveryLayer("sisyphus")
+
+      expect(result).toContain("Discovery Layer (Serena — Read-Only Navigation)")
+      expect(result).not.toContain("graphify-retrieval")
+    })
+
+    it("returns Serena-only fallback when graph.json is absent", () => {
+      const tempDir = mkdtempSync(join(tmpdir(), "discovery-nograph-"))
+
+      const result = buildDiscoveryLayer("oracle", tempDir)
+
+      expect(result).toContain("Discovery Layer (Serena — Read-Only Navigation)")
+      expect(result).toContain("`serena_activate_project`")
+      expect(result).toContain("`serena_get_symbols_overview`")
+      expect(result).not.toContain("graphify-retrieval")
+    })
+
+    it("does NOT instruct to invoke graphify-retrieval in fallback", () => {
+      const result = buildDiscoveryLayer("explore")
+
+      expect(result).not.toContain("graphify-retrieval")
+      expect(result).not.toContain('task(subagent_type="graphify-retrieval"')
+    })
+  })
+
+  describe("Serena read-only wording", () => {
+    it("explicitly marks Serena tools as read-only in Set A", () => {
+      const tempDir = mkdtempSync(join(tmpdir(), "discovery-readonly-a-"))
+      const graphifyDir = join(tempDir, "graphify-out")
+      mkdirSync(graphifyDir)
+      writeFileSync(join(graphifyDir, "graph.json"), "{}")
+
+      const result = buildDiscoveryLayer("prometheus", tempDir)
+
+      expect(result).toContain("Read-only navigation and verification only")
+      expect(result).not.toContain("replace_symbol_body")
+      expect(result).not.toContain("insert_after_symbol")
+      expect(result).not.toContain("insert_before_symbol")
+      expect(result).not.toContain("rename_symbol")
+    })
+
+    it("explicitly marks Serena tools as read-only in Set B", () => {
+      const tempDir = mkdtempSync(join(tmpdir(), "discovery-readonly-b-"))
+      const graphifyDir = join(tempDir, "graphify-out")
+      mkdirSync(graphifyDir)
+      writeFileSync(join(graphifyDir, "graph.json"), "{}")
+
+      const result = buildDiscoveryLayer("oracle", tempDir)
+
+      expect(result).toContain("Read-only navigation and verification only")
+      expect(result).not.toContain("replace_symbol_body")
+      expect(result).not.toContain("insert_after_symbol")
+      expect(result).not.toContain("insert_before_symbol")
+      expect(result).not.toContain("rename_symbol")
+    })
+
+    it("explicitly marks Serena tools as read-only in Set C", () => {
+      const tempDir = mkdtempSync(join(tmpdir(), "discovery-readonly-c-"))
+      const graphifyDir = join(tempDir, "graphify-out")
+      mkdirSync(graphifyDir)
+      writeFileSync(join(graphifyDir, "graph.json"), "{}")
+
+      const result = buildDiscoveryLayer("deep-explorer", tempDir)
+
+      expect(result).toContain("Read-only navigation and verification only")
+      expect(result).not.toContain("replace_symbol_body")
+      expect(result).not.toContain("insert_after_symbol")
+      expect(result).not.toContain("insert_before_symbol")
+      expect(result).not.toContain("rename_symbol")
+    })
+
+    it("explicitly marks Serena tools as read-only in fallback", () => {
+      const result = buildDiscoveryLayer("sisyphus")
+
+      expect(result).toContain("Read-only navigation and verification only")
+      expect(result).not.toContain("replace_symbol_body")
+      expect(result).not.toContain("insert_after_symbol")
+      expect(result).not.toContain("insert_before_symbol")
+      expect(result).not.toContain("rename_symbol")
+    })
+  })
+
+  describe("graph present vs absent differentiation", () => {
+    it("returns full guidance with Graphify tools when graph present", () => {
+      const tempDir = mkdtempSync(join(tmpdir(), "discovery-full-"))
+      const graphifyDir = join(tempDir, "graphify-out")
+      mkdirSync(graphifyDir)
+      writeFileSync(join(graphifyDir, "graph.json"), "{}")
+
+      const result = buildDiscoveryLayer("sisyphus", tempDir)
+
+      expect(result).toContain("Graphify")
+      expect(result).toContain("query_graph")
+      expect(result).toContain("god_nodes")
+    })
+
+    it("returns minimal Serena-only fallback when graph absent", () => {
+      const result = buildDiscoveryLayer("sisyphus")
+
+      expect(result).toContain("Serena — Read-Only Navigation")
+      expect(result).not.toContain("query_graph")
+      expect(result).not.toContain("god_nodes")
+      expect(result).not.toContain("Graphify + Serena")
+    })
+  })
+
+  describe("options", () => {
+    it("accepts DiscoveryLayerOptions interface", () => {
+      const tempDir = mkdtempSync(join(tmpdir(), "discovery-options-"))
+      const graphifyDir = join(tempDir, "graphify-out")
+      mkdirSync(graphifyDir)
+      writeFileSync(join(graphifyDir, "graph.json"), "{}")
+
+      const options: DiscoveryLayerOptions = { requiresTask: false }
+      const result = buildDiscoveryLayer("sisyphus", tempDir, options)
+
+      expect(result).toContain("Set A: Macro-Survey")
+    })
   })
 })
 

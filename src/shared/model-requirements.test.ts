@@ -360,7 +360,6 @@ describe("AGENT_MODEL_REQUIREMENTS", () => {
       "librarian",
       "explore",
       "deep-explorer",
-      "graphify-retrieval",
       "memory-retrieval",
       "memory-store",
       "multimodal-looker",

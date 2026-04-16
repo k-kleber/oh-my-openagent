@@ -31,7 +31,7 @@ Spawn overview collectors with focused scopes:
 \`\`\`
 task(
   subagent_type="explore",
-  load_skills=["memory-bootstrap-collector", "code-intelligence"],
+  load_skills=["memory-bootstrap-collector"],
   description="Overview: architecture map",
   prompt="[BOOTSTRAP_MODE] true
 [BOOTSTRAP_RUN_ID] <run-id>
@@ -51,7 +51,7 @@ Aggregate overview outputs, produce prioritized deep-dive targets.
 \`\`\`
 task(
   subagent_type="explore",
-  load_skills=["memory-bootstrap-collector", "code-intelligence"],
+  load_skills=["memory-bootstrap-collector"],
   description="Deep dive: <target>",
   prompt="[BOOTSTRAP_MODE] true
 [BOOTSTRAP_RUN_ID] <run-id>

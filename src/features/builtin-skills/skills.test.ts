@@ -124,14 +124,15 @@ describe("createBuiltinSkills", () => {
 		expect(defaultSkills.map((s) => s.name)).toContain("context7-mcp")
 		expect(defaultSkills.map((s) => s.name)).toContain("websearch-mcp")
 		expect(defaultSkills.map((s) => s.name)).toContain("code-intelligence-init")
+		expect(defaultSkills.map((s) => s.name)).not.toContain("code-intelligence")
 	})
 
-	test("memory-init template includes code-intelligence handoff guidance", () => {
+	test("memory-init template includes serena readiness and code-intelligence-init handoff", () => {
 		const skills = createBuiltinSkills()
 		const memoryInit = skills.find((s) => s.name === "memory-init")
 
 		expect(memoryInit).toBeDefined()
-		expect(memoryInit!.template).toContain("Verify code-intelligence readiness")
+		expect(memoryInit!.template).toContain("Verify Serena readiness")
 		expect(memoryInit!.template).toContain("code-intelligence-init")
 		expect(memoryInit!.template).toContain("hindsight_list_banks")
 		expect(memoryInit!.template).toContain("openmemory_store")

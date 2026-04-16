@@ -53,11 +53,6 @@ const AGENT_RESTRICTIONS: Record<string, Record<string, boolean>> = {
     call_omo_agent: false,
   },
 
-  "graphify-retrieval": {
-    ...EXPLORATION_AGENT_DENYLIST,
-    bash: false,
-  },
-
   librarian: EXPLORATION_AGENT_DENYLIST,
 
   oracle: {

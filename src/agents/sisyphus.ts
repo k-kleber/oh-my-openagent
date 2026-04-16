@@ -38,7 +38,7 @@ import {
   buildParallelDelegationSection,
   buildNonClaudePlannerSection,
   buildAntiDuplicationSection,
-  buildGraphifySection,
+  buildDiscoveryLayer,
   categorizeTools,
 } from "./dynamic-agent-prompt-builder";
 
@@ -70,7 +70,7 @@ function buildDynamicSisyphusPrompt(
   const parallelDelegationSection = buildParallelDelegationSection(model, availableCategories);
   const nonClaudePlannerSection = buildNonClaudePlannerSection(model);
   const taskManagementSection = buildTaskManagementSection(useTaskSystem);
-  const graphifySection = buildGraphifySection(directory);
+  const graphifySection = buildDiscoveryLayer("sisyphus", directory);
   const todoHookNote = useTaskSystem
     ? "YOUR TASK CREATION WOULD BE TRACKED BY HOOK([SYSTEM REMINDER - TASK CONTINUATION])"
     : "YOUR TODO CREATION WOULD BE TRACKED BY HOOK([SYSTEM REMINDER - TODO CONTINUATION])";

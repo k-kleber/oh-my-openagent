@@ -37,11 +37,8 @@ function buildGraphifySessionContext(directory: string): string | null {
 
   return [
     "## Knowledge Graph (Graphify)",
-    "",
-    "This project has Graphify artifacts available in `graphify-out/`.",
-    "Before launching `explore`, `deep-explorer`, or broad repo search, run `task(subagent_type=\"graphify-retrieval\", load_skills=[], run_in_background=false, description=\"Read graphify context\", prompt=\"Read graphify-out/GRAPH_REPORT.md and graphify-out/graph.json. Return a compact architecture summary focused on the current task before broader exploration.\")`.",
-    "Wait for the `graphify-retrieval` result before dependent exploration or conclusions.",
-    "Do not glob/read Graphify artifacts yourself unless Graphify context was already provided by the caller.",
+    "Graphify artifacts are available in `graphify-out/`.",
+    "Use the built-in `graphify` MCP tools directly (e.g., `query_graph`, `god_nodes`, `graph_stats`).",
   ].join("\n")
 }
 

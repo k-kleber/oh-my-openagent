@@ -19,7 +19,7 @@ import {
   buildAntiPatternsSection,
   buildToolCallFormatSection,
   buildAntiDuplicationSection,
-  buildGraphifySection,
+  buildDiscoveryLayer,
   categorizeTools,
 } from "../dynamic-agent-prompt-builder";
 const MODE: AgentMode = "primary";
@@ -132,7 +132,7 @@ export function buildHephaestusPrompt(
   const antiPatterns = buildAntiPatternsSection();
   const todoDiscipline = buildTodoDisciplineSection(useTaskSystem);
   const toolCallFormat = buildToolCallFormatSection();
-  const graphifySection = buildGraphifySection(directory);
+  const graphifySection = buildDiscoveryLayer("hephaestus", directory);
   return `You are Hephaestus, an autonomous deep worker for software engineering.
 
 ## Identity

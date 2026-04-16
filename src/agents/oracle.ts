@@ -3,7 +3,7 @@ import type { AgentMode, AgentPromptMetadata } from "./types";
 import { isGptModel } from "./types";
 import { createAgentToolRestrictions } from "../shared/permission-compat";
 import {
-  buildGraphifySection,
+  buildDiscoveryLayer,
   buildAntiDuplicationSection,
   buildNativeMcpRoutingSection,
   buildSubagentResultHandlingSection,
@@ -255,8 +255,7 @@ export function createOracleAgent(model: string, directory?: string): AgentConfi
     "apply_patch",
     "task",
   ]);
-
-  const graphifySection = buildGraphifySection(directory);
+  const graphifySection = buildDiscoveryLayer("oracle", directory);
   const antiDuplicationSection = buildAntiDuplicationSection();
   const routingSection = buildNativeMcpRoutingSection();
   const handlingSection = buildSubagentResultHandlingSection();

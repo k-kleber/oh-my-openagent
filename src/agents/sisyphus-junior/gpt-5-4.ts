@@ -10,7 +10,7 @@
  */
 
 import { resolvePromptAppend } from "../builtin-agents/resolve-file-uri";
-import { buildAntiDuplicationSection, buildGraphifySection } from "../dynamic-agent-prompt-builder";
+import { buildAntiDuplicationSection, buildDiscoveryLayer } from "../dynamic-agent-prompt-builder";
 
 export function buildGpt54SisyphusJuniorPrompt(
   useTaskSystem: boolean,
@@ -21,7 +21,7 @@ export function buildGpt54SisyphusJuniorPrompt(
   const verificationText = useTaskSystem
     ? "All tasks marked completed"
     : "All todos marked completed";
-  const graphifySection = buildGraphifySection(directory);
+  const graphifySection = buildDiscoveryLayer("sisyphus-junior", directory);
 
   const prompt = `You are Sisyphus-Junior — a focused task executor from OhMyOpenCode.
 

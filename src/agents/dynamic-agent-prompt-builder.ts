@@ -186,23 +186,236 @@ Before delegating research to explore or librarian, delegate to a memory-retriev
 After completing significant work (architectural decisions, bug fixes with non-obvious cause, pattern discoveries), consider triggering memory capture: \`task(subagent_type="memory-store", load_skills=[], prompt="Project: <projectPath> (<projectName>)\\nObservations:\\n- <list of insights>", run_in_background=false)\`. Only capture high-signal, non-obvious, actionable insights.`
 }
 
+export interface DiscoveryLayerOptions {
+  requiresTask?: boolean
+}
+
+export function buildDiscoveryLayer(
+  agentName: string,
+  directory?: string,
+  options?: DiscoveryLayerOptions
+): string {
+  // Utility agents get no discovery layer
+  const utilityAgents = [
+    "memory-retrieval",
+    "memory-store",
+    "librarian",
+    "multimodal-looker",
+    "momus",
+    "metis",
+    "atlas",
+    "flash",
+    "tester",
+  ]
+  if (utilityAgents.includes(agentName)) return ""
+
+  const graphPresent = directory && existsSync(join(directory, "graphify-out", "graph.json"))
+
+  if (!graphPresent) {
+    return buildSerenaOnlyFallback(agentName)
+  }
+
+  // Determine which set this agent belongs to
+  const set = getRoleSet(agentName)
+  if (set === "none") return ""
+
+  return buildFullDiscoveryLayer(set, agentName)
+}
+
+function getRoleSet(agentName: string): "A" | "B" | "C" | "none" {
+  if (agentName === "sisyphus" || agentName === "prometheus") return "A"
+  if (agentName.startsWith("sisyphus-junior")) return "A"
+  if (["hephaestus", "oracle", "debugger", "brainstormer"].includes(agentName)) return "B"
+  if (["explore", "deep-explorer"].includes(agentName)) return "C"
+  return "none"
+}
+
+const SERENA_CPP_NOTE =
+  "\n\n> **C/C++ projects**: Serena requires clangd with `compile_commands.json`. " +
+  "If `serena_find_symbol` returns empty, use `serena_search_for_pattern` as fallback. " +
+  "Never fall back to raw `Grep` when Serena tools are available."
+
+function buildSerenaOnlyFallback(agentName: string): string {
+  const isQuickLookup = agentName === "prometheus" || agentName === "hephaestus"
+  const quickLookupNote = isQuickLookup
+    ? `\n\n### Hybrid Search Rule\n\n**${agentName} quick-lookup exception**: You may perform 1-3 direct \`serena_find_symbol\` quick-lookups before delegating to subagents. Heavy or broad search MUST delegate.`
+    : `\n\n### Hybrid Search Rule\n\nHeavy or broad search MUST delegate to \`explore\` or \`deep-explorer\`.`
+
+  return `## Discovery Layer (Serena — Read-Only Navigation)
+
+**MUST call \`serena_activate_project\` as the first step in any new session. Never skip this. Never use Grep when Serena tools are available.**
+
+### Workflow: Map → Microscope → Trace
+
+1. **Map**: \`serena_activate_project\` then \`serena_get_symbols_overview\` for top-level module structure
+2. **Microscope**: \`serena_find_symbol\` to locate specific symbols by name path
+3. **Trace**: \`serena_find_referencing_symbols\` to find callers, implementers, and type references
+
+### Serena Read-Only Tools (No Editing)
+
+- \`serena_activate_project\` — activate project context (MUST be called first)
+- \`serena_get_symbols_overview\` — file/module structure overview
+- \`serena_find_symbol\` — find symbol by exact name path
+- \`serena_find_referencing_symbols\` — who references a symbol
+- \`serena_read_file\` — read file content
+- \`serena_search_for_pattern\` — pattern search (use before falling back to Grep)
+
+**Read-only navigation and verification only.** Do not use symbol-editing tools in the discovery phase.${SERENA_CPP_NOTE}${quickLookupNote}
+`
+}
+
+function buildFullDiscoveryLayer(set: "A" | "B" | "C", agentName: string): string {
+  if (set === "A") return buildSetA(agentName)
+  if (set === "B") return buildSetB(agentName)
+  return buildSetC(agentName)
+}
+
+function buildSetA(agentName: string): string {
+  const isPrometheus = agentName === "prometheus"
+  const quickLookupNote = isPrometheus
+    ? `\n\n### Hybrid Search Rule\n\n**Prometheus quick-lookup exception**: You may perform 1-3 direct \`serena_find_symbol\` quick-lookups before delegating. Heavy or broad search MUST delegate to \`explore\` or \`deep-explorer\`.`
+    : `\n\n### Hybrid Search Rule\n\nHeavy or broad search MUST delegate to \`explore\` or \`deep-explorer\`.`
+
+  return `## Discovery Layer (Graphify + Serena — Set A: Macro-Survey)
+
+**Workflow: Map → Microscope → Trace**
+
+Graphify provides repository-wide structure awareness. Serena provides precise symbol-level navigation.
+
+### Phase 1: Map (Graphify Macro-Survey)
+
+Use Graphify map tools to discover architectural hubs and overall structure:
+
+- \`query_graph\` — broad BFS context query for initial orientation
+- \`god_nodes\` — identify architectural hub nodes (high centrality)
+- \`graph_stats\` — overall graph statistics for scope assessment
+- \`get_community\` — discover communities of interest around a topic
+
+### Phase 2: Microscope (Serena Symbol Navigation)
+
+After Graphify narrows the area:
+
+- \`serena_activate_project\` then \`serena_get_symbols_overview\` for module structure (MUST call first)
+- \`serena_find_symbol\` to locate specific symbols in the target area
+- \`serena_find_referencing_symbols\` to understand symbol connections
+
+### Phase 3: Trace (Reference Discovery)
+
+- \`serena_find_referencing_symbols\` to find callers, implementations, and type references
+- \`serena_search_for_pattern\` for lexical fallback when symbol search is insufficient
+
+### Serena Read-Only Tools (No Editing)
+
+- \`serena_activate_project\`, \`serena_get_symbols_overview\`, \`serena_find_symbol\`, \`serena_find_referencing_symbols\`, \`serena_read_file\`, \`serena_search_for_pattern\`
+
+**Read-only navigation and verification only.** Do not use symbol-editing tools in the discovery phase.${SERENA_CPP_NOTE}${quickLookupNote}
+
+### Graphify Tools Available
+
+| Tool | Purpose |
+|------|---------|
+| \`query_graph\` | Broad BFS context query |
+| \`god_nodes\` | Architectural hubs (high centrality) |
+| \`graph_stats\` | Overall graph statistics |
+| \`get_community\` | Community around a node |
+| \`get_node\` | Node details |
+| \`get_neighbors\` | Immediate neighbors |
+| \`shortest_path\` | Connection between two nodes |
+`
+}
+
+function buildSetB(agentName: string): string {
+  const isHephaestus = agentName === "hephaestus"
+  const quickLookupNote = isHephaestus
+    ? `\n\n### Hybrid Search Rule\n\n**Hephaestus quick-lookup exception**: You may perform 1-3 direct \`serena_find_symbol\` or \`shortest_path\` quick-lookups before delegating. Heavy or broad search MUST delegate.`
+    : ""
+
+  return `## Discovery Layer (Graphify + Serena — Set B: Tactical Navigation)
+
+**Workflow: Map → Microscope → Trace**
+
+### Phase 1: Map (Graphify Targeted Query)
+
+Use Graphify shortest-path and node tools for targeted navigation:
+
+- \`shortest_path\` — find connection between two known nodes
+- \`get_node\` — get details of a specific node
+- \`get_neighbors\` — immediate neighbors for boundary discovery
+
+### Phase 2: Microscope (Serena Symbol Navigation)
+
+- \`serena_activate_project\` then \`serena_get_symbols_overview\` for module structure (MUST call first)
+- \`serena_find_symbol\` to locate specific symbols by name path
+- \`serena_find_referencing_symbols\` for precise reference tracing
+
+### Phase 3: Trace (Reference Discovery)
+
+- \`serena_find_referencing_symbols\` to trace callers, implementers, and usages
+- \`serena_search_for_pattern\` for lexical fallback when symbol search is insufficient
+
+### Serena Read-Only Tools (No Editing)
+
+- \`serena_activate_project\`, \`serena_get_symbols_overview\`, \`serena_find_symbol\`, \`serena_find_referencing_symbols\`, \`serena_read_file\`, \`serena_search_for_pattern\`
+
+**Read-only navigation and verification only.** Do not use symbol-editing tools in the discovery phase.${SERENA_CPP_NOTE}${quickLookupNote}
+
+### Graphify Tools Available
+
+| Tool | Purpose |
+|------|---------|
+| \`get_node\` | Node details |
+| \`get_neighbors\` | Immediate neighbors |
+| \`shortest_path\` | Connection between two nodes |
+| \`query_graph\` | Broad BFS query (when scope is uncertain) |
+`
+}
+
+function buildSetC(_agentName: string): string {
+  return `## Discovery Layer (Graphify + Serena — Set C: Impact Check)
+
+**Workflow: Map → Microscope → Trace**
+
+### Phase 1: Map (Graphify Boundary Detection)
+
+Use Graphify neighbor tools to detect impact boundaries:
+
+- \`get_neighbors\` — immediate neighbors to detect direct impact surface
+- \`shortest_path\` — check if two nodes are connected and how
+
+### Phase 2: Microscope (Serena Reference Tracing)
+
+- \`serena_activate_project\` then \`serena_get_symbols_overview\` for target module structure (MUST call first)
+- \`serena_find_referencing_symbols\` to trace all references and callers
+
+### Phase 3: Trace (Serena Symbol Verification)
+
+- \`serena_find_referencing_symbols\` to verify no missed references
+- \`serena_search_for_pattern\` for lexical fallback when symbol search is insufficient
+
+### Serena Read-Only Tools (No Editing)
+
+- \`serena_activate_project\`, \`serena_get_symbols_overview\`, \`serena_find_symbol\`, \`serena_find_referencing_symbols\`, \`serena_read_file\`, \`serena_search_for_pattern\`
+
+**Read-only navigation and verification only.** Do not use symbol-editing tools in the discovery phase.${SERENA_CPP_NOTE}
+
+### Graphify Tools Available
+
+| Tool | Purpose |
+|------|---------|
+| \`get_neighbors\` | Immediate neighbors (impact surface) |
+| \`shortest_path\` | Connection between nodes |
+| \`get_node\` | Node details |
+`
+}
+
 export function buildGraphifySection(directory?: string, options?: { requiresTask?: boolean }): string {
+  // Backward compat wrapper — delegates to the unified discovery layer
+  // When graph is absent, returns empty (old behavior preserved for callers that check existence)
   if (!directory) return ""
   const graphPath = join(directory, "graphify-out", "graph.json")
   if (!existsSync(graphPath)) return ""
-  const requiresTask = options?.requiresTask ?? true
-  return `## Knowledge Graph (Graphify)
-
-If \`graphify-out/graph.json\` exists in the project root, you MUST:
-1. ${requiresTask
-    ? `Before launching \`explore\`, \`deep-explorer\`, or broad repo search, run \`task(subagent_type="graphify-retrieval", load_skills=[], run_in_background=false, description="Read graphify context", prompt="Read graphify-out/GRAPH_REPORT.md and graphify-out/graph.json. Return a compact architecture summary focused on the current task before broader exploration.")\``
-    : `If \`task\` is unavailable, read \`graphify-out/GRAPH_REPORT.md\` first and state exactly what Graphify artifacts you used before broader repo search`}
-2. ${requiresTask
-    ? `Wait for the \`graphify-retrieval\` result before any dependent exploration or conclusions. Do not glob/read Graphify artifacts yourself unless the caller already supplied Graphify context.`
-    : `If Graphify context was already supplied by the caller, use that first instead of re-reading artifacts.`}
-3. Use Graphify context to narrow subsequent explore/deep-explorer work before broad repo search, and keep it in mind for later subagents and implementation decisions
-
-Graphify should be consulted before explore when present, so later repo search is more targeted.`
+  // Use Set B (hephaestus) as the default role for backward-compat callers
+  return buildDiscoveryLayer("hephaestus", directory, options)
 }
 
 export function buildCategorySkillsDelegationGuide(categories: AvailableCategory[], skills: AvailableSkill[], specialists: AvailableSpecialist[] = []): string {
@@ -345,7 +558,7 @@ task(category="quick", load_skills=[], prompt="Redesign the sidebar layout with 
 
     Coding specialist guardrail:
     - Stay language-agnostic by default. Attach a language-specific add-on skill only when repository evidence or explicit user intent justifies it.
-    - When a language-specific add-on is used, preserve the shared generic coding-guideline layer (for example \`code-intelligence\` or a project-wide guideline skill) and treat the language-specific skill as an extension, not a replacement.
+    - When a language-specific add-on is used, preserve the shared generic coding-guideline layer (for example a project-wide guideline skill) and treat the language-specific skill as an extension, not a replacement.
 
     Promotion rubric (when to promote to a first-class specialist agent):
     - Prefer skill-led specialists by default (use \`load_skills\` with explicit skills).
@@ -644,7 +857,7 @@ export function buildSubagentResultHandlingSection(): string {
 
 When subagents return "absent", "miss", or no results:
 
-1. **Graphify Absent**: If graphify-retrieval returns "absent", proceed with direct tools immediately. Do NOT retry via shell or workarounds.
+1. **Graphify Absent**: If Graphify MCP tools return no results or the graph is absent, proceed with Serena-based navigation immediately. Do NOT retry via shell or workarounds.
 2. **Memory Miss**: If memory-retrieval returns no results, proceed with the task using available context. A miss is not a failure.
 3. **No Retries**: Never attempt to "force" a subagent result through shell commands if the specialized subagent found nothing.
 </Subagent_Result_Handling>`

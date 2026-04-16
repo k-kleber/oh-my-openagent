@@ -1,13 +1,13 @@
-import type { AgentConfig } from "@opencode-ai/sdk"
-import type { AgentMode, AgentPromptMetadata } from "./types"
+import type { AgentConfig } from "@opencode-ai/sdk";
+import type { AgentMode, AgentPromptMetadata } from "./types";
 import {
-  buildGraphifySection,
+  buildDiscoveryLayer,
   buildAntiDuplicationSection,
   buildNativeMcpRoutingSection,
   buildSubagentResultHandlingSection,
-} from "./dynamic-agent-prompt-builder"
+} from "./dynamic-agent-prompt-builder";
 
-const MODE: AgentMode = "primary"
+const MODE: AgentMode = "primary";
 
 export const DEBUGGER_PROMPT_METADATA: AgentPromptMetadata = {
   category: "specialist",
@@ -15,9 +15,18 @@ export const DEBUGGER_PROMPT_METADATA: AgentPromptMetadata = {
   promptAlias: "Debugger",
   keyTrigger: "Bug report/error investigation requiring root-cause analysis",
   triggers: [
-    { domain: "Root-cause debugging", trigger: "Need to find why a bug happens, not patch quickly" },
-    { domain: "Failure triage", trigger: "Need deep, evidence-driven diagnosis across modules" },
-    { domain: "Multi-route tracing", trigger: "Need to trace all possible code paths to a failure point" },
+    {
+      domain: "Root-cause debugging",
+      trigger: "Need to find why a bug happens, not patch quickly",
+    },
+    {
+      domain: "Failure triage",
+      trigger: "Need deep, evidence-driven diagnosis across modules",
+    },
+    {
+      domain: "Multi-route tracing",
+      trigger: "Need to trace all possible code paths to a failure point",
+    },
   ],
   useWhen: [
     "Tracking down production bugs and non-obvious regressions",
@@ -32,9 +41,10 @@ export const DEBUGGER_PROMPT_METADATA: AgentPromptMetadata = {
     "Need broad product planning instead of technical diagnosis",
     "Trivial single-line bugs where grep is sufficient",
   ],
-}
+};
 
-const DEBUGGER_PROMPT = `You are Debugger, a hardcore root-cause investigation primary agent.
+function buildDebuggerPrompt(discoverySection?: string): string {
+  return `You are Debugger, a hardcore root-cause investigation primary agent.
 
 Your sole mission: identify the actual root cause of bugs with high confidence and evidence.
 
@@ -44,6 +54,14 @@ Your sole mission: identify the actual root cause of bugs with high confidence a
 - Produce a clear root-cause narrative backed by concrete evidence.
 
 ## Investigation method (mandatory)
+${discoverySection ? `\n${discoverySection}\n` : ""}
+### Phase 0: Project Orientation (mandatory for non-trivial bugs)
+
+- **Step 1:** Run \`serena_activate_project\` to initialize the environment.
+- **Step 2:** If Graphify artifacts exist, use \`query_graph\` or \`get_community\` to locate the architectural area relevant to the bug.
+- **Step 3:** Fire 2-4 parallel \`explore\` or \`deep-explorer\` subagents (run_in_background=true) with narrow, focused prompts to map affected modules/layers before forming hypotheses.
+- **Step 4:** Collect all background results via \`background_output\` before proceeding to Phase 1.
+- **Skip condition:** Skip Phase 0 only for trivial single-file bugs where the PoF is immediately obvious from an exact stack trace with file+line.
 
 ### Phase 1: Point of Failure (PoF) Identification
 
@@ -108,7 +126,7 @@ Your sole mission: identify the actual root cause of bugs with high confidence a
 - Run tracks in parallel.
 - Use task(subagent_type="explore"|"deep-explorer"|"librarian", ...) for research fanout so delegated runs stay on the intended read-only specialists and can load skills.
 - Never use task(category=...) for code-finding or evidence gathering. Categories route to Sisyphus-Junior, which is not the debugger's search path.
-- Load \`code-intelligence\` for Serena-first codebase exploration.
+- Use the discovery layer above for Serena + Graphify codebase navigation before delegating.
 
 ## Subagent dependency gate (mandatory)
 - When you launch explore/librarian with run_in_background=true, treat their findings as required inputs for dependent analysis.
@@ -148,31 +166,36 @@ Return:
 - Never modify files.
 - Never run write/edit/patch tools.
 - Never output apply-ready patch/diff blocks.
-- Keep digging until root cause is established or hard blocker is proven.`
+- Keep digging until root cause is established or hard blocker is proven.`;
+}
 
-export function createDebuggerAgent(model: string, directory?: string): AgentConfig {
-  const graphifySection = buildGraphifySection(directory)
-  const antiDuplicationSection = buildAntiDuplicationSection()
-  const routingSection = buildNativeMcpRoutingSection()
-  const handlingSection = buildSubagentResultHandlingSection()
+export function createDebuggerAgent(
+  model: string,
+  directory?: string,
+): AgentConfig {
+  const discoverySection = buildDiscoveryLayer("debugger", directory);
+  const antiDuplicationSection = buildAntiDuplicationSection();
+  const routingSection = buildNativeMcpRoutingSection();
+  const handlingSection = buildSubagentResultHandlingSection();
 
-  const sharedSections = [
-    graphifySection,
+  const headerSections = [
     routingSection,
     handlingSection,
-    antiDuplicationSection
-  ].filter(Boolean).join("\n\n")
+    antiDuplicationSection,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  const promptBody = buildDebuggerPrompt(discoverySection);
 
   return {
     description:
-      "Hardcore root-cause debugger primary agent. Flow-first investigation: traces all code routes to failure point before forming hypotheses. Uses Serena-first code-intelligence for multi-route backwards tracing, Skeptic validation, and evidence-driven convergence. (Debugger - OhMyOpenCode)",
+      "Hardcore root-cause debugger primary agent. Flow-first investigation: traces all code routes to failure point before forming hypotheses. Uses Serena-first discovery for multi-route backwards tracing, Skeptic validation, and evidence-driven convergence. (Debugger - OhMyOpenCode)",
     mode: MODE,
     model,
     temperature: 0.1,
-    prompt: sharedSections
-      ? `${sharedSections}\n\n${DEBUGGER_PROMPT}`
-      : DEBUGGER_PROMPT,
-  }
+    prompt: headerSections ? `${headerSections}\n\n${promptBody}` : promptBody,
+  };
 }
 
-createDebuggerAgent.mode = MODE
+createDebuggerAgent.mode = MODE;

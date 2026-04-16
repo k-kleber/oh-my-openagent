@@ -337,7 +337,6 @@ describe("sisyphus-task", () => {
         connectedProvidersOverride: TEST_CONNECTED_PROVIDERS,
         availableModelsOverride: createTestAvailableModels(),
         availableSkills: [
-          { name: "code-intelligence", description: "test" },
           { name: "global-tooling-preference", description: "test" },
           { name: "tool-doc-ripgrep", description: "test" },
           { name: "tool-doc-fd", description: "test" },
@@ -370,7 +369,6 @@ describe("sisyphus-task", () => {
 
       //#then
       expect(args.load_skills).toEqual([
-        "code-intelligence",
         "global-tooling-preference",
         "tool-doc-ripgrep",
         "tool-doc-fd",
@@ -378,7 +376,6 @@ describe("sisyphus-task", () => {
       ])
       expect(resolveSkillContentSpy).toHaveBeenCalledWith(
         [
-          "code-intelligence",
           "global-tooling-preference",
           "tool-doc-ripgrep",
           "tool-doc-fd",
@@ -1882,50 +1879,6 @@ describe("sisyphus-task", () => {
       expect(result).toContain("Done")
     }, { timeout: 10000 })
 
-    test("brainstormer allows graphify-retrieval subagent delegation", async () => {
-      // given
-      const { createDelegateTask } = require("./tools")
-      let promptCalled = false
-      const mockManager = { launch: async () => ({}) }
-      const mockClient = {
-        app: {
-          agents: async () => ({ data: [{ name: "graphify-retrieval", mode: "subagent", model: { providerID: "github-copilot", modelID: "gpt-5-mini" } }] }),
-        },
-        config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
-        session: {
-          get: async () => ({ data: { directory: "/project" } }),
-          create: async () => ({ data: { id: "ses_graphify_ok" } }),
-          prompt: async () => {
-            promptCalled = true
-            return { data: {} }
-          },
-          promptAsync: async () => {
-            promptCalled = true
-            return { data: {} }
-          },
-          messages: async () => ({ data: [{ info: { role: "assistant" }, parts: [{ type: "text", text: "Graphify done" }] }] }),
-          status: async () => ({ data: { ses_graphify_ok: { type: "idle" } } }),
-        },
-      }
-      const tool = createDelegateTask({ manager: mockManager, client: mockClient })
-
-      // when
-      const result = await tool.execute(
-        {
-          description: "Graphify retrieval",
-          prompt: "Read graph context",
-          subagent_type: "graphify-retrieval",
-          run_in_background: false,
-          load_skills: [],
-        },
-        { sessionID: "parent-session", messageID: "parent-message", agent: "brainstormer", abort: new AbortController().signal },
-      )
-
-      // then
-      expect(promptCalled).toBe(true)
-      expect(result).toContain("Graphify done")
-    }, { timeout: 10000 })
-
     test("brainstormer allows deep-explorer subagent delegation", async () => {
       // given
       const { createDelegateTask } = require("./tools")
@@ -2029,52 +1982,8 @@ describe("sisyphus-task", () => {
       )
 
       // then
-      expect(result).toContain("Debugger can only delegate to explore, deep-explorer, librarian, memory-retrieval, or graphify-retrieval")
+      expect(result).toContain("Debugger can only delegate to explore, deep-explorer, librarian, or memory-retrieval")
     })
-
-    test("debugger allows graphify-retrieval delegation", async () => {
-      // given
-      const { createDelegateTask } = require("./tools")
-      let promptCalled = false
-      const mockManager = { launch: async () => ({}) }
-      const mockClient = {
-        app: {
-          agents: async () => ({ data: [{ name: "graphify-retrieval", mode: "subagent", model: { providerID: "github-copilot", modelID: "gpt-5-mini" } }] }),
-        },
-        config: { get: async () => ({ data: { model: SYSTEM_DEFAULT_MODEL } }) },
-        session: {
-          get: async () => ({ data: { directory: "/project" } }),
-          create: async () => ({ data: { id: "ses_debugger_graphify_ok" } }),
-          prompt: async () => {
-            promptCalled = true
-            return { data: {} }
-          },
-          promptAsync: async () => {
-            promptCalled = true
-            return { data: {} }
-          },
-          messages: async () => ({ data: [{ info: { role: "assistant" }, parts: [{ type: "text", text: "Graphify done" }] }] }),
-          status: async () => ({ data: { ses_debugger_graphify_ok: { type: "idle" } } }),
-        },
-      }
-      const tool = createDelegateTask({ manager: mockManager, client: mockClient })
-
-      // when
-      const result = await tool.execute(
-        {
-          description: "Graphify retrieval",
-          prompt: "Read graph context",
-          subagent_type: "graphify-retrieval",
-          run_in_background: false,
-          load_skills: [],
-        },
-        { sessionID: "parent-session", messageID: "parent-message", agent: "debugger", abort: new AbortController().signal },
-      )
-
-      // then
-      expect(promptCalled).toBe(true)
-      expect(result).toContain("Graphify done")
-    }, { timeout: 10000 })
 
     test("#given category without run_in_background #when executing #then throws required parameter error", async () => {
       // given

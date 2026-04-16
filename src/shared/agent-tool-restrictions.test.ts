@@ -15,20 +15,6 @@ describe("agent-tool-restrictions", () => {
     expect(hasAgentToolRestrictions("deep-explorer")).toBe(true)
   })
 
-  test("graphify-retrieval blocks mutation, delegation, and shell tools", () => {
-    const restrictions = getAgentToolRestrictions("graphify-retrieval")
-
-    expect(restrictions.write).toBe(false)
-    expect(restrictions.edit).toBe(false)
-    expect(restrictions.task).toBe(false)
-    expect(restrictions.call_omo_agent).toBe(false)
-    expect(restrictions.bash).toBe(false)
-  })
-
-  test("graphify-retrieval reports restrictions as present", () => {
-    expect(hasAgentToolRestrictions("graphify-retrieval")).toBe(true)
-  })
-
   test("brainstormer allows write but blocks mutation and patch tools", () => {
     const restrictions = getAgentToolRestrictions("brainstormer")
 

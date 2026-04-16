@@ -83,12 +83,12 @@ Create the work plan directly - that's your job as the planning agent.`,
 
   const normalizedParentAgent = getAgentConfigKey(parentAgent ?? "")
   if (normalizedParentAgent === "brainstormer") {
-    const brainstormerAllowedSubagents = new Set(["explore", "deep-explorer", "librarian", "memory-retrieval", "graphify-retrieval"])
+    const brainstormerAllowedSubagents = new Set(["explore", "deep-explorer", "librarian", "memory-retrieval"])
     if (!brainstormerAllowedSubagents.has(agentName.toLowerCase())) {
       return {
         agentToUse: "",
         categoryModel: undefined,
-        error: `Brainstormer can only delegate to explore, deep-explorer, librarian, memory-retrieval, or graphify-retrieval. Received: "${agentName}".`,
+        error: `Brainstormer can only delegate to explore, deep-explorer, librarian, or memory-retrieval. Received: "${agentName}".`,
       }
     }
   }

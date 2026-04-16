@@ -95,26 +95,55 @@ export async function injectContinuation(args: {
   let tools = resolvedInfo?.tools
 
   if (!agentName || !model) {
-    let previousMessage = null
+    const isCompactionAgent = (agent: unknown): boolean =>
+      typeof agent === "string" && agent.toLowerCase() === "compaction"
+
     if (isSqliteBackend()) {
-      previousMessage = await findNearestMessageWithFieldsFromSDK(ctx.client, sessionID)
+      // Skip compaction agent messages when resolving model
+      const allMessages = await ctx.client.session.messages({ path: { id: sessionID } })
+      const messages = normalizeSDKResponse(allMessages, [] as Array<{ info?: { agent?: string; model?: { providerID?: string; modelID?: string; variant?: string }; tools?: Record<string, unknown> } }>)
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const info = messages[i].info
+        if (isCompactionAgent(info?.agent)) {
+          continue
+        }
+        if (info?.model?.providerID && info?.model?.modelID) {
+          model = model ?? {
+            providerID: info.model.providerID,
+            modelID: info.model.modelID,
+            ...(info.model.variant ? { variant: info.model.variant } : {}),
+          }
+        }
+        if (!agentName && info?.agent) {
+          agentName = info.agent
+        }
+        if (info?.tools) {
+          tools = tools ?? info.tools as Record<string, boolean | "allow" | "deny" | "ask">
+        }
+        if (agentName && model) break
+      }
     } else {
       const messageDir = getMessageDir(sessionID)
-      previousMessage = messageDir ? findNearestMessageWithFields(messageDir) : null
+      if (messageDir) {
+        // Skip compaction agent messages when resolving model
+        const allMessages = findNearestMessageWithFields(messageDir)
+        if (allMessages && !isCompactionAgent(allMessages.agent)) {
+          agentName = agentName ?? allMessages.agent
+          model =
+            model ??
+            (allMessages.model?.providerID && allMessages.model?.modelID
+              ? {
+                  providerID: allMessages.model.providerID,
+                  modelID: allMessages.model.modelID,
+                  ...(allMessages.model.variant
+                    ? { variant: allMessages.model.variant }
+                    : {}),
+                }
+              : undefined)
+          tools = tools ?? allMessages.tools
+        }
+      }
     }
-    agentName = agentName ?? previousMessage?.agent
-    model =
-      model ??
-      (previousMessage?.model?.providerID && previousMessage?.model?.modelID
-        ? {
-            providerID: previousMessage.model.providerID,
-            modelID: previousMessage.model.modelID,
-            ...(previousMessage.model.variant
-              ? { variant: previousMessage.model.variant }
-              : {}),
-          }
-        : undefined)
-    tools = tools ?? previousMessage?.tools
   }
 
   if (agentName && skipAgents.some(s => getAgentConfigKey(s) === getAgentConfigKey(agentName))) {

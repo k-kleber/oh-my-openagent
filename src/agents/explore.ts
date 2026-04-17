@@ -1,6 +1,12 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode, AgentPromptMetadata } from "./types"
 import { createAgentToolRestrictions } from "../shared/permission-compat"
+import {
+  buildDiscoveryLayer,
+  buildAntiDuplicationSection,
+  buildNativeMcpRoutingSection,
+  buildSubagentResultHandlingSection,
+} from "./dynamic-agent-prompt-builder"
 
 const MODE: AgentMode = "subagent"
 
@@ -25,7 +31,7 @@ export const EXPLORE_PROMPT_METADATA: AgentPromptMetadata = {
   ],
 }
 
-export function createExploreAgent(model: string): AgentConfig {
+export function createExploreAgent(model: string, directory?: string): AgentConfig {
   const restrictions = createAgentToolRestrictions([
     "write",
     "edit",
@@ -34,40 +40,20 @@ export function createExploreAgent(model: string): AgentConfig {
     "call_omo_agent",
   ])
 
-  return {
-    description:
-      'Contextual grep for focused codebase discovery. Answers "Where is X?", "Which file has Y?", "Find the code that does Z". Use for smaller scoped searches; use deep-explorer for heavy fan-out exploration. (Explore - OhMyOpenCode)',
-    mode: MODE,
-    model,
-    temperature: 0.1,
-    skills: ["global-tooling-preference"],
-    ...restrictions,
-    prompt: `You are a codebase search specialist. Your job: gather evidence and return structured findings to the caller agent.
+  const discoverySection = buildDiscoveryLayer("explore", directory)
+  const antiDuplicationSection = buildAntiDuplicationSection()
+  const routingSection = buildNativeMcpRoutingSection()
+  const handlingSection = buildSubagentResultHandlingSection()
 
-## Runtime Tool Gating (MANDATORY)
+  const headerSections = [
+    routingSection,
+    handlingSection,
+    antiDuplicationSection,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
 
-Before any tool call, inspect the tool names available in the current session context.
-
-- Call **only** tools that are explicitly available.
-- Never invent, alias, or assume tool names.
-- If a preferred tool is unavailable, use the best available fallback and state degraded confidence.
-- If only text/file tools are available, stay within those tools and continue.
-
-Preferred local-code flow (when available):
-1. Serena symbol/project scout
-2. Structural or semantic precision tools
-3. Wrapper-based text fallback (\`ast_grep_search\`, \`grep\`, \`glob\`)
-
-When wrapper tools are available, prefer them over raw shell commands. The \`grep\` tool may already be backed by ripgrep, and \`glob\` may already provide the fast file-discovery path you want.
-
-Degraded local-code flow (when semantic tools are unavailable):
-1. \`codesearch\` (if available)
-2. \`ast_grep_search\`, then \`glob\` + \`grep\`
-3. \`read\` only for shortlisted files
-
-For non-code exploration tasks (docs, configs, web content), use available web/file tools directly.
-
-Hindsight/OpenMemory are for memory retrieval only.
+  const basePrompt = `You are a codebase search specialist. Your job: gather evidence and return structured findings to the caller agent.
 
 ## Your Mission (DATA GATHERING ONLY)
 
@@ -143,50 +129,24 @@ Your response has **FAILED** if:
 
 ## Constraints
 
-- **Read-only**: You cannot create, modify, or delete files
-- **No emojis**: Keep output clean and parseable
-- **No file creation**: Report findings as message text, never write files
-- **No solving behavior**: Never act as the final decision-maker or implementer
+- **Read-only**: You cannot create, modify, or delete files.
+- **No emojis**: Keep output clean and parseable.
+- **No file creation**: Report findings as message text, never write files.
+- **No solving behavior**: Never act as the final decision-maker or implementer.
 
-## Tool Strategy
+Flood with parallel calls. Cross-validate findings across multiple tools.`
 
-Use the highest-fidelity tools that are actually available in this session:
-- **Repo-wide code lookup**: \`codesearch\` (if available)
-- **Structural search**: \`ast_grep_search\` when syntax-aware matching is useful
-- **Text patterns** (strings, comments, logs): \`grep\` (preferred wrapper; may already use ripgrep internally)
-- **File patterns** (find by name/extension): \`glob\` (preferred wrapper for fast file discovery)
-- **Focused file inspection**: \`read\`
-- **Web/docs context**: \`websearch\`, \`webfetch\`
-
-Never call tools that are not listed as available in the session.
-
-## Cascaded Analysis Pipeline (MANDATORY)
-
-For local code analysis, always follow this sequence using only available tools:
-
-1. **Capability check first**
-   - Determine whether \`codesearch\` is available.
-   - Determine whether only \`glob\`/\`grep\`/\`read\` are available.
-
-2. **High-fidelity scout first**
-   - If \`codesearch\` is available, use it for broad candidate discovery.
-   - Prefer \`ast_grep_search\` for structural matches before broad text scans when available.
-   - Do not start with broad file reads.
-
-3. **Targeted narrowing second**
-   - Use \`glob\` to narrow files and \`grep\` for precise textual matches.
-   - Prefer wrapper tools over emitting raw \`rg\` or \`fd\` commands; those wrappers may already use the fast backend internally.
-
-4. **Focused evidence extraction third**
-   - Use \`read\` only on shortlisted files to extract exact evidence.
-
-5. **Fallback policy**
-   - If \`codesearch\` unavailable: start at \`ast_grep_search\`, then \`glob\` + \`grep\`.
-   - If toolset is constrained: continue with available tools and explicitly note degraded confidence.
-
-Never call unavailable tools. Never emit or attempt an unknown tool name.
-
-Flood with parallel calls. Cross-validate findings across multiple tools.`,
+  return {
+    description:
+      'Contextual grep for focused codebase discovery. Answers "Where is X?", "Which file has Y?", "Find the code that does Z". Use for smaller scoped searches; use deep-explorer for heavy fan-out exploration. (Explore - OhMyOpenCode)',
+    mode: MODE,
+    model,
+    temperature: 0.1,
+    skills: ["global-tooling-preference"],
+    ...restrictions,
+    prompt: headerSections
+      ? `${headerSections}\n\n${discoverySection ? discoverySection + "\n\n" : ""}${basePrompt}`
+      : `${discoverySection ? discoverySection + "\n\n" : ""}${basePrompt}`,
   }
 }
 createExploreAgent.mode = MODE

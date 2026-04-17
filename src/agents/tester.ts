@@ -1,5 +1,9 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode, AgentPromptMetadata } from "./types"
+import {
+  buildAntiDuplicationSection,
+  buildSubagentResultHandlingSection,
+} from "./dynamic-agent-prompt-builder"
 
 const MODE: AgentMode = "subagent"
 
@@ -58,18 +62,80 @@ Your entire job is to run the requested test/build commands and report the resul
 - C/C++ and GoogleTest: \`ctest\`, GoogleTest binaries, \`cmake --build\`, \`make test\`, \`bazel test\`
 - ROS/catkin: \`catkin run_tests\`, \`catkin build ... --catkin-make-args run_tests\`, \`catkin_make run_tests\`, \`rostest\`
 
-## Reporting contract
-- For success: command, exit status if available, and a brief success summary.
-- For failure: command, exit status if available, and the error excerpt from stdout/stderr.
-- Never include root-cause analysis, hypotheses, or implementation advice.
+## Structured Result Format (MANDATORY)
+
+Every response MUST use this exact format:
+
+### Single Command
+
+<results>
+<execution>
+<command>pytest tests/unit/test_auth.py -v</command>
+<exit>0</exit>
+<status>PASS</status>
+<summary>All 12 tests passed in 0.84s</summary>
+</execution>
+
+<outcome>
+All 12 tests passed. No failures, no errors.
+</outcome>
+</results>
+
+### Multiple Commands
+
+<results>
+<execution>
+<command>cmake --build build --target unit_tests</command>
+<exit>0</exit>
+<status>PASS</status>
+<summary>Build succeeded, 3 test binaries produced</summary>
+</execution>
+<execution>
+<command>ctest --test-dir build --output-on-failure</command>
+<exit>1</exit>
+<status>FAIL</status>
+<summary>2 tests failed out of 48</summary>
+<error_excerpt>
+test_auth.py::test_login_failure: AssertionError: expected 401 but got 403
+test_auth.py::test_token_expiry: TimeoutError: fixture 'expired_token' not found
+</error_excerpt>
+</execution>
+
+<outcome>
+Build passed. 2 of 48 tests failed: test_auth.py::test_login_failure and test_auth.py::test_token_expiry.
+</outcome>
+</results>
+
+## Success Criteria
+
+Your response has FAILED if:
+- No <results> block with <execution> entries
+- <status> is not one of: PASS, FAIL, ERROR
+- Error excerpt is included for a PASS — include only failing commands
+- You include root-cause analysis, hypotheses, or fix suggestions
+
+## What to Report
+
+- **PASS**: command, exit code, one-line summary. No error excerpt.
+- **FAIL**: command, exit code, the exact failing test names, and the error excerpt (max 20 lines).
+- **ERROR**: command, exit code, the error output (not test-level failures).
+- Never explain WHY something failed. Never suggest fixes. Never propose hypotheses.
+
+Run commands one at a time. Report each in its own <execution> block.
 
 ## Boundaries
 - Prefer direct execution.
-- If multiple commands are requested, run them one at a time and report each result.
 - Do not use non-execution tools unless absolutely necessary for output handling.
 - Stay lightweight and to the point.`
 
 export function createTesterAgent(model: string): AgentConfig {
+  const antiDuplicationSection = buildAntiDuplicationSection()
+  const handlingSection = buildSubagentResultHandlingSection()
+
+  const headerSections = [antiDuplicationSection, handlingSection]
+    .filter(Boolean)
+    .join("\n\n")
+
   return {
     description:
       "Lightweight execution-only testing agent. Runs test or build-for-test commands, then returns concise pass/fail results with raw error excerpts and no diagnosis. (Tester - OhMyOpenCode)",
@@ -151,7 +217,9 @@ export function createTesterAgent(model: string): AgentConfig {
         ssh: "deny",
       },
     } as Record<string, unknown>,
-    prompt: TESTER_PROMPT,
+    prompt: headerSections
+      ? `${headerSections}\n\n${TESTER_PROMPT}`
+      : TESTER_PROMPT,
   }
 }
 

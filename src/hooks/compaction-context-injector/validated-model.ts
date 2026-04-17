@@ -31,12 +31,20 @@ export function resolveValidatedModel(
 export function validateCheckpointModel(
   checkpointModel: CompactionAgentConfigCheckpoint["model"],
   currentModel: CompactionAgentConfigCheckpoint["model"],
+  currentAgent: string | undefined,
 ): CompactionAgentConfigCheckpoint["model"] | undefined {
   if (!checkpointModel) {
     return undefined
   }
 
   if (!currentModel) {
+    return checkpointModel
+  }
+
+  // If the current model differs but the current agent is the compaction agent,
+  // trust the checkpoint model — the session was temporarily using a different model
+  // during summarization, and we need to restore the original.
+  if (isCompactionAgent(currentAgent)) {
     return checkpointModel
   }
 

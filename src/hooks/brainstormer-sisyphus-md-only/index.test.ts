@@ -1,7 +1,12 @@
-import { describe, expect, test } from "bun:test"
-import { mkdirSync, writeFileSync } from "node:fs"
+import { describe, expect, test, beforeEach } from "bun:test"
+import { mkdirSync, writeFileSync, rmSync } from "node:fs"
 import { createBrainstormerSisyphusMdOnlyHook } from "./hook"
 import * as sessionState from "../../features/claude-code-session-state"
+
+// Cleanup before tests
+beforeEach(() => {
+  rmSync("/tmp/test", { force: true, recursive: true })
+})
 
 describe("brainstormer-sisyphus-md-only", () => {
   const hook = createBrainstormerSisyphusMdOnlyHook({
@@ -9,26 +14,44 @@ describe("brainstormer-sisyphus-md-only", () => {
     client: {},
   } as never)
 
-  test("blocks brainstormer writes to brainstorm handoff files", async () => {
+  test("allows brainstormer writes to brainstorm handoff files", async () => {
     mkdirSync("/tmp/test/.sisyphus/drafts", { recursive: true })
     sessionState.updateSessionAgent("ses-brainstormer", "brainstormer")
     const input = { tool: "Write", sessionID: "ses-brainstormer", callID: "c1" }
     const output = { args: { filePath: ".sisyphus/drafts/brainstorm-auth-flow.md" } }
 
-    await expect(hook["tool.execute.before"](input, output)).rejects.toThrow(
-      "Brainstormer is read-only. Write is not allowed",
-    )
+    // Should NOT throw - allowed to create new brainstorm files
+    await expect(hook["tool.execute.before"](input, output)).resolves.toBeUndefined()
   })
 
-  test("blocks brainstormer writes to brainstorm handoff files in brainstorms subdirectory", async () => {
+  test("allows brainstormer writes to brainstorm files in brainstorms subdirectory", async () => {
     mkdirSync("/tmp/test/.sisyphus/drafts/brainstorms", { recursive: true })
     sessionState.updateSessionAgent("ses-brainstormer-1b", "brainstormer")
     const input = { tool: "Write", sessionID: "ses-brainstormer-1b", callID: "c1b" }
     const output = { args: { filePath: ".sisyphus/drafts/brainstorms/brainstorm-ui-polish.md" } }
 
-    await expect(hook["tool.execute.before"](input, output)).rejects.toThrow(
-      "Brainstormer is read-only. Write is not allowed",
-    )
+    // Should NOT throw - allowed to create new brainstorm files in brainstorms/
+    await expect(hook["tool.execute.before"](input, output)).resolves.toBeUndefined()
+  })
+
+  test("allows brainstormer writes to notes files", async () => {
+    mkdirSync("/tmp/test/.sisyphus/drafts", { recursive: true })
+    sessionState.updateSessionAgent("ses-brainstormer-notes", "brainstormer")
+    const input = { tool: "Write", sessionID: "ses-brainstormer-notes", callID: "c1" }
+    const output = { args: { filePath: ".sisyphus/drafts/notes-auth-design.md" } }
+
+    // Should NOT throw - allowed to create new notes files
+    await expect(hook["tool.execute.before"](input, output)).resolves.toBeUndefined()
+  })
+
+  test("allows brainstormer writes to research files", async () => {
+    mkdirSync("/tmp/test/.sisyphus/drafts", { recursive: true })
+    sessionState.updateSessionAgent("ses-brainstormer-research", "brainstormer")
+    const input = { tool: "Write", sessionID: "ses-brainstormer-research", callID: "c1" }
+    const output = { args: { filePath: ".sisyphus/drafts/research-alternatives.md" } }
+
+    // Should NOT throw - allowed to create new research files
+    await expect(hook["tool.execute.before"](input, output)).resolves.toBeUndefined()
   })
 
   test("blocks brainstormer writes to non-brainstorm markdown files", async () => {
@@ -37,7 +60,7 @@ describe("brainstormer-sisyphus-md-only", () => {
     const output = { args: { filePath: ".sisyphus/drafts/idea.md" } }
 
     await expect(hook["tool.execute.before"](input, output)).rejects.toThrow(
-      "Brainstormer is read-only. Write is not allowed",
+      "Brainstormer can only create new brainstorm/notes/research files",
     )
   })
 
@@ -47,17 +70,17 @@ describe("brainstormer-sisyphus-md-only", () => {
     const output = { args: { filePath: "src/main.ts" } }
 
     await expect(hook["tool.execute.before"](input, output)).rejects.toThrow(
-      "Brainstormer is read-only. Write is not allowed",
+      "Brainstormer can only create new brainstorm/notes/research files",
     )
   })
 
-  test("blocks brainstormer apply_patch usage outside brainstorm files", async () => {
+  test("blocks brainstormer apply_patch usage", async () => {
     sessionState.updateSessionAgent("ses-brainstormer-3", "brainstormer")
     const input = { tool: "apply_patch", sessionID: "ses-brainstormer-3", callID: "c3" }
     const output = { args: { filePath: "src/main.ts" } }
 
     await expect(hook["tool.execute.before"](input, output)).rejects.toThrow(
-      "Brainstormer is read-only.",
+      "Brainstormer can only create new brainstorm/notes/research files",
     )
   })
 
@@ -67,7 +90,7 @@ describe("brainstormer-sisyphus-md-only", () => {
     const output = { args: { filePath: ".sisyphus/drafts/brainstorm-auth-flow.md" } }
 
     await expect(hook["tool.execute.before"](input, output)).rejects.toThrow(
-      "Brainstormer is read-only.",
+      "Brainstormer is read-only. Cannot modify files",
     )
   })
 
@@ -80,7 +103,7 @@ describe("brainstormer-sisyphus-md-only", () => {
     const output = { args: { filePath: ".sisyphus/drafts/brainstorm-existing.md" } }
 
     await expect(hook["tool.execute.before"](input, output)).rejects.toThrow(
-      "Brainstormer is read-only. Write is not allowed",
+      "Brainstormer may only create new files. Existing file detected",
     )
   })
 
@@ -90,7 +113,17 @@ describe("brainstormer-sisyphus-md-only", () => {
     const output = { args: { filePath: "src/main.ts" } }
 
     await expect(hook["tool.execute.before"](input, output)).rejects.toThrow(
-      "Brainstormer is read-only.",
+      "Brainstormer can only create new brainstorm/notes/research files",
+    )
+  })
+
+  test("blocks brainstormer write without file path", async () => {
+    sessionState.updateSessionAgent("ses-brainstormer-7", "brainstormer")
+    const input = { tool: "Write", sessionID: "ses-brainstormer-7", callID: "c7" }
+    const output = { args: { content: "some content" } } // No filePath
+
+    await expect(hook["tool.execute.before"](input, output)).rejects.toThrow(
+      "Brainstormer can only create new brainstorm/notes/research files",
     )
   })
 })

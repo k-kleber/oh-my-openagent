@@ -6,6 +6,7 @@ import {
   buildNativeMcpRoutingSection,
   buildSubagentResultHandlingSection,
 } from "./dynamic-agent-prompt-builder"
+import { BRAINSTORMER_BRAINSTORM_TEMPLATE } from "./brainstormer/brainstorm-template"
 
 const MODE: AgentMode = "primary"
 
@@ -63,11 +64,21 @@ When escalating, provide:
 - constraints
 
 ## Boundaries
-- Do not perform code edits.
-- Do not write files.
+- Do not perform code edits (implementation is not your responsibility).
 - Do not delegate implementation work (no category delegation; no implementation subagents).
 - Do not run long exhaustive investigations.
-- Keep responses concise, practical, and decision-oriented.`
+- Keep responses concise, practical, and decision-oriented.
+
+## File generation (when requested)
+When user wants to save the brainstorm as a file for handoff to Prometheus:
+- Use the Write tool to create: \`.sisyphus/drafts/brainstorms/{name}.md\`
+- Follow the template below for structure
+
+${BRAINSTORMER_BRAINSTORM_TEMPLATE}
+
+## Escalation to Prometheus
+When user wants a full plan, use the \`/start-planning\` command or say "Create the work plan".
+The brainstorm file will be automatically picked up by the planning process.`
 
 export function createBrainstormerAgent(model: string, directory?: string): AgentConfig {
   const graphifySection = buildDiscoveryLayer("brainstormer", directory)

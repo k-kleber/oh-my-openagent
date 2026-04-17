@@ -47,6 +47,7 @@ export function createRecoveryLogic(
     const validatedCheckpointModel = validateCheckpointModel(
       checkpoint.model,
       currentPromptConfig.model,
+      currentPromptConfig.agent,
     )
     const { model: checkpointModel, ...checkpointWithoutModel } = checkpoint
     const checkpointWithAgent = {

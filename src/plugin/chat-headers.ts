@@ -132,10 +132,14 @@ export function createChatHeadersHandler(args: { ctx: PluginContext }): (input: 
       ? (input as Record<string, unknown>).model as Record<string, unknown>
       : undefined
     const api = model && isRecord(model.api) ? model.api as Record<string, unknown> : undefined
-    if (api?.npm === "@ai-sdk/github-copilot") return
+    const isSsdkActive = api?.npm === "@ai-sdk/github-copilot"
 
-    if (!(await isOmoInternalMessage(normalizedInput, ctx.client))) return
-
+    // 2026 Agent Mode headers - force even when SDK is active to bypass per-message billing
     output.headers["x-initiator"] = "agent"
+    output.headers["x-copilot-is-agent"] = "true"
+    output.headers["openai-is-agent"] = "true"
+
+    // Skip per-message check only when SDK is active AND no internal marker present
+    if (isSsdkActive && !(await isOmoInternalMessage(normalizedInput, ctx.client))) return
   }
 }

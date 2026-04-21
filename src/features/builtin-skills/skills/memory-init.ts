@@ -18,7 +18,7 @@ At the start of a project session: "init memory", "set up memory for this projec
 
 - Call \`serena_activate_project(project="<projectName>")\`.
 - Note detected languages.
-- Pre-warm LSP cache: \`serena_execute_shell_command(command="serena project index <projectName> --language <language>")\`.
+- Keep Serena setup in the native tool interface. Do not express it as a shell command.
 
 ### 2.a Verify Serena readiness
 
@@ -58,5 +58,6 @@ Memory initialized for project: <projectName>
 
 - Use kebab-case for bank IDs.
 - Use \`hindsight_*\` and \`openmemory_*\` native tools.
+- Never express Serena tool usage as shell commands.
 - Run \`code-intelligence-init\` when Serena readiness is missing.`,
 }

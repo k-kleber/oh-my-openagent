@@ -58,6 +58,7 @@ describe("createBackgroundOutput block=true polling", () => {
 
         return task
       },
+      waitForSession: async () => task.sessionID ?? "ses-1",
     }
 
     const tool = createBackgroundOutput(manager, createMockClient())
@@ -89,6 +90,7 @@ describe("createBackgroundOutput block=true polling", () => {
         pollCount += 1
         return task
       },
+      waitForSession: async () => task.sessionID ?? "ses-1",
     }
 
     const tool = createBackgroundOutput(manager, createMockClient())
@@ -108,5 +110,47 @@ describe("createBackgroundOutput block=true polling", () => {
     expect(output).toContain("# Task Status")
     expect(output).toContain("Timed out waiting")
     expect(output).toContain("still running")
+  })
+
+  test("waits for pending task session before polling", async () => {
+    // #given
+    let waitCalls = 0
+    let pollCount = 0
+    const task = createTask({ status: "pending", sessionID: undefined })
+    const manager: BackgroundOutputManager = {
+      getTask: (id: string) => {
+        if (id !== task.id) return undefined
+        pollCount += 1
+        if (waitCalls > 0) {
+          task.sessionID = "ses-live"
+          task.status = "completed"
+        }
+        return task
+      },
+      waitForSession: async () => {
+        waitCalls += 1
+        task.sessionID = "ses-live"
+        task.status = "running"
+        return "ses-live"
+      },
+    }
+
+    const tool = createBackgroundOutput(manager, createMockClient())
+
+    // #when
+    const output = await tool.execute(
+      {
+        task_id: task.id,
+        block: true,
+        timeout: 3000,
+      },
+      mockContext
+    )
+
+    // #then
+    expect(waitCalls).toBe(1)
+    expect(pollCount).toBeGreaterThanOrEqual(1)
+    expect(output).toContain("Task Result")
+    expect(output).toContain("Session ID: ses-live")
   })
 })

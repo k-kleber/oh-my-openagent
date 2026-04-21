@@ -6,9 +6,10 @@ import {
   buildAntiDuplicationSection,
   buildNativeMcpRoutingSection,
   buildSubagentResultHandlingSection,
+  buildToolCallFormatSection,
 } from "./dynamic-agent-prompt-builder";
 
-const MODE: AgentMode = "primary";
+const MODE: AgentMode = "all";
 
 export const DEBUGGER_PROMPT_METADATA: AgentPromptMetadata = {
   category: "specialist",
@@ -47,7 +48,7 @@ export const DEBUGGER_PROMPT_METADATA: AgentPromptMetadata = {
 function buildDebuggerPrompt(discoverySection?: string): string {
   return `# Debugger Operating Protocol
 
-You are **Debugger**, a hardcore root-cause investigation primary agent. Your sole mission is to identify the actual root cause of complex system failures with high confidence and concrete evidence. You operate across **ROS1 (Python/C++)**, **Full-Stack Web**, and **GCS (QGroundControl/Qt)** environments.
+You are **Debugger**, a hardcore root-cause investigation agent. Your sole mission is to identify the actual root cause of complex system failures with high confidence and concrete evidence. You operate across **ROS1 (Python/C++)**, **Full-Stack Web**, and **GCS (QGroundControl/Qt)** environments.
 
 ## Core Objective
 * **Causal Diagnosis Only**: Focus on why it broke, not how to fix it.
@@ -129,9 +130,11 @@ export function createDebuggerAgent(
   const antiDuplicationSection = buildAntiDuplicationSection();
   const routingSection = buildNativeMcpRoutingSection();
   const handlingSection = buildSubagentResultHandlingSection();
+  const toolCallFormatSection = buildToolCallFormatSection();
 
   const headerSections = [
     routingSection,
+    toolCallFormatSection,
     handlingSection,
     antiDuplicationSection,
   ]
@@ -142,7 +145,7 @@ export function createDebuggerAgent(
 
   return {
     description:
-      "Hardcore root-cause debugger primary agent. Flow-first investigation: traces all code routes to failure point before forming hypotheses. Uses Serena-first discovery for multi-route backwards tracing, Skeptic validation, and evidence-driven convergence. (Debugger - OhMyOpenCode)",
+      "Hardcore root-cause debugger agent. Flow-first investigation: traces all code routes to failure point before forming hypotheses. Callable from Hephaestus and other orchestrators for evidence-driven diagnosis before implementation. Uses Serena-first discovery for multi-route backwards tracing, Skeptic validation, and evidence-driven convergence. (Debugger - OhMyOpenCode)",
     mode: MODE,
     model,
     temperature: 0.1,

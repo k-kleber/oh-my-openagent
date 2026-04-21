@@ -1,6 +1,12 @@
 import type { AgentConfig } from "@opencode-ai/sdk"
 import type { AgentMode, AgentPromptMetadata } from "./types"
 import { createAgentToolRestrictions } from "../shared/permission-compat"
+import {
+  buildDiscoveryLayer,
+  buildNativeMcpRoutingSection,
+  buildSubagentResultHandlingSection,
+  buildToolCallFormatSection,
+} from "./dynamic-agent-prompt-builder"
 
 const MODE: AgentMode = "subagent"
 
@@ -29,7 +35,7 @@ export const DEEP_EXPLORER_PROMPT_METADATA: AgentPromptMetadata = {
   ],
 }
 
-export function createDeepExplorerAgent(model: string): AgentConfig {
+export function createDeepExplorerAgent(model: string, directory?: string): AgentConfig {
   const restrictions = createAgentToolRestrictions([
     "write",
     "edit",
@@ -37,15 +43,19 @@ export function createDeepExplorerAgent(model: string): AgentConfig {
     "call_omo_agent",
   ])
 
-  return {
-    description:
-      "Heavy contextual exploration agent. Same capabilities as explore, plus can spawn explore-only workers for parallel fan-out on complex discovery tasks. Use for broad, uncertain, cross-module searches. (Deep Explorer - OhMyOpenCode)",
-    mode: MODE,
-    model,
-    temperature: 0.1,
-    skills: ["global-tooling-preference"],
-    ...restrictions,
-    prompt: `You are a deep codebase exploration specialist for heavy discovery tasks.
+  const discoverySection = buildDiscoveryLayer("deep-explorer", directory)
+  const routingSection = buildNativeMcpRoutingSection()
+  const handlingSection = buildSubagentResultHandlingSection()
+  const toolCallFormatSection = buildToolCallFormatSection()
+  const headerSections = [
+    routingSection,
+    toolCallFormatSection,
+    handlingSection,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
+
+  const basePrompt = `You are a deep codebase exploration specialist for heavy discovery tasks.
 
 ## Runtime Tool Gating (MANDATORY)
 
@@ -115,7 +125,21 @@ What the caller can decide next, plus remaining unknowns.
 - Broad coverage with no obvious gaps for requested scope.
 - Explicitly list any unresolved unknowns.
 - Respect retrieval-only role.
-`,
+`
+
+  const prompt = headerSections
+    ? `${headerSections}\n\n${discoverySection ? discoverySection + "\n\n" : ""}${basePrompt}`
+    : `${discoverySection ? discoverySection + "\n\n" : ""}${basePrompt}`
+
+  return {
+    description:
+      "Heavy contextual exploration agent. Same capabilities as explore, plus can spawn explore-only workers for parallel fan-out on complex discovery tasks. Use for broad, uncertain, cross-module searches. (Deep Explorer - OhMyOpenCode)",
+    mode: MODE,
+    model,
+    temperature: 0.1,
+    skills: ["global-tooling-preference"],
+    ...restrictions,
+    prompt,
   }
 }
 createDeepExplorerAgent.mode = MODE

@@ -136,6 +136,8 @@ describe("createBuiltinSkills", () => {
 		expect(memoryInit!.template).toContain("code-intelligence-init")
 		expect(memoryInit!.template).toContain("hindsight_list_banks")
 		expect(memoryInit!.template).toContain("openmemory_store")
+		expect(memoryInit!.template).toContain("Never express Serena tool usage as shell commands")
+		expect(memoryInit!.template).not.toContain("serena_execute_shell_command")
 		expect(memoryInit!.mcpConfig).toBeUndefined()
 	})
 
@@ -168,7 +170,10 @@ describe("createBuiltinSkills", () => {
 		const initSkill = skills.find((s) => s.name === "code-intelligence-init")
 
 		expect(initSkill).toBeDefined()
-		expect(initSkill!.template).toContain('serena project index <projectName>')
+		expect(initSkill!.template).toContain('serena_activate_project(project="<projectName>")')
+		expect(initSkill!.template).toContain("Never express Serena tool usage as shell commands")
+		expect(initSkill!.template).not.toContain("CLI-first")
+		expect(initSkill!.template).not.toContain("serena_execute_shell_command")
 		expect(initSkill!.template).toContain('skill(name="clangd-preindex-init")')
 		expect(initSkill!.description).toContain("Initialize Serena")
 	})

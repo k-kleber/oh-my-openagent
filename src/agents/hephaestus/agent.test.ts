@@ -192,6 +192,7 @@ describe("createHephaestusAgent", () => {
     expect(config.prompt).toContain("You build context by examining");
     expect(config.prompt).toContain("Never chain together bash commands");
     expect(config.prompt).toContain("<tool_usage_rules>");
+    expect(config.prompt).toContain("task(subagent_type=\"debugger\"");
   });
 
   test("GPT 5.4 prompt lets project instructions override opener defaults", () => {
@@ -216,6 +217,19 @@ describe("createHephaestusAgent", () => {
     expect(config.prompt).toContain("Senior Staff Engineer");
     expect(config.prompt).toContain("Hard Constraints");
     expect(config.prompt).toContain("<tool_usage_rules>");
+    expect(config.prompt).toContain("Delegate to debugger");
+  });
+
+  test("generic GPT prompt routes bug work through debugger before fixing", () => {
+    // given
+    const model = "openai/gpt-5.2";
+
+    // when
+    const config = createHephaestusAgent(model);
+
+    // then
+    expect(config.prompt).toContain("task(subagent_type=\"debugger\"");
+    expect(config.prompt).toContain("implement the fix yourself");
   });
 
   test("GPT 5.3-codex prompt lets project instructions override opener defaults", () => {
@@ -226,7 +240,7 @@ describe("createHephaestusAgent", () => {
     const config = createHephaestusAgent(model);
 
     // then
-    expect(config.prompt).toContain("unless a project/user instruction file explicitly asks for a greeting or opening phrase");
+    expect(config.prompt).toContain("Skip empty preambles");
   });
 
   test("includes Hephaestus identity in prompt", () => {

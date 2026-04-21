@@ -3,16 +3,12 @@ import {
   findNearestMessageWithFields,
   findNearestMessageWithFieldsFromSDK,
 } from "../../features/hook-message-injector"
-import { getMessageDir, isSqliteBackend, normalizePromptTools, normalizeSDKResponse } from "../../shared"
+import { getMessageDir, isCompactionAgent, isSqliteBackend, normalizePromptTools, normalizeSDKResponse } from "../../shared"
 import type { ModelInfo } from "./types"
 
 type PromptContext = {
   model?: ModelInfo
   tools?: Record<string, boolean>
-}
-
-function isCompactionAgent(agent: unknown): boolean {
-  return typeof agent === "string" && agent.toLowerCase() === "compaction"
 }
 
 export async function resolveRecentPromptContextForSession(

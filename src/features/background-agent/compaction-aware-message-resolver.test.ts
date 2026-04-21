@@ -3,10 +3,10 @@ import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 import {
-  isCompactionAgent,
   findNearestMessageExcludingCompaction,
   resolvePromptContextFromSessionMessages,
 } from "./compaction-aware-message-resolver"
+import { isCompactionAgent } from "../../shared/compaction-marker"
 import {
   clearCompactionAgentConfigCheckpoint,
   setCompactionAgentConfigCheckpoint,

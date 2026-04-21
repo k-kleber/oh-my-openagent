@@ -1,11 +1,8 @@
 import type { CompactionAgentConfigCheckpoint } from "../../shared/compaction-agent-config-checkpoint"
+import { isCompactionAgent } from "./session-id"
 
 export type RecoveryPromptConfig = CompactionAgentConfigCheckpoint & {
   agent: string
-}
-
-function isCompactionAgent(agent: string | undefined): boolean {
-  return agent?.trim().toLowerCase() === "compaction"
 }
 
 function matchesExpectedModel(

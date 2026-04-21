@@ -2,7 +2,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "bun:test"
 import type { OhMyOpenCodeConfig } from "../../config"
-import { resolveRunAgent, waitForEventProcessorShutdown } from "./runner"
+import { OMO_INTERNAL_INITIATOR_MARKER } from "../../shared"
+import { createInitialRunPromptParts, resolveRunAgent, waitForEventProcessorShutdown } from "./runner"
 
 const createConfig = (overrides: Partial<OhMyOpenCodeConfig> = {}): OhMyOpenCodeConfig => ({
   ...overrides,
@@ -189,5 +190,21 @@ describe("run with invalid model", () => {
       console.error = originalError
       process.exit = originalExit
     }
+  })
+})
+
+describe("run initial prompt handshake", () => {
+  it("builds the first run prompt without the internal initiator marker", () => {
+    const parts = createInitialRunPromptParts("open the repo")
+
+    expect(parts).toEqual([{ type: "text", text: "open the repo" }])
+    expect(JSON.stringify(parts)).not.toContain(OMO_INTERNAL_INITIATOR_MARKER)
+  })
+
+  it("falls back to a plain initialization message when input is empty", () => {
+    const parts = createInitialRunPromptParts("   ")
+
+    expect(parts).toEqual([{ type: "text", text: "Initializing agent session." }])
+    expect(JSON.stringify(parts)).not.toContain(OMO_INTERNAL_INITIATOR_MARKER)
   })
 })

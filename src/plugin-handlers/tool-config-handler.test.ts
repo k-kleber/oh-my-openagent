@@ -366,6 +366,37 @@ describe("applyToolConfig", () => {
     })
   })
 
+  describe("#given exploration agents", () => {
+    describe("#when applying tool config", () => {
+      it.each(["explore", "deep-explorer", "librarian"])(
+        "#then should not deny Serena or Graphify discovery tools for %s",
+        (agentName) => {
+          const params = createParams({ agents: [agentName] })
+
+          applyToolConfig(params)
+
+          const agent = params.agentResult[agentName] as {
+            permission: Record<string, unknown>
+          }
+
+          expect(agent.permission.serena_activate_project).toBeUndefined()
+          expect(agent.permission.serena_get_symbols_overview).toBeUndefined()
+          expect(agent.permission.serena_find_symbol).toBeUndefined()
+          expect(agent.permission.serena_find_referencing_symbols).toBeUndefined()
+          expect(agent.permission.serena_read_file).toBeUndefined()
+          expect(agent.permission.serena_search_for_pattern).toBeUndefined()
+          expect(agent.permission.query_graph).toBeUndefined()
+          expect(agent.permission.god_nodes).toBeUndefined()
+          expect(agent.permission.graph_stats).toBeUndefined()
+          expect(agent.permission.get_community).toBeUndefined()
+          expect(agent.permission.get_node).toBeUndefined()
+          expect(agent.permission.get_neighbors).toBeUndefined()
+          expect(agent.permission.shortest_path).toBeUndefined()
+        },
+      )
+    })
+  })
+
   describe("#given tester agent", () => {
     describe("#when applying tool config", () => {
       it("#then should enforce tester execution-only permissions", () => {

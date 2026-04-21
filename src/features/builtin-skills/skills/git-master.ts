@@ -687,6 +687,7 @@ git stash list
 | Pushed commits exist | WARNING | Will require force-push; confirm with user |
 | All commits local | SAFE | Proceed freely |
 | Upstream diverged | WARNING | May need \`--onto\` strategy |
+| Merge commits detected | WARNING | Default rebase flattens merges; use \`--rebase-merges\` if topology must be preserved |
 
 ### R1.3 Determine Rebase Strategy
 
@@ -707,6 +708,9 @@ USER REQUEST -> STRATEGY:
 
 "split commit" / "커밋 분리"
   -> INTERACTIVE_EDIT
+
+branch contains merge commits and user wants cleanup/update without flattening history
+  -> PRESERVE_TOPOLOGY
 \`\`\`
 </rebase_context>
 
@@ -727,6 +731,9 @@ MERGE_BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master)
 # For SQUASH (combine all into one):
 git reset --soft $MERGE_BASE
 git commit -m "Combined: <summarize all changes>"
+
+# For PRESERVE_TOPOLOGY (keep merge commits while rewriting branch history):
+GIT_SEQUENCE_EDITOR=: git rebase -i --rebase-merges $MERGE_BASE
 
 # For SELECTIVE SQUASH (keep some, squash others):
 # Use fixup approach - mark commits to squash, then autosquash
@@ -751,6 +758,10 @@ GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash $MERGE_BASE
 # Simple rebase onto main:
 git fetch origin
 git rebase origin/main
+
+# Merge-preserving update when branch contains merge commits:
+git fetch origin
+git rebase --rebase-merges origin/main
 
 # Complex: Move commits to different base
 # git rebase --onto <newbase> <oldbase> <branch>

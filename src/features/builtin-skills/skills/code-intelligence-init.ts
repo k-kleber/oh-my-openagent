@@ -17,16 +17,15 @@ Make Serena ready for this project and apply clangd preindex optimization when t
 
 - Derive \`<projectName>\` from cwd.
 
-### 2. Serena readiness (CLI-first)
+### 2. Serena readiness
 
-Run:
+Use native Serena tools directly:
 
 \`\`\`
 serena_activate_project(project="<projectName>")
-serena_execute_shell_command(command="serena project index <projectName>")
 \`\`\`
 
-If this fails, stop and report \`FAILED\`.
+If Serena activation fails, stop and report \`FAILED\`.
 
 ### 3. Conditional clangd optimization
 
@@ -52,6 +51,6 @@ Return one of:
 
 ## Guardrails
 
-- Prefer CLI for Serena setup.
+- Never express Serena tool usage as shell commands.
 - Always include explicit status and next action in the final report.`,
 }

@@ -58,6 +58,8 @@ export function collectPendingBuiltinAgents(input: {
     if (agentName === "writer") continue
     if (agentName === "atlas") continue
     if (agentName === "sisyphus-junior") continue
+    if (agentName === "explore") continue
+    if (agentName === "deep-explorer") continue
     if (disabledAgents.some((name) => name.toLowerCase() === agentName.toLowerCase())) continue
 
     const override = agentOverrides[agentName]
@@ -96,7 +98,7 @@ export function collectPendingBuiltinAgents(input: {
     if (!resolution) continue
     const { model, variant: resolvedVariant } = resolution
 
-    let config = buildAgent(source, model, mergedCategories, gitMasterConfig, browserProvider, disabledSkills)
+    let config = buildAgent(source, model, mergedCategories, gitMasterConfig, browserProvider, disabledSkills, directory)
 
     // Apply resolved variant from model fallback chain
     if (resolvedVariant) {

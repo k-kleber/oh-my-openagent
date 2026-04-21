@@ -72,6 +72,12 @@ import {
 
 type OpencodeClient = PluginInput["client"]
 
+type SessionWaiter = {
+  resolve: (sessionID: string) => void
+  reject: (error: Error) => void
+  timer: ReturnType<typeof setTimeout>
+}
+
 
 interface MessagePartInfo {
   id?: string
@@ -178,6 +184,7 @@ export class BackgroundManager {
   private notificationQueueByParent: Map<string, Promise<void>> = new Map()
   private rootDescendantCounts: Map<string, number>
   private preStartDescendantReservations: Set<string>
+  private sessionWaiters: Map<string, SessionWaiter> = new Map()
   private enableParentSessionNotifications: boolean
   readonly taskHistory = new TaskHistory()
   private cachedCircuitBreakerSettings?: CircuitBreakerSettings
@@ -466,6 +473,7 @@ export class BackgroundManager {
     const sessionID = createResult.data.id
 
     if (task.status === "cancelled") {
+      this.rejectSessionWaiter(task.id, `Task was cancelled before session start: ${task.id}`)
       await this.client.session.abort({
         path: { id: sessionID },
       }).catch((error) => {
@@ -554,6 +562,7 @@ export class BackgroundManager {
       }
 
       task.sessionID = sessionID
+      this.resolveSessionWaiter(task.id, sessionID)
       task.status = "running"
       task.startedAt = new Date()
       task.progress = {
@@ -606,6 +615,7 @@ export class BackgroundManager {
           }
 
           task.sessionID = sessionID
+          this.resolveSessionWaiter(task.id, sessionID)
           task.status = "running"
           task.startedAt = new Date()
           task.progress = {
@@ -632,6 +642,7 @@ export class BackgroundManager {
       log("[background-agent] promptAsync error:", error)
       const existingTask = task
       if (existingTask) {
+        this.rejectSessionWaiter(existingTask.id, `Failed to start task session: ${existingTask.id}`)
         existingTask.status = "interrupt"
         const errorMessage = error instanceof Error ? error.message : String(error)
         if (errorMessage.includes("agent.name") || errorMessage.includes("undefined") || isAgentNotFoundError(error)) {
@@ -665,6 +676,59 @@ export class BackgroundManager {
 
   getTask(id: string): BackgroundTask | undefined {
     return this.tasks.get(id)
+  }
+
+  waitForSession(taskId: string, timeoutMs: number): Promise<string> {
+    const task = this.tasks.get(taskId)
+    if (!task) {
+      return Promise.reject(new Error(`Task not found: ${taskId}`))
+    }
+
+    if (task.sessionID) {
+      return Promise.resolve(task.sessionID)
+    }
+
+    if (task.status !== "pending" && task.status !== "running") {
+      return Promise.reject(new Error(`Task is no longer active: ${taskId}`))
+    }
+
+    return new Promise<string>((resolve, reject) => {
+      const existing = this.sessionWaiters.get(taskId)
+      if (existing) {
+        clearTimeout(existing.timer)
+        existing.reject(new Error(`Superseded session waiter for task: ${taskId}`))
+        this.sessionWaiters.delete(taskId)
+      }
+
+      const timer = setTimeout(() => {
+        this.sessionWaiters.delete(taskId)
+        reject(new Error(`Timed out waiting for session: ${taskId}`))
+      }, Math.max(timeoutMs, 0))
+
+      this.sessionWaiters.set(taskId, { resolve, reject, timer })
+    })
+  }
+
+  private resolveSessionWaiter(taskId: string, sessionID: string): void {
+    const waiter = this.sessionWaiters.get(taskId)
+    if (!waiter) {
+      return
+    }
+
+    clearTimeout(waiter.timer)
+    this.sessionWaiters.delete(taskId)
+    waiter.resolve(sessionID)
+  }
+
+  private rejectSessionWaiter(taskId: string, message: string): void {
+    const waiter = this.sessionWaiters.get(taskId)
+    if (!waiter) {
+      return
+    }
+
+    clearTimeout(waiter.timer)
+    this.sessionWaiters.delete(taskId)
+    waiter.reject(new Error(message))
   }
 
   getTasksByParentSession(sessionID: string): BackgroundTask[] {
@@ -2067,6 +2131,11 @@ Use \`background_output(task_id="${task.id}")\` to retrieve this result when rea
     this.processingKeys.clear()
     this.taskHistory.clearAll()
     this.completedTaskSummaries.clear()
+    for (const [taskId, waiter] of this.sessionWaiters.entries()) {
+      clearTimeout(waiter.timer)
+      waiter.reject(new Error(`BackgroundManager shutdown while waiting for session: ${taskId}`))
+    }
+    this.sessionWaiters.clear()
     this.unregisterProcessCleanup()
     log("[background-agent] Shutdown complete")
 

@@ -36,6 +36,8 @@ import { maybeCreateSisyphusConfig } from "./builtin-agents/sisyphus-agent"
 import { maybeCreateHephaestusConfig } from "./builtin-agents/hephaestus-agent"
 import { maybeCreateDebuggerConfig } from "./builtin-agents/debugger-agent"
 import { maybeCreateBrainstormerConfig } from "./builtin-agents/brainstormer-agent"
+import { maybeCreateExploreConfig } from "./builtin-agents/explore-agent"
+import { maybeCreateDeepExplorerConfig } from "./builtin-agents/deep-explorer-agent"
 import { maybeCreateResearcherConfig } from "./builtin-agents/researcher-agent"
 import { maybeCreateWriterConfig } from "./builtin-agents/writer-agent"
 import { maybeCreateAtlasConfig } from "./builtin-agents/atlas-agent"
@@ -44,8 +46,8 @@ import { buildCustomAgentMetadata, parseRegisteredAgentSummaries } from "./custo
 type AgentSource = AgentFactory | AgentConfig
 
 const agentSources: Record<BuiltinAgentName, AgentSource> = {
-  sisyphus: createSisyphusAgent,
-  hephaestus: createHephaestusAgent,
+  sisyphus: createSisyphusAgent as unknown as AgentFactory,
+  hephaestus: createHephaestusAgent as unknown as AgentFactory,
   debugger: createDebuggerAgent,
   tester: createTesterAgent,
   brainstormer: createBrainstormerAgent,
@@ -240,10 +242,35 @@ export async function createBuiltinAgents(
     isFirstRunNoCache,
     mergedCategories,
     directory,
-    
   })
   if (brainstormerConfig) {
     result["brainstormer"] = brainstormerConfig
+  }
+
+  const exploreConfig = maybeCreateExploreConfig({
+    disabledAgents,
+    agentOverrides,
+    availableModels,
+    systemDefaultModel,
+    isFirstRunNoCache,
+    mergedCategories,
+    directory,
+  })
+  if (exploreConfig) {
+    result["explore"] = exploreConfig
+  }
+
+  const deepExplorerConfig = maybeCreateDeepExplorerConfig({
+    disabledAgents,
+    agentOverrides,
+    availableModels,
+    systemDefaultModel,
+    isFirstRunNoCache,
+    mergedCategories,
+    directory,
+  })
+  if (deepExplorerConfig) {
+    result["deep-explorer"] = deepExplorerConfig
   }
 
   const researcherConfig = maybeCreateResearcherConfig({

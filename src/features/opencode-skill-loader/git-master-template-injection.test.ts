@@ -6,6 +6,8 @@ import { injectGitMasterConfig } from "./git-master-template-injection"
 const SAMPLE_TEMPLATE = [
 	"# Git Master Agent",
 	"",
+	"| Merge commits detected | WARNING | Default rebase flattens merges; use `--rebase-merges` if topology must be preserved |",
+	"",
 	"## MODE DETECTION (FIRST STEP)",
 	"",
 	"Analyze the request.",
@@ -15,6 +17,8 @@ const SAMPLE_TEMPLATE = [
 	"git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null",
 	"MERGE_BASE=$(git merge-base HEAD main)",
 	"GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash $MERGE_BASE",
+	"GIT_SEQUENCE_EDITOR=: git rebase -i --rebase-merges $MERGE_BASE",
+	"git rebase --rebase-merges origin/main",
 	"```",
 	"",
 	"```",

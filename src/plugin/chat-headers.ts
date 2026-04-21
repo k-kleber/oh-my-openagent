@@ -54,17 +54,38 @@ function isCopilotProvider(providerID: string): boolean {
   return providerID === "github-copilot" || providerID === "github-copilot-enterprise"
 }
 
-// Queries how many messages already exist in a session. Used as a safety net to
-// detect sessions that existed before this server process (server restart case).
-async function getExistingMessageCount(
+function getMessageID(value: unknown): string | undefined {
+  if (!isRecord(value)) return undefined
+  if (typeof value.id === "string") return value.id
+
+  const info = value.info
+  if (isRecord(info) && typeof info.id === "string") {
+    return info.id
+  }
+
+  return undefined
+}
+
+// Queries how many messages already exist in a session before the current one.
+// Some runtimes persist the in-flight message before chat.headers runs, so we
+// exclude the current message ID from the count.
+async function getPriorMessageCount(
   client: PluginContext["client"],
   sessionID: string,
+  currentMessageID?: string,
 ): Promise<number> {
   try {
     const resp = await client.session.messages({ path: { id: sessionID } })
     const data = resp.data
     if (!Array.isArray(data)) return 0
-    return data.length
+
+    if (!currentMessageID) {
+      return data.length
+    }
+
+    return data.filter((message) => {
+      return getMessageID(message) !== currentMessageID
+    }).length
   } catch {
     return 0
   }
@@ -98,11 +119,15 @@ export function createChatHeadersHandler(_args: { ctx: PluginContext }): (input:
 
     // Determine if this is the billing handshake message:
     // 1. in-process deduplication: if we already marked this session, it's NOT the first
-    // 2. server-restart safety net: if session.messages() returns >0, the session
+    // 2. server-restart safety net: if prior session messages exist, the session
     //    already has history (from before this server process) → NOT the first
     const alreadyBilled = billedSessionSet.has(sessionID)
-    const existingCount = await getExistingMessageCount(_args.ctx.client, sessionID)
-    const isFirstBillingMessage = !alreadyBilled && existingCount === 0
+    const priorMessageCount = await getPriorMessageCount(
+      _args.ctx.client,
+      sessionID,
+      normalizedInput.message.id,
+    )
+    const isFirstBillingMessage = !alreadyBilled && priorMessageCount === 0
 
     if (isSsdkActive) {
       // When @ai-sdk/github-copilot is active, the SDK sets x-initiator internally.

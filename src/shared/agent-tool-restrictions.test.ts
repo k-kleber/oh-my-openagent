@@ -15,6 +15,26 @@ describe("agent-tool-restrictions", () => {
     expect(hasAgentToolRestrictions("deep-explorer")).toBe(true)
   })
 
+  test("exploration agents allow read-only Serena and Graphify tools", () => {
+    for (const agentName of ["explore", "deep-explorer", "librarian"]) {
+      const restrictions = getAgentToolRestrictions(agentName)
+
+      expect(restrictions.serena_activate_project).toBe(true)
+      expect(restrictions.serena_get_symbols_overview).toBe(true)
+      expect(restrictions.serena_find_symbol).toBe(true)
+      expect(restrictions.serena_find_referencing_symbols).toBe(true)
+      expect(restrictions.serena_read_file).toBe(true)
+      expect(restrictions.serena_search_for_pattern).toBe(true)
+      expect(restrictions.query_graph).toBe(true)
+      expect(restrictions.god_nodes).toBe(true)
+      expect(restrictions.graph_stats).toBe(true)
+      expect(restrictions.get_community).toBe(true)
+      expect(restrictions.get_node).toBe(true)
+      expect(restrictions.get_neighbors).toBe(true)
+      expect(restrictions.shortest_path).toBe(true)
+    }
+  })
+
   test("brainstormer allows write but blocks mutation and patch tools", () => {
     const restrictions = getAgentToolRestrictions("brainstormer")
 

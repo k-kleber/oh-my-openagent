@@ -51,15 +51,9 @@ export function createDelegateTask(options: DelegateTaskToolOptions): ToolDefini
   const defaultSkillsBySubagent: Record<string, string[]> = {
     explore: [
       "global-tooling-preference",
-      "tool-doc-ripgrep",
-      "tool-doc-fd",
-      "tool-doc-sd",
     ],
     "deep-explorer": [
       "global-tooling-preference",
-      "tool-doc-ripgrep",
-      "tool-doc-fd",
-      "tool-doc-sd",
     ],
     librarian: [
       "global-tooling-preference",

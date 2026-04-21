@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test"
 
 import { createChatHeadersHandler } from "./chat-headers"
 
-function makeMockClient(existingMessageCount = 0) {
-  const msgs = Array.from({ length: existingMessageCount }, (_, i) => ({ id: `msg_${i}` }))
+function makeMockClient(existingMessages: number | Array<{ id?: string }> = 0) {
+  const msgs = Array.isArray(existingMessages)
+    ? existingMessages
+    : Array.from({ length: existingMessages }, (_, i) => ({ id: `msg_${i}` }))
   return {
     client: {
       session: {
@@ -24,6 +26,23 @@ describe("createChatHeadersHandler", () => {
         sessionID: "ses_first",
         provider: { id: "github-copilot" },
         message: { id: "msg_first", role: "user" },
+      },
+      output,
+    )
+
+    expect(output.headers["x-initiator"]).toBe("user")
+  })
+
+  test("first message still gets billed when session.messages already contains the in-flight message", async () => {
+    const mock = makeMockClient([{ id: "msg_first_seen" }])
+    const handler = createChatHeadersHandler({ ctx: mock as never })
+    const output: { headers: Record<string, string> } = { headers: {} }
+
+    await handler(
+      {
+        sessionID: "ses_first_seen",
+        provider: { id: "github-copilot" },
+        message: { id: "msg_first_seen", role: "user" },
       },
       output,
     )
@@ -170,5 +189,44 @@ describe("createChatHeadersHandler", () => {
     expect(output.headers["x-initiator"]).toBe("agent")
     expect(output.headers["x-copilot-is-agent"]).toBe("true")
     expect(output.headers["openai-is-agent"]).toBe("true")
+  })
+
+  test("resumed session with earlier messages plus current message still gets agent headers", async () => {
+    const mock = makeMockClient([{ id: "msg_old" }, { id: "msg_current" }])
+    const handler = createChatHeadersHandler({ ctx: mock as never })
+    const output: { headers: Record<string, string> } = { headers: {} }
+
+    await handler(
+      {
+        sessionID: "ses_resumed_plus_current",
+        provider: { id: "github-copilot" },
+        message: { id: "msg_current", role: "user" },
+      },
+      output,
+    )
+
+    expect(output.headers["x-initiator"]).toBe("agent")
+    expect(output.headers["x-copilot-is-agent"]).toBe("true")
+    expect(output.headers["openai-is-agent"]).toBe("true")
+  })
+
+  test("SSSDK active: first message already present in session.messages still lets SDK bill once", async () => {
+    const mock = makeMockClient([{ id: "msg_ssdk_seen" }])
+    const handler = createChatHeadersHandler({ ctx: mock as never })
+    const output: { headers: Record<string, string> } = { headers: {} }
+
+    await handler(
+      {
+        sessionID: "ses_ssdk_seen",
+        provider: { id: "github-copilot" },
+        model: { api: { npm: "@ai-sdk/github-copilot" } },
+        message: { id: "msg_ssdk_seen", role: "user" },
+      },
+      output,
+    )
+
+    expect(output.headers["x-initiator"]).toBeUndefined()
+    expect(output.headers["x-copilot-is-agent"]).toBeUndefined()
+    expect(output.headers["openai-is-agent"]).toBeUndefined()
   })
 })

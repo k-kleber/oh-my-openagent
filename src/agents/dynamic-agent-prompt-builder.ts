@@ -241,6 +241,22 @@ function buildSerenaOnlyFallback(agentName: string): string {
     ? `\n\n### Hybrid Search Rule\n\n**${agentName} quick-lookup exception**: You may perform 1-3 direct \`serena_find_symbol\` quick-lookups before delegating to subagents. Heavy or broad search MUST delegate.`
     : `\n\n### Hybrid Search Rule\n\nHeavy or broad search MUST delegate to \`explore\` or \`deep-explorer\`.`
 
+  const isExplorationAgent = agentName === "explore" || agentName === "deep-explorer"
+
+  const explorationGraphifyTools = isExplorationAgent
+    ? `
+
+### Graphify Tools Available
+
+| Tool | Purpose |
+|------|---------|
+| \`get_neighbors\` | Immediate neighbors (impact surface) |
+| \`shortest_path\` | Connection between two nodes |
+| \`get_node\` | Node details |
+| \`query_graph\` | Broad BFS context query |
+`
+    : ""
+
   return `## Discovery Layer (Serena — Read-Only Navigation)
 
 **MUST call \`serena_activate_project\` as the first step in any new session. Never skip this. Never use Grep when Serena tools are available.**
@@ -260,7 +276,7 @@ function buildSerenaOnlyFallback(agentName: string): string {
 - \`serena_read_file\` — read file content
 - \`serena_search_for_pattern\` — pattern search (use before falling back to Grep)
 
-**Read-only navigation and verification only.** Do not use symbol-editing tools in the discovery phase.${SERENA_CPP_NOTE}${quickLookupNote}
+**Read-only navigation and verification only.** Do not use symbol-editing tools in the discovery phase.${SERENA_CPP_NOTE}${quickLookupNote}${explorationGraphifyTools}
 `
 }
 
@@ -377,20 +393,25 @@ function buildSetC(_agentName: string): string {
 
 ### Phase 1: Map (Graphify Boundary Detection)
 
-Use Graphify neighbor tools to detect impact boundaries:
+Use Graphify first to identify likely boundaries before tracing symbols:
 
+- \`query_graph\` — broad BFS query when the relevant area is still uncertain
+- \`get_node\` — inspect a candidate node before tracing references
 - \`get_neighbors\` — immediate neighbors to detect direct impact surface
 - \`shortest_path\` — check if two nodes are connected and how
 
 ### Phase 2: Microscope (Serena Reference Tracing)
 
 - \`serena_activate_project\` then \`serena_get_symbols_overview\` for target module structure (MUST call first)
+- \`serena_find_symbol\` to lock onto the exact symbol after Graphify narrows the target
 - \`serena_find_referencing_symbols\` to trace all references and callers
 
 ### Phase 3: Trace (Serena Symbol Verification)
 
 - \`serena_find_referencing_symbols\` to verify no missed references
 - \`serena_search_for_pattern\` for lexical fallback when symbol search is insufficient
+
+**Default order**: Graphify orientation first, then Serena symbol tracing, then lexical fallback only if the higher-fidelity tools are insufficient.
 
 ### Serena Read-Only Tools (No Editing)
 
@@ -402,9 +423,10 @@ Use Graphify neighbor tools to detect impact boundaries:
 
 | Tool | Purpose |
 |------|---------|
+| \`query_graph\` | Broad BFS context for uncertain scope |
+| \`get_node\` | Node details |
 | \`get_neighbors\` | Immediate neighbors (impact surface) |
 | \`shortest_path\` | Connection between nodes |
-| \`get_node\` | Node details |
 `
 }
 
@@ -862,5 +884,4 @@ When subagents return "absent", "miss", or no results:
 3. **No Retries**: Never attempt to "force" a subagent result through shell commands if the specialized subagent found nothing.
 </Subagent_Result_Handling>`
 }
-
 

@@ -94,6 +94,18 @@ export function createBackgroundOutput(manager: BackgroundOutputManager, client:
 
         if (shouldBlock && isTaskActiveStatus(task.status)) {
           const startTime = Date.now()
+
+          if (task.status === "pending" && !task.sessionID) {
+            const remainingWaitMs = Math.max(timeoutMs - (Date.now() - startTime), 0)
+            if (remainingWaitMs > 0) {
+              try {
+                await manager.waitForSession(task.id, remainingWaitMs)
+              } catch {
+                // Fall back to status polling and timeout note handling below.
+              }
+            }
+          }
+
           while (Date.now() - startTime < timeoutMs) {
             await delay(1000)
 

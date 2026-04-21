@@ -457,8 +457,11 @@ describe("buildDiscoveryLayer", () => {
         const result = buildDiscoveryLayer(agentName, tempDir)
 
         expect(result).toContain("Set C: Impact Check")
+        expect(result).toContain("`query_graph`")
+        expect(result).toContain("`get_node`")
         expect(result).toContain("`get_neighbors`")
         expect(result).toContain("`shortest_path`")
+        expect(result).toContain("Graphify orientation first")
         expect(result).toContain("Map → Microscope → Trace")
       })
 
@@ -629,4 +632,3 @@ describe("buildDiscoveryLayer", () => {
     })
   })
 })
-

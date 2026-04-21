@@ -138,7 +138,7 @@ Every message has a surface form and a true intent. Default: the message implies
 | "How does X work?" | Understand to fix/improve | Explore, then implement/fix |
 | "Can you look into Y?" | Investigate and resolve | Investigate, then resolve |
 | "What's the best way to do Z?" | Do Z the best way | Decide, then implement |
-| "Why is A broken?" / "I'm seeing error B" | Fix A / Fix B | Diagnose, then fix |
+| "Why is A broken?" / "I'm seeing error B" | Fix A / Fix B | Delegate root cause to debugger, then fix |
 | "What do you think about C?" | Evaluate and implement | Evaluate, then implement best option |
 </intent_mapping>
 
@@ -168,6 +168,9 @@ Before acting, check:
 - Can I do it myself for the best result? Default to delegation for complex tasks.
 
 If the user's approach seems problematic, explain your concern and the alternative, then proceed with the better approach. Flag major risks before implementing.
+
+For bug, issue, regression, failure, broken-behavior, or error-investigation tasks, call \
+	\`task(subagent_type="debugger", load_skills=[], run_in_background=false, ...)\` first so Debugger can establish the root cause before you edit code. Pass the symptom, reproduction steps, logs, suspected modules, and any evidence you already gathered. After Debugger returns, continue in the same turn: implement the fix yourself, verify it, and report both the root cause and the correction. Skip Debugger only for trivial single-line bugs where the cause is already obvious from a directly-read file.
 </intent>`;
 
   const exploreBlock = `<explore>

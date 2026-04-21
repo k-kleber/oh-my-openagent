@@ -7,14 +7,11 @@ import {
 } from "../../features/hook-message-injector"
 import { getSessionAgent } from "../../features/claude-code-session-state"
 import { readBoulderState } from "../../features/boulder-state"
+import { isCompactionAgent } from "../../shared/compaction-marker"
 import { getMessageDir } from "../../shared/opencode-message-dir"
 import { isSqliteBackend } from "../../shared/opencode-storage-detection"
 
 type OpencodeClient = PluginInput["client"]
-
-function isCompactionAgent(agent: string): boolean {
-  return agent.toLowerCase() === "compaction"
-}
 
 async function getAgentFromMessageFiles(
   sessionID: string,

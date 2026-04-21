@@ -6,6 +6,7 @@ import {
   buildAntiDuplicationSection,
   buildNativeMcpRoutingSection,
   buildSubagentResultHandlingSection,
+  buildToolCallFormatSection,
 } from "./dynamic-agent-prompt-builder"
 
 const MODE: AgentMode = "subagent"
@@ -44,9 +45,11 @@ export function createExploreAgent(model: string, directory?: string): AgentConf
   const antiDuplicationSection = buildAntiDuplicationSection()
   const routingSection = buildNativeMcpRoutingSection()
   const handlingSection = buildSubagentResultHandlingSection()
+  const toolCallFormatSection = buildToolCallFormatSection()
 
   const headerSections = [
     routingSection,
+    toolCallFormatSection,
     handlingSection,
     antiDuplicationSection,
   ]

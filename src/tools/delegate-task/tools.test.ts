@@ -368,19 +368,9 @@ describe("sisyphus-task", () => {
       await tool.execute(args, toolContext)
 
       //#then
-      expect(args.load_skills).toEqual([
-        "global-tooling-preference",
-        "tool-doc-ripgrep",
-        "tool-doc-fd",
-        "tool-doc-sd",
-      ])
+      expect(args.load_skills).toEqual(["global-tooling-preference"])
       expect(resolveSkillContentSpy).toHaveBeenCalledWith(
-        [
-          "global-tooling-preference",
-          "tool-doc-ripgrep",
-          "tool-doc-fd",
-          "tool-doc-sd",
-        ],
+        ["global-tooling-preference"],
         expect.any(Object),
       )
     }, { timeout: 10000 })

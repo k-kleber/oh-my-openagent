@@ -6,6 +6,8 @@ import { createMomusAgent } from "./momus"
 import { createMetisAgent } from "./metis"
 import { createTesterAgent } from "./tester"
 import { createAtlasAgent } from "./atlas"
+import { createDeepExplorerAgent } from "./deep-explorer"
+import { createDebuggerAgent } from "./debugger"
 
 const TEST_MODEL = "anthropic/claude-sonnet-4-5"
 
@@ -66,6 +68,31 @@ describe("read-only agent tool restrictions", () => {
       for (const tool of FILE_WRITE_TOOLS) {
         expect(permission[tool]).toBe("deny")
       }
+    })
+
+    test("includes tool call format guardrails in prompt", () => {
+      const agent = createExploreAgent(TEST_MODEL)
+
+      expect(agent.prompt).toContain("Tool Call Format (CRITICAL)")
+      expect(agent.prompt).toContain("NEVER output tool calls as text")
+    })
+  })
+
+  describe("Deep Explorer", () => {
+    test("includes tool call format guardrails in prompt", () => {
+      const agent = createDeepExplorerAgent(TEST_MODEL)
+
+      expect(agent.prompt).toContain("Tool Call Format (CRITICAL)")
+      expect(agent.prompt).toContain("NEVER output tool calls as text")
+    })
+  })
+
+  describe("Debugger", () => {
+    test("includes tool call format guardrails in prompt", () => {
+      const agent = createDebuggerAgent(TEST_MODEL)
+
+      expect(agent.prompt).toContain("Tool Call Format (CRITICAL)")
+      expect(agent.prompt).toContain("NEVER output tool calls as text")
     })
   })
 

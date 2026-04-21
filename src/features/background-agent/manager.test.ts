@@ -5189,6 +5189,102 @@ describe("BackgroundManager - tool permission spread order", () => {
     manager.shutdown()
   })
 
+  test("waitForSession resolves when prompt handoff completes and session is published", async () => {
+    //#given
+    let releasePrompt!: () => void
+    const promptStarted = new Promise<void>((resolve) => {
+      releasePrompt = resolve
+    })
+    const client = {
+      session: {
+        get: async () => ({ data: { directory: "/test/dir" } }),
+        create: async () => ({ data: { id: "session-live" } }),
+        promptAsync: async () => {
+          await promptStarted
+          return {}
+        },
+      },
+    }
+    const manager = new BackgroundManager({ client, directory: tmpdir() } as unknown as PluginInput)
+
+    const task: BackgroundTask = {
+      id: "task-wait-session",
+      status: "pending",
+      queuedAt: new Date(),
+      description: "test task",
+      prompt: "test prompt",
+      agent: "explore",
+      parentSessionID: "parent-session",
+      parentMessageID: "parent-message",
+    }
+    const input: import("./types").LaunchInput = {
+      description: task.description,
+      prompt: task.prompt,
+      agent: task.agent,
+      parentSessionID: task.parentSessionID,
+      parentMessageID: task.parentMessageID,
+    }
+
+    //#when
+    const startPromise = (manager as unknown as { startTask: (item: { task: BackgroundTask; input: import("./types").LaunchInput }) => Promise<void> })
+      .startTask({ task, input })
+    const waitPromise = manager.waitForSession(task.id, 1000)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    //#then
+    expect(task.sessionID).toBeUndefined()
+
+    releasePrompt()
+    await startPromise
+    await expect(waitPromise).resolves.toBe("session-live")
+    manager.shutdown()
+  })
+
+  test("waitForSession rejects when prompt handoff fails before session is published", async () => {
+    //#given
+    const client = {
+      session: {
+        get: async () => ({ data: { directory: "/test/dir" } }),
+        create: async () => ({ data: { id: "session-fail" } }),
+        promptAsync: async () => {
+          throw new Error("The socket connection was closed unexpectedly")
+        },
+        abort: async () => ({}),
+        messages: async () => ({ data: [] }),
+      },
+    }
+    const manager = new BackgroundManager({ client, directory: tmpdir() } as unknown as PluginInput)
+    stubNotifyParentSession(manager)
+
+    const task: BackgroundTask = {
+      id: "task-wait-session-fail",
+      status: "pending",
+      queuedAt: new Date(),
+      description: "test task",
+      prompt: "test prompt",
+      agent: "explore",
+      parentSessionID: "parent-session",
+      parentMessageID: "parent-message",
+    }
+    const input: import("./types").LaunchInput = {
+      description: task.description,
+      prompt: task.prompt,
+      agent: task.agent,
+      parentSessionID: task.parentSessionID,
+      parentMessageID: task.parentMessageID,
+    }
+
+    //#when
+    const startPromise = (manager as unknown as { startTask: (item: { task: BackgroundTask; input: import("./types").LaunchInput }) => Promise<void> })
+      .startTask({ task, input })
+    const waitPromise = manager.waitForSession(task.id, 1000)
+
+    //#then
+    await startPromise
+    await expect(waitPromise).rejects.toThrow("Failed to start task session")
+    manager.shutdown()
+  })
+
   test("resume respects explore agent restrictions", async () => {
     //#given
     let capturedTools: Record<string, unknown> | undefined

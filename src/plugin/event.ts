@@ -17,7 +17,7 @@ import {
   setPendingModelFallback,
 } from "../hooks/model-fallback/hook";
 import { getRawFallbackModels } from "../hooks/runtime-fallback/fallback-models";
-import { resetMessageCursor } from "../shared";
+import { isCompactionAgent, resetMessageCursor } from "../shared";
 import { getAgentConfigKey } from "../shared/agent-display-names";
 import { readConnectedProvidersCache } from "../shared/connected-providers-cache";
 import { log } from "../shared/logger";
@@ -120,10 +120,6 @@ function applyUserConfiguredFallbackChain(
   if (fallbackChain && fallbackChain.length > 0) {
     setSessionFallbackChain(sessionID, fallbackChain);
   }
-}
-
-function isCompactionAgent(agent: string): boolean {
-  return agent.toLowerCase() === "compaction";
 }
 
 type EventInput = Parameters<NonNullable<NonNullable<CreatedHooks["writeExistingFileGuard"]>["event"]>>[0];

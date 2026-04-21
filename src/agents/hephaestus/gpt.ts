@@ -153,6 +153,13 @@ ${keyTriggers}
 
 If you notice a potential issue — fix it or note it in final message. Don't ask for permission.
 
+### Bug / Issue Workflow
+
+- If the task is a bug, issue, regression, failure, broken behavior, or error investigation, delegate the root-cause step to \`task(subagent_type="debugger", load_skills=[], run_in_background=false, ...)\` before editing code.
+- Give Debugger the symptom, repro, logs/errors, suspected modules, and any evidence you've already gathered.
+- After Debugger returns, continue in the same turn: implement the fix yourself, verify it, and explain both the root cause and the fix.
+- Skip Debugger only when the bug is trivial and the cause is already obvious from a directly-read file.
+
 ### Step 3: Validate Before Acting
 
 **Assumptions Check:**

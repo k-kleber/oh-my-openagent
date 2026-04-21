@@ -11,6 +11,22 @@ const EXPLORATION_AGENT_DENYLIST: Record<string, boolean> = {
   call_omo_agent: false,
 }
 
+const EXPLORATION_NATIVE_MCP_ALLOWLIST: Record<string, boolean> = {
+  serena_activate_project: true,
+  serena_get_symbols_overview: true,
+  serena_find_symbol: true,
+  serena_find_referencing_symbols: true,
+  serena_read_file: true,
+  serena_search_for_pattern: true,
+  query_graph: true,
+  god_nodes: true,
+  graph_stats: true,
+  get_community: true,
+  get_node: true,
+  get_neighbors: true,
+  shortest_path: true,
+}
+
 const SERENA_MUTATION_TOOL_DENYLIST: Record<string, boolean> = {
   serena_create_text_file: false,
   serena_replace_content: false,
@@ -46,14 +62,21 @@ const MEMORY_TOOL_DENYLIST: Record<string, boolean> = {
 }
 
 const AGENT_RESTRICTIONS: Record<string, Record<string, boolean>> = {
-  explore: EXPLORATION_AGENT_DENYLIST,
+  explore: {
+    ...EXPLORATION_AGENT_DENYLIST,
+    ...EXPLORATION_NATIVE_MCP_ALLOWLIST,
+  },
 
   "deep-explorer": {
     ...EXPLORATION_AGENT_DENYLIST,
     call_omo_agent: false,
+    ...EXPLORATION_NATIVE_MCP_ALLOWLIST,
   },
 
-  librarian: EXPLORATION_AGENT_DENYLIST,
+  librarian: {
+    ...EXPLORATION_AGENT_DENYLIST,
+    ...EXPLORATION_NATIVE_MCP_ALLOWLIST,
+  },
 
   oracle: {
     write: false,

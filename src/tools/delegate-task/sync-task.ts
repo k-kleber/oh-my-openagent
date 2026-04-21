@@ -33,9 +33,24 @@ export async function executeSyncTask(
     | Awaited<ReturnType<ExecutorContext["manager"]["reserveSubagentSpawn"]>>
     | undefined
 
+  const wasAborted = (): boolean => ctx.abort?.aborted === true
+
+  const buildAbortMessage = (): string => {
+    return `Task aborted.\n\nSession ID: ${syncSessionID ?? "(not created yet)"}`
+  }
+
   try {
+    if (wasAborted()) {
+      return buildAbortMessage()
+    }
+
     if (typeof manager?.reserveSubagentSpawn === "function") {
       spawnReservation = await manager.reserveSubagentSpawn(parentContext.sessionID)
+    }
+
+    if (wasAborted()) {
+      spawnReservation?.rollback()
+      return buildAbortMessage()
     }
 
     const spawnContext = spawnReservation?.spawnContext
@@ -46,6 +61,11 @@ export async function executeSyncTask(
             parentDepth: 0,
             childDepth: 1,
           })
+
+    if (wasAborted()) {
+      spawnReservation?.rollback()
+      return buildAbortMessage()
+    }
 
     const createSessionResult = await deps.createSyncSession(client, {
       parentSessionID: parentContext.sessionID,
@@ -83,6 +103,11 @@ export async function executeSyncTask(
       })
     }
 
+    if (wasAborted()) {
+      spawnReservation?.rollback()
+      return buildAbortMessage()
+    }
+
     const promptError = await deps.sendSyncPrompt(client, {
       sessionID,
       agentToUse,
@@ -98,6 +123,10 @@ export async function executeSyncTask(
     }
     promptDelivered = true
     spawnReservation?.commit()
+
+    if (wasAborted()) {
+      return buildAbortMessage()
+    }
 
     if (args.category) {
       SessionCategoryRegistry.register(sessionID, args.category)
@@ -148,6 +177,27 @@ export async function executeSyncTask(
       }
 
       const result = await deps.fetchSyncResult(client, sessionID)
+      if (!result.ok && !wasAborted()) {
+        const finalResult = await deps.fetchSyncResult(client, sessionID)
+        if (finalResult.ok) {
+          const duration = formatDuration(startTime)
+
+          const actualModelStr = categoryModel
+            ? `${categoryModel.providerID}/${categoryModel.modelID}`
+            : undefined
+          const parentModelStr = parentContext.model
+            ? `${parentContext.model.providerID}/${parentContext.model.modelID}`
+            : undefined
+          const modelRoutingNote =
+            actualModelStr && parentModelStr && actualModelStr !== parentModelStr
+              ? `\n⚠️  Model routing: parent used ${parentModelStr}, this subagent used ${actualModelStr} (via category: ${args.category ?? "unknown"})`
+              : actualModelStr
+                ? `\nModel: ${actualModelStr}${args.category ? ` (category: ${args.category})` : ""}`
+                : ""
+
+          return `Task completed in ${duration}.\n\nAgent: ${agentToUse}${args.category ? ` (category: ${args.category})` : ""}${modelRoutingNote}\n\n---\n\n${finalResult.textContent || "(No text output)"}\n\n<task_metadata>\nsession_id: ${sessionID}\n</task_metadata>`
+        }
+      }
       if (!result.ok) {
         return result.error
       }

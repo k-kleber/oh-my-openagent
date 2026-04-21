@@ -1,6 +1,4 @@
-export function isCompactionAgent(agent: string | undefined): boolean {
-  return agent?.trim().toLowerCase() === "compaction"
-}
+export { isCompactionAgent } from "../../shared/compaction-marker"
 
 export function resolveSessionID(props?: Record<string, unknown>): string | undefined {
   return (props?.sessionID ??

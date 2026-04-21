@@ -13,8 +13,6 @@ import { pollForCompletion } from "./poll-for-completion"
 import { loadAgentProfileColors } from "./agent-profile-colors"
 import { suppressRunInput } from "./stdin-suppression"
 import { createTimestampedStdoutController } from "./timestamp-output"
-import { OMO_INTERNAL_INITIATOR_MARKER } from "../../shared"
-
 export { resolveRunAgent }
 
 const EVENT_PROCESSOR_SHUTDOWN_TIMEOUT_MS = 2_000
@@ -29,6 +27,11 @@ export async function waitForEventProcessorShutdown(
   ])
 
   void completed
+}
+
+export function createInitialRunPromptParts(message: string): Array<{ type: "text"; text: string }> {
+  const handshakeText = message.trim() || "Initializing agent session."
+  return [{ type: "text", text: handshakeText }]
 }
 
 /**
@@ -148,11 +151,10 @@ export async function run(options: RunOptions): Promise<number> {
       )
 
       // Default to a harmless prompt if message is empty so the payload is never null/empty.
-      // Appending OMO_INTERNAL_INITIATOR_MARKER marks this as a handshake turn so the server
-      // bills 1 credit (the Human-in-the-Loop handshake) and opens an "Agentic Session."
-      // Subsequent agentic turns carry the marker and incur zero additional charges.
-      const handshakeText = message.trim() || "Initializing agent session."
-      const parts = [{ type: "text" as const, text: `${handshakeText}\n${OMO_INTERNAL_INITIATOR_MARKER}` }]
+      // The first run prompt must remain a genuine user turn so Copilot can open the
+      // billed session. Follow-up agentic turns are marked elsewhere with the internal
+      // initiator marker and should not be mixed into the initial handshake prompt.
+      const parts = createInitialRunPromptParts(message)
 
       await client.session.promptAsync({
         path: { id: sessionID },

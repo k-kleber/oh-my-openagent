@@ -9,10 +9,10 @@ describe("primary agent subagent wait gate instructions", () => {
     const prompt = createDebuggerAgent("github-copilot/gpt-5.3-codex").prompt
 
     expect(prompt).toContain("<Anti_Duplication>")
-    expect(prompt).toContain("Subagent dependency gate")
+    expect(prompt).toContain("Dependency Gate (MANDATORY)")
     expect(prompt).toContain("background_output(task_id=\"...\")")
-    expect(prompt).toContain("Do NOT continue with main-thread code reading")
-    expect(prompt).toContain("Never use task(category=...) for code-finding or evidence gathering")
+    expect(prompt).toContain("Do **not** continue implementation or analysis")
+    expect(prompt).toContain("You must wait for Skeptic results before finalizing your hypothesis")
   })
 
   it("#given brainstormer prompt #when optional checks are delegated #then enforces wait before dependent recommendations", () => {

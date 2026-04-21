@@ -157,6 +157,7 @@ describe("createChatParamsHandler", () => {
       temperature: 0.4,
       topP: 0.7,
       topK: 1,
+      maxOutputTokens: 4096,
       options: {
         existing: true,
         reasoningEffort: "high",
@@ -210,10 +211,41 @@ describe("createChatParamsHandler", () => {
     expect(output).toEqual({
       topP: 1,
       topK: 1,
+      maxOutputTokens: 128_000,
       options: {
         maxTokens: 128_000,
       },
     })
+  })
+
+  test("prefers top-level maxOutputTokens when provided by newer OpenCode output shape", async () => {
+    //#given
+    const handler = createChatParamsHandler({
+      anthropicEffort: null,
+    })
+
+    const input = {
+      sessionID: "ses_chat_params",
+      agent: { name: "oracle" },
+      model: { providerID: "openai", modelID: "gpt-5.4" },
+      provider: { id: "openai" },
+      message: {},
+    }
+
+    const output: ChatParamsOutput = {
+      temperature: 0.1,
+      topP: 1,
+      topK: 1,
+      maxOutputTokens: 200_000,
+      options: {},
+    }
+
+    //#when
+    await handler(input, output)
+
+    //#then
+    expect(output.maxOutputTokens).toBe(128_000)
+    expect(output.options.maxTokens).toBe(128_000)
   })
 
   test("drops unsupported reasoning settings from bundled model capabilities", async () => {

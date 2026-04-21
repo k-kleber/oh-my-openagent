@@ -50,6 +50,11 @@ export interface MessageInfo {
   tools?: Record<string, ToolPermission>
 }
 
+export interface MessageWithInfo {
+  info?: MessageInfo
+  parts?: Array<{ type?: string }>
+}
+
 export interface ResolvedMessageInfo {
   agent?: string
   model?: { providerID: string; modelID: string }
@@ -59,4 +64,5 @@ export interface ResolvedMessageInfo {
 export interface ResolveLatestMessageInfoResult {
   resolvedInfo?: ResolvedMessageInfo
   encounteredCompaction: boolean
+  latestMessageWasCompaction: boolean
 }

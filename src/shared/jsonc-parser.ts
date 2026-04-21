@@ -7,9 +7,14 @@ export interface JsoncParseResult<T> {
   errors: Array<{ message: string; offset: number; length: number }>
 }
 
+export function stripUtf8Bom(content: string): string {
+  return content.charCodeAt(0) === 0xFEFF ? content.slice(1) : content
+}
+
 export function parseJsonc<T = unknown>(content: string): T {
+  const normalizedContent = stripUtf8Bom(content)
   const errors: ParseError[] = []
-  const result = parse(content, errors, {
+  const result = parse(normalizedContent, errors, {
     allowTrailingComma: true,
     disallowComments: false,
   }) as T
@@ -25,8 +30,9 @@ export function parseJsonc<T = unknown>(content: string): T {
 }
 
 export function parseJsoncSafe<T = unknown>(content: string): JsoncParseResult<T> {
+  const normalizedContent = stripUtf8Bom(content)
   const errors: ParseError[] = []
-  const data = parse(content, errors, {
+  const data = parse(normalizedContent, errors, {
     allowTrailingComma: true,
     disallowComments: false,
   }) as T | null

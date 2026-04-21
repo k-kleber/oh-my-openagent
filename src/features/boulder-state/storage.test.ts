@@ -399,8 +399,8 @@ describe("boulder-state", () => {
       expect(progress.isComplete).toBe(false)
     })
 
-    test("should count space-indented unchecked checkbox", () => {
-      // given - plan file with a two-space indented checkbox
+    test("should ignore space-indented unchecked checkbox in simple plans", () => {
+      // given - simple plan file with a two-space indented checkbox
       const planPath = join(TEST_DIR, "space-indented-plan.md")
       writeFileSync(planPath, `# Plan
   - [ ] indented task
@@ -410,13 +410,13 @@ describe("boulder-state", () => {
       const progress = getPlanProgress(planPath)
 
       // then
-      expect(progress.total).toBe(1)
+      expect(progress.total).toBe(0)
       expect(progress.completed).toBe(0)
       expect(progress.isComplete).toBe(false)
     })
 
-    test("should count tab-indented unchecked checkbox", () => {
-      // given - plan file with a tab-indented checkbox
+    test("should ignore tab-indented unchecked checkbox in simple plans", () => {
+      // given - simple plan file with a tab-indented checkbox
       const planPath = join(TEST_DIR, "tab-indented-plan.md")
       writeFileSync(planPath, `# Plan
 	- [ ] tab-indented task
@@ -426,13 +426,13 @@ describe("boulder-state", () => {
       const progress = getPlanProgress(planPath)
 
       // then
-      expect(progress.total).toBe(1)
+      expect(progress.total).toBe(0)
       expect(progress.completed).toBe(0)
       expect(progress.isComplete).toBe(false)
     })
 
-    test("should count mixed top-level checked and indented unchecked checkboxes", () => {
-      // given - plan file with checked top-level and unchecked indented task
+    test("should count only top-level checkboxes in simple plans", () => {
+      // given - simple plan file with checked top-level and unchecked indented task
       const planPath = join(TEST_DIR, "mixed-indented-plan.md")
       writeFileSync(planPath, `# Plan
 - [x] top-level completed task
@@ -443,13 +443,13 @@ describe("boulder-state", () => {
       const progress = getPlanProgress(planPath)
 
       // then
-      expect(progress.total).toBe(2)
+      expect(progress.total).toBe(1)
       expect(progress.completed).toBe(1)
-      expect(progress.isComplete).toBe(false)
+      expect(progress.isComplete).toBe(true)
     })
 
-    test("should count space-indented completed checkbox", () => {
-      // given - plan file with a two-space indented completed checkbox
+    test("should ignore space-indented completed checkbox in simple plans", () => {
+      // given - simple plan file with a two-space indented completed checkbox
       const planPath = join(TEST_DIR, "indented-completed-plan.md")
       writeFileSync(planPath, `# Plan
   - [x] indented completed task
@@ -459,9 +459,54 @@ describe("boulder-state", () => {
       const progress = getPlanProgress(planPath)
 
       // then
-      expect(progress.total).toBe(1)
+      expect(progress.total).toBe(0)
+      expect(progress.completed).toBe(0)
+      expect(progress.isComplete).toBe(false)
+    })
+
+    test("should count only labeled top-level tasks in structured plans", () => {
+      // given - structured plan with nested and unlabeled checkboxes
+      const planPath = join(TEST_DIR, "structured-plan.md")
+      writeFileSync(planPath, `# Plan
+
+## TODOs
+- [x] 1. Finished task
+  - [ ] nested acceptance checkbox
+- [ ] 2. Current task
+- [x] unlabeled checkbox that should be ignored
+
+## Final Verification Wave
+- [ ] F1. Final review
+  - [x] nested final-wave checkbox
+`)
+
+      // when
+      const progress = getPlanProgress(planPath)
+
+      // then
+      expect(progress.total).toBe(3)
       expect(progress.completed).toBe(1)
-      expect(progress.isComplete).toBe(true)
+      expect(progress.isComplete).toBe(false)
+    })
+
+    test("should treat final verification section as structured even without TODO section", () => {
+      // given - final-wave-only structured plan
+      const planPath = join(TEST_DIR, "final-wave-only-plan.md")
+      writeFileSync(planPath, `# Plan
+
+## Final Verification Wave
+- [x] F1. Verified build
+- [ ] F2. Manual review
+  - [ ] nested acceptance checkbox
+`)
+
+      // when
+      const progress = getPlanProgress(planPath)
+
+      // then
+      expect(progress.total).toBe(2)
+      expect(progress.completed).toBe(1)
+      expect(progress.isComplete).toBe(false)
     })
 
     test("should return isComplete true when all checked", () => {

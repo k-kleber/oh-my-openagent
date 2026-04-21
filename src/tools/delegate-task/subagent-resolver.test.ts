@@ -131,6 +131,26 @@ describe("resolveSubagentExecution", () => {
     expect(result.categoryModel).toEqual({ providerID: "opencode", modelID: "gpt-5-nano" })
   })
 
+  test("allows Hephaestus to delegate to debugger when debugger is mode all", async () => {
+    //#given
+    const args = createBaseArgs({ subagent_type: "debugger" })
+    const executorCtx = createExecutorContext(async () => ([
+      { name: "debugger", mode: "all", model: "openai/gpt-5.4" },
+    ]))
+
+    //#when
+    const result = await resolveSubagentExecution(args, executorCtx, "hephaestus", "deep")
+
+    //#then
+    expect(result.error).toBeUndefined()
+    expect(result.agentToUse).toBe("debugger")
+    expect(result.categoryModel).toEqual(expect.objectContaining({
+      providerID: "github-copilot",
+      modelID: "gpt-5.3-codex",
+      variant: "medium",
+    }))
+  })
+
   test("logs failure details when subagent resolution throws", async () => {
     //#given
     const args = createBaseArgs({ subagent_type: "review" })

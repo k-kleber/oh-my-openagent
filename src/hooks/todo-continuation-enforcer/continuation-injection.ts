@@ -4,6 +4,7 @@ import type { BackgroundManager } from "../../features/background-agent"
 import { getSessionAgent } from "../../features/claude-code-session-state"
 import {
   createInternalAgentTextPart,
+  isCompactionAgent,
   normalizeSDKResponse,
   resolveInheritedPromptTools,
 } from "../../shared"
@@ -95,9 +96,6 @@ export async function injectContinuation(args: {
   let tools = resolvedInfo?.tools
 
   if (!agentName || !model) {
-    const isCompactionAgent = (agent: unknown): boolean =>
-      typeof agent === "string" && agent.toLowerCase() === "compaction"
-
     if (isSqliteBackend()) {
       // Skip compaction agent messages when resolving model
       const allMessages = await ctx.client.session.messages({ path: { id: sessionID } })

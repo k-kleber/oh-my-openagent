@@ -103,6 +103,24 @@ describe("preemptive-compaction post-compaction degradation monitor", () => {
 
     await hook.event({
       event: {
+        type: "message.updated",
+        properties: {
+          info: {
+            id: "msg_source_model",
+            role: "assistant",
+            sessionID,
+            providerID: "anthropic",
+            modelID: "claude-sonnet-4-6",
+            finish: true,
+            tokens: { input: 1000, output: 10, reasoning: 0, cache: { read: 0, write: 0 } },
+            parts: [{ type: "text", text: "source model response" }],
+          },
+        },
+      },
+    })
+
+    await hook.event({
+      event: {
         type: "session.compacted",
         properties: { sessionID },
       },
@@ -130,6 +148,67 @@ describe("preemptive-compaction post-compaction degradation monitor", () => {
         streak: 3,
       },
     )
+  })
+
+  it("uses the original assistant model for degradation recovery even when a compaction model is configured", async () => {
+    // given
+    const sessionHistory: AssistantHistoryMessage[] = []
+    const ctx = createMockCtx(sessionHistory)
+    const hook = createPreemptiveCompactionHook(ctx as never, {
+      agents: {
+        atlas: {
+          compaction: {
+            model: "anthropic/claude-opus-4-1",
+          },
+        },
+      },
+    } as never)
+    const sessionID = "ses_tail_recovery_source_model"
+
+    await hook.event({
+      event: {
+        type: "message.updated",
+        properties: {
+          info: {
+            id: "msg_source_model",
+            role: "assistant",
+            sessionID,
+            providerID: "openai",
+            modelID: "gpt-5",
+            finish: true,
+            tokens: { input: 1000, output: 10, reasoning: 0, cache: { read: 0, write: 0 } },
+            parts: [{ type: "text", text: "source model response" }],
+          },
+        },
+      },
+    })
+
+    await hook.event({
+      event: {
+        type: "session.compacted",
+        properties: { sessionID },
+      },
+    })
+
+    const stepOnlyParts = [{ type: "step-start" }, { type: "step-finish" }]
+
+    // when
+    appendAssistantHistory(sessionHistory, { id: "msg_1", parts: stepOnlyParts })
+    await hook.event(buildAssistantUpdate({ sessionID, id: "msg_1", parts: stepOnlyParts }))
+
+    appendAssistantHistory(sessionHistory, { id: "msg_2", parts: stepOnlyParts })
+    await hook.event(buildAssistantUpdate({ sessionID, id: "msg_2", parts: stepOnlyParts }))
+
+    appendAssistantHistory(sessionHistory, { id: "msg_3", parts: stepOnlyParts })
+    await hook.event(buildAssistantUpdate({ sessionID, id: "msg_3", parts: stepOnlyParts }))
+
+    // then
+    expect(ctx.client.session.summarize).toHaveBeenCalledTimes(1)
+    expect(ctx.client.session.summarize).toHaveBeenCalledWith({
+      path: { id: sessionID },
+      body: { providerID: "openai", modelID: "gpt-5" },
+      query: { directory: "/tmp/test" },
+    })
   })
 
   it("resets no-text streak when assistant emits text content", async () => {

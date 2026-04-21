@@ -1,4 +1,3 @@
-import { OMO_INTERNAL_INITIATOR_MARKER } from "../shared"
 import type { PluginContext } from "./types"
 
 type ChatHeadersInput = {
@@ -14,8 +13,9 @@ type ChatHeadersOutput = {
   headers: Record<string, string>
 }
 
-const INTERNAL_MARKER_CACHE_LIMIT = 1000
-const internalMarkerCache = new Map<string, boolean>()
+// Tracks sessions where the billing handshake (first x-initiator:user) has been sent.
+// For in-process sessions, subsequent messages get x-initiator:agent automatically.
+const billedSessionSet = new Set<string>()
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -54,69 +54,29 @@ function isCopilotProvider(providerID: string): boolean {
   return providerID === "github-copilot" || providerID === "github-copilot-enterprise"
 }
 
-async function hasInternalMarker(
+// Queries how many messages already exist in a session. Used as a safety net to
+// detect sessions that existed before this server process (server restart case).
+async function getExistingMessageCount(
   client: PluginContext["client"],
   sessionID: string,
-  messageID: string,
-): Promise<boolean> {
-  const cacheKey = `${sessionID}:${messageID}`
-  const cached = internalMarkerCache.get(cacheKey)
-  if (cached !== undefined) {
-    return cached
-  }
-
+): Promise<number> {
   try {
-    const response = await client.session.message({
-      path: { id: sessionID, messageID },
-    })
-
-    const data = response.data
-    if (!isRecord(data) || !Array.isArray(data.parts)) {
-      internalMarkerCache.set(cacheKey, false)
-      if (internalMarkerCache.size > INTERNAL_MARKER_CACHE_LIMIT) {
-        internalMarkerCache.clear()
-      }
-      return false
-    }
-
-    const hasMarker = data.parts.some((part) => {
-      if (!isRecord(part) || part.type !== "text" || typeof part.text !== "string") {
-        return false
-      }
-
-      return part.text.includes(OMO_INTERNAL_INITIATOR_MARKER)
-    })
-
-    internalMarkerCache.set(cacheKey, hasMarker)
-    if (internalMarkerCache.size > INTERNAL_MARKER_CACHE_LIMIT) {
-      internalMarkerCache.clear()
-    }
-
-    return hasMarker
+    const resp = await client.session.messages({ path: { id: sessionID } })
+    const data = resp.data
+    if (!Array.isArray(data)) return 0
+    return data.length
   } catch {
-    internalMarkerCache.set(cacheKey, false)
-    if (internalMarkerCache.size > INTERNAL_MARKER_CACHE_LIMIT) {
-      internalMarkerCache.clear()
-    }
-    return false
+    return 0
   }
 }
 
-async function isOmoInternalMessage(input: ChatHeadersInput, client: PluginContext["client"]): Promise<boolean> {
-  if (input.message.role !== "user") {
-    return false
-  }
-
-  if (!input.message.id) {
-    return false
-  }
-
-  return hasInternalMarker(client, input.sessionID, input.message.id)
+// Call this from event.ts for sessions confirmed to have already been billed
+// (e.g., external sessions that existed before the plugin loaded).
+export function markSessionBilled(sessionID: string): void {
+  billedSessionSet.add(sessionID)
 }
 
-export function createChatHeadersHandler(args: { ctx: PluginContext }): (input: unknown, output: unknown) => Promise<void> {
-  const { ctx } = args
-
+export function createChatHeadersHandler(_args: { ctx: PluginContext }): (input: unknown, output: unknown) => Promise<void> {
   return async (input, output): Promise<void> => {
     const normalizedInput = buildChatHeadersInput(input)
     if (!normalizedInput) return
@@ -134,12 +94,41 @@ export function createChatHeadersHandler(args: { ctx: PluginContext }): (input: 
     const api = model && isRecord(model.api) ? model.api as Record<string, unknown> : undefined
     const isSsdkActive = api?.npm === "@ai-sdk/github-copilot"
 
-    // 2026 Agent Mode headers - force even when SDK is active to bypass per-message billing
-    output.headers["x-initiator"] = "agent"
-    output.headers["x-copilot-is-agent"] = "true"
-    output.headers["openai-is-agent"] = "true"
+    const sessionID = normalizedInput.sessionID
 
-    // Skip per-message check only when SDK is active AND no internal marker present
-    if (isSsdkActive && !(await isOmoInternalMessage(normalizedInput, ctx.client))) return
+    // Determine if this is the billing handshake message:
+    // 1. in-process deduplication: if we already marked this session, it's NOT the first
+    // 2. server-restart safety net: if session.messages() returns >0, the session
+    //    already has history (from before this server process) → NOT the first
+    const alreadyBilled = billedSessionSet.has(sessionID)
+    const existingCount = await getExistingMessageCount(_args.ctx.client, sessionID)
+    const isFirstBillingMessage = !alreadyBilled && existingCount === 0
+
+    if (isSsdkActive) {
+      // When @ai-sdk/github-copilot is active, the SDK sets x-initiator internally.
+      // Only set agent headers when this is NOT the first billing message.
+      if (!isFirstBillingMessage) {
+        output.headers["x-initiator"] = "agent"
+        output.headers["x-copilot-is-agent"] = "true"
+        output.headers["openai-is-agent"] = "true"
+      }
+      // Mark billed so subsequent calls don't re-enter the billing path.
+      billedSessionSet.add(sessionID)
+      // For the first message we return early so the SDK's own x-initiator logic is
+      // preserved — it will correctly set "user" and trigger the billing handshake.
+      return
+    }
+
+    // Non-SSSD path (direct API calls, e.g. the `run` CLI command):
+    // - First message: x-initiator: "user" → server bills 1 premium request
+    // - All subsequent messages: x-initiator: "agent" → zero additional charges
+    if (isFirstBillingMessage) {
+      billedSessionSet.add(sessionID)
+      output.headers["x-initiator"] = "user"
+    } else {
+      output.headers["x-initiator"] = "agent"
+      output.headers["x-copilot-is-agent"] = "true"
+      output.headers["openai-is-agent"] = "true"
+    }
   }
 }

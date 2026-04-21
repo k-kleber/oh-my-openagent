@@ -1,7 +1,6 @@
 import type { OhMyOpenCodeConfig } from "../config"
 import { log } from "../shared/logger"
 import { resolveNoTextTailFromSession } from "./preemptive-compaction-no-text-tail"
-import { resolveCompactionModel } from "./shared/compaction-model-resolver"
 
 const PREEMPTIVE_COMPACTION_TIMEOUT_MS = 120_000
 const POST_COMPACTION_MONITOR_COUNT = 5
@@ -69,33 +68,41 @@ export function createPostCompactionDegradationMonitor(args: {
   tokenCache: Map<string, CompactionTargetState>
   compactionInProgress: Set<string>
 }) {
-  const { client, directory, pluginConfig, tokenCache, compactionInProgress } = args
+  const { client, directory, tokenCache, compactionInProgress } = args
   const postCompactionRemaining = new Map<string, number>()
   const postCompactionNoTextStreak = new Map<string, number>()
   const postCompactionRecoveryTriggered = new Set<string>()
   const postCompactionEpoch = new Map<string, number>()
+  const postCompactionSourceModel = new Map<string, CompactionTargetState>()
 
   const clear = (sessionID: string): void => {
     postCompactionRemaining.delete(sessionID)
     postCompactionNoTextStreak.delete(sessionID)
     postCompactionRecoveryTriggered.delete(sessionID)
     postCompactionEpoch.delete(sessionID)
+    postCompactionSourceModel.delete(sessionID)
   }
 
   const onSessionCompacted = (sessionID: string): void => {
     const nextEpoch = (postCompactionEpoch.get(sessionID) ?? 0) + 1
+    const cached = tokenCache.get(sessionID)
     postCompactionEpoch.set(sessionID, nextEpoch)
     postCompactionRemaining.set(sessionID, POST_COMPACTION_MONITOR_COUNT)
     postCompactionNoTextStreak.set(sessionID, 0)
     postCompactionRecoveryTriggered.delete(sessionID)
+    if (cached?.providerID && cached.modelID) {
+      postCompactionSourceModel.set(sessionID, cached)
+    } else {
+      postCompactionSourceModel.delete(sessionID)
+    }
   }
 
   const triggerRecovery = async (sessionID: string): Promise<void> => {
     if (postCompactionRecoveryTriggered.has(sessionID) || compactionInProgress.has(sessionID)) return
 
-    const cached = tokenCache.get(sessionID)
-    if (!cached?.modelID) {
-      log("[preemptive-compaction] No-text tail detected but compaction model is unavailable", { sessionID })
+    const sourceModel = postCompactionSourceModel.get(sessionID)
+    if (!sourceModel?.providerID || !sourceModel.modelID) {
+      log("[preemptive-compaction] No-text tail detected but source model is unavailable", { sessionID })
       return
     }
 
@@ -104,13 +111,6 @@ export function createPostCompactionDegradationMonitor(args: {
     const recoveryEpoch = postCompactionEpoch.get(sessionID) ?? 0
 
     try {
-      const { providerID: targetProviderID, modelID: targetModelID } = resolveCompactionModel(
-        pluginConfig,
-        sessionID,
-        cached.providerID,
-        cached.modelID,
-      )
-
       await client.tui
         .showToast({
           body: {
@@ -125,7 +125,7 @@ export function createPostCompactionDegradationMonitor(args: {
       await withTimeout(
         client.session.summarize({
           path: { id: sessionID },
-          body: { providerID: targetProviderID, modelID: targetModelID },
+          body: { providerID: sourceModel.providerID, modelID: sourceModel.modelID },
           query: { directory },
         }),
         PREEMPTIVE_COMPACTION_TIMEOUT_MS,

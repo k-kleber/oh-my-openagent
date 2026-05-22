@@ -9,10 +9,16 @@ When the user explicitly wants to remember something: "remember that X", "captur
 
 ## Classify first
 
+Load memory MCP access first:
+
+\`\`\`
+skill(name="memory-mcp")
+\`\`\`
+
 | Type     | Destination | Native tool |
 | -------- | ----------- | ----------- |
-| Temporal | Hindsight   | \`hindsight_retain\` |
-| Durable  | OpenMemory  | \`openmemory_store\` |
+| Temporal | Hindsight   | \`skill_mcp(... mcp_name="hindsight", tool_name="retain")\` |
+| Durable  | OpenMemory  | \`skill_mcp(... mcp_name="openmemory", tool_name="openmemory_store")\` |
 
 ## Workflow
 
@@ -22,25 +28,16 @@ Determine the MemoryRecordType. Reject anything that doesn't fit a category.
 
 ### 2a. Temporal → Hindsight
 
-Call the native MCP tool directly:
+Call through \`skill_mcp\`:
 \`\`\`
-hindsight_retain({
-  "content": "[<type>] <content>",
-  "context": "<projectPath>",
-  "tags": ["<projectName>", "<type>"],
-  "bank_id": "default"
-})
+skill_mcp(mcp_name="hindsight", tool_name="retain", arguments={"content": "[<type>] <content>", "context": "<projectPath>", "tags": ["<projectName>", "<type>"], "bank_id": "default"})
 \`\`\`
 
 ### 2b. Durable → OpenMemory
 
-Call the native MCP tool directly:
+Call through \`skill_mcp\`:
 \`\`\`
-openmemory_store({
-  "content": "[approved] [<type>] <content>",
-  "tags": ["<projectName>", "<type>"],
-  "metadata": {"type": "<type>", "scope": "project", "approvalState": "approved"}
-})
+skill_mcp(mcp_name="openmemory", tool_name="openmemory_store", arguments={"content": "[approved] [<type>] <content>", "tags": ["<projectName>", "<type>"], "metadata": {"type": "<type>", "scope": "project", "approvalState": "approved"}})
 \`\`\`
 
 ### 2c. Scope and taxonomy tags (required)
@@ -54,5 +51,5 @@ openmemory_store({
 - Reject uncategorized content
 - If conflict found with current codebase, pause and ask user: \`CONFLICT: memory says X but current code shows Y — which is truth?\`
 - Do NOT write durable memory into Hindsight
-- Use native memory MCP tools for Hindsight and OpenMemory`,
+- Use \`memory-mcp\` + \`skill_mcp\` for Hindsight and OpenMemory`,
 }

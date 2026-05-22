@@ -13,6 +13,7 @@ describe("primary agent subagent wait gate instructions", () => {
     expect(prompt).toContain("background_output(task_id=\"...\")")
     expect(prompt).toContain("Do **not** continue implementation or analysis")
     expect(prompt).toContain("You must wait for Skeptic results before finalizing your hypothesis")
+    expect(prompt).toContain("Subagent Mode")
   })
 
   it("#given brainstormer prompt #when optional checks are delegated #then enforces wait before dependent recommendations", () => {

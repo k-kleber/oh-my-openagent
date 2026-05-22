@@ -77,6 +77,7 @@ export function buildKeyTriggersSection(agents: AvailableAgent[], _skills: Avail
   return `### Key Triggers (check BEFORE classification):
 
 ${keyTriggers.join("\n")}
+- External library/framework docs needed → load \`context7-mcp\` and use Context7 for current official docs before relying on model memory
 - **"Look into" + "create PR"** → Not just research. Full implementation cycle expected.`
 }
 
@@ -156,6 +157,8 @@ export function buildLibrarianSection(agents: AvailableAgent[]): string {
 
 Search **external references** (docs, OSS, web). Fire proactively when unfamiliar libraries are involved.
 
+For library/framework documentation, load \`context7-mcp\` first and query Context7 before using trained knowledge or generic web results. Use \`websearch-mcp\` for broader current-web corroboration and non-doc sources.
+
 **Contextual Grep (Internal)** — search OUR codebase, find patterns in THIS repo, project-specific logic.
 **Reference Grep (External)** — search EXTERNAL resources, official API docs, library best practices, OSS implementation examples.
 
@@ -181,7 +184,7 @@ export function buildDelegationTable(agents: AvailableAgent[]): string {
 export function buildMemorySection(): string {
   return `## Memory Integration
 
-Before delegating research to explore or librarian, delegate to a memory-retrieval subagent to surface relevant prior context: \`task(subagent_type="memory-retrieval", load_skills=[], prompt="Recall and verify memory relevant to: <user's request>\\nProject: <projectPath> (<projectName>)", run_in_background=false)\`. Hindsight and OpenMemory are native always-on MCPs, so no memory skill needs to be mounted first. Memory retrieval is memory-only: on memory miss, do not perform fallback repo discovery; return a concise no-memory result. Treat recalled memory as advisory until verified against current code.
+Before delegating research to explore or librarian, delegate to a memory-retrieval subagent to surface relevant prior context: \`task(subagent_type="memory-retrieval", load_skills=[], prompt="Recall and verify memory relevant to: <user's request>\\nProject: <projectPath> (<projectName>)", run_in_background=false)\`. The memory-retrieval and memory-store agents load \`memory-mcp\` themselves, so callers do not need to mount it manually. Memory retrieval is memory-only: on memory miss, do not perform fallback repo discovery; return a concise no-memory result. Treat recalled memory as advisory until verified against current code.
 
 After completing significant work (architectural decisions, bug fixes with non-obvious cause, pattern discoveries), consider triggering memory capture: \`task(subagent_type="memory-store", load_skills=[], prompt="Project: <projectPath> (<projectName>)\\nObservations:\\n- <list of insights>", run_in_background=false)\`. Only capture high-signal, non-obvious, actionable insights.`
 }
@@ -861,12 +864,16 @@ Some MCP servers are built-in/native and must be called DIRECTLY via their nativ
 ### Native MCPs (call directly, never via skill_mcp):
 | MCP Server | Native Tools |
 |---|---|
-| **hindsight** | hindsight_recall, hindsight_retain, hindsight_sync_retain |
-| **openmemory** | openmemory_query, openmemory_store |
 | **serena** | serena_* (all tools starting with serena_) |
 
-**CORRECT**: hindsight_recall(query="...")
-**WRONG**: skill_mcp(mcp_name="hindsight", tool_name="hindsight_recall", ...) - this will fail.
+### Hot-loaded memory MCPs (load \`memory-mcp\` first, then use \`skill_mcp\`):
+| MCP Server | Skill | Example |
+|---|---|---|
+| **hindsight** | \`memory-mcp\` | \`skill_mcp(mcp_name="hindsight", tool_name="recall", ...)\` |
+| **openmemory** | \`memory-mcp\` | \`skill_mcp(mcp_name="openmemory", tool_name="openmemory_query", ...)\` |
+
+**CORRECT**: \`skill(name="memory-mcp")\` → \`skill_mcp(mcp_name="hindsight", tool_name="recall", ...)\`
+**WRONG**: calling memory MCP tools before loading \`memory-mcp\`.
 </Native_MCP_Routing>`
 }
 
@@ -884,4 +891,3 @@ When subagents return "absent", "miss", or no results:
 3. **No Retries**: Never attempt to "force" a subagent result through shell commands if the specialized subagent found nothing.
 </Subagent_Result_Handling>`
 }
-

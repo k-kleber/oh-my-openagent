@@ -323,7 +323,7 @@ FILES MODIFIED: [list]
 \`\`\`typescript
 task(subagent_type="explore", load_skills=[], run_in_background=true, ...)
 task(subagent_type="deep-explorer", load_skills=[], run_in_background=true, ...)
-task(subagent_type="librarian", load_skills=[], run_in_background=true, ...)
+task(subagent_type="librarian", load_skills=["context7-mcp", "websearch-mcp"], run_in_background=true, ...)
 \`\`\`
 
 **For task execution**: NEVER background

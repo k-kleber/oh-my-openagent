@@ -61,7 +61,7 @@ describe("applyMcpConfig", () => {
 
     //#when
     const { applyMcpConfig } = await import("./mcp-config-handler")
-    await applyMcpConfig({ config, pluginConfig, pluginComponents: EMPTY_PLUGIN_COMPONENTS })
+    await applyMcpConfig({ config, pluginConfig, pluginComponents: EMPTY_PLUGIN_COMPONENTS, directory: "/tmp/project" })
 
     //#then
     const mergedMcp = config.mcp as Record<string, Record<string, unknown>>
@@ -89,6 +89,7 @@ describe("applyMcpConfig", () => {
     await applyMcpConfig({
       config,
       pluginConfig,
+      directory: "/tmp/project",
       pluginComponents: {
         ...EMPTY_PLUGIN_COMPONENTS,
         mcpServers: {
@@ -111,10 +112,25 @@ describe("applyMcpConfig", () => {
 
     //#when
     const { applyMcpConfig } = await import("./mcp-config-handler")
-    await applyMcpConfig({ config, pluginConfig, pluginComponents: EMPTY_PLUGIN_COMPONENTS })
+    await applyMcpConfig({ config, pluginConfig, pluginComponents: EMPTY_PLUGIN_COMPONENTS, directory: "/tmp/project" })
 
     //#then
     expect(loadMcpConfigsSpy).toHaveBeenCalledWith(["firecrawl", "exa"])
+  })
+
+  test("passes the project directory to built-in Graphify MCP config", async () => {
+    const config: Record<string, unknown> = { mcp: {} }
+    const pluginConfig = createPluginConfig()
+
+    const { applyMcpConfig } = await import("./mcp-config-handler")
+    await applyMcpConfig({
+      config,
+      pluginConfig,
+      pluginComponents: EMPTY_PLUGIN_COMPONENTS,
+      directory: "/repo/operations-cloud",
+    })
+
+    expect(createBuiltinMcpsSpy).toHaveBeenCalledWith([], pluginConfig, "/repo/operations-cloud")
   })
 
   test("works when no user MCPs have enabled:false", async () => {
@@ -134,7 +150,7 @@ describe("applyMcpConfig", () => {
 
     //#when
     const { applyMcpConfig } = await import("./mcp-config-handler")
-    await applyMcpConfig({ config, pluginConfig, pluginComponents: EMPTY_PLUGIN_COMPONENTS })
+    await applyMcpConfig({ config, pluginConfig, pluginComponents: EMPTY_PLUGIN_COMPONENTS, directory: "/tmp/project" })
 
     //#then
     const mergedMcp = config.mcp as Record<string, Record<string, unknown>>
@@ -152,6 +168,7 @@ describe("applyMcpConfig", () => {
     await applyMcpConfig({
       config,
       pluginConfig,
+      directory: "/tmp/project",
       pluginComponents: {
         ...EMPTY_PLUGIN_COMPONENTS,
         mcpServers: {

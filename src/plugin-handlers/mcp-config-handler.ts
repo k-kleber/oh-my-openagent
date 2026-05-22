@@ -29,6 +29,7 @@ export async function applyMcpConfig(params: {
   config: Record<string, unknown>;
   pluginConfig: OhMyOpenCodeConfig;
   pluginComponents: PluginComponents;
+  directory: string;
 }): Promise<void> {
   const disabledMcps = params.pluginConfig.disabled_mcps ?? [];
   const userMcp = params.config.mcp as Record<string, unknown> | undefined;
@@ -39,7 +40,7 @@ export async function applyMcpConfig(params: {
     : { servers: {} };
 
   const merged = {
-    ...createBuiltinMcps(disabledMcps, params.pluginConfig),
+    ...createBuiltinMcps(disabledMcps, params.pluginConfig, params.directory),
     ...(userMcp ?? {}),
     ...mcpResult.servers,
     ...params.pluginComponents.mcpServers,

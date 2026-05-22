@@ -1,10 +1,12 @@
-import { afterEach, describe, test, expect } from "bun:test"
+import { afterEach, beforeEach, describe, test, expect } from "bun:test"
 import { createBuiltinSkills } from "./skills"
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
 const originalTavily = process.env.TAVILY_API_KEY
+const originalOpenMemory = process.env.OPENMEMORY_API_KEY
+const originalContext7 = process.env.CONTEXT7_API_KEY
 
 function resetTavilyEnv() {
   if (typeof originalTavily === "undefined") {
@@ -12,6 +14,22 @@ function resetTavilyEnv() {
     return
   }
   process.env.TAVILY_API_KEY = originalTavily
+}
+
+function resetOpenMemoryEnv() {
+  if (typeof originalOpenMemory === "undefined") {
+    delete process.env.OPENMEMORY_API_KEY
+    return
+  }
+  process.env.OPENMEMORY_API_KEY = originalOpenMemory
+}
+
+function resetContext7Env() {
+  if (typeof originalContext7 === "undefined") {
+    delete process.env.CONTEXT7_API_KEY
+    return
+  }
+  process.env.CONTEXT7_API_KEY = originalContext7
 }
 
 function withTavilyEnv(value: string | undefined, run: () => void) {
@@ -33,8 +51,14 @@ function withTavilyEnv(value: string | undefined, run: () => void) {
 	}
 }
 
+beforeEach(() => {
+	resetOpenMemoryEnv()
+})
+
 afterEach(() => {
 	resetTavilyEnv()
+	resetOpenMemoryEnv()
+	resetContext7Env()
 })
 
 describe("createBuiltinSkills", () => {
@@ -134,21 +158,43 @@ describe("createBuiltinSkills", () => {
 		expect(memoryInit).toBeDefined()
 		expect(memoryInit!.template).toContain("Verify Serena readiness")
 		expect(memoryInit!.template).toContain("code-intelligence-init")
-		expect(memoryInit!.template).toContain("hindsight_list_banks")
-		expect(memoryInit!.template).toContain("openmemory_store")
+		expect(memoryInit!.template).toContain('skill(name="memory-mcp")')
+		expect(memoryInit!.template).toContain('tool_name="list_banks"')
+		expect(memoryInit!.template).toContain('tool_name="openmemory_store"')
 		expect(memoryInit!.template).toContain("Never express Serena tool usage as shell commands")
 		expect(memoryInit!.template).not.toContain("serena_execute_shell_command")
 		expect(memoryInit!.mcpConfig).toBeUndefined()
 	})
 
-	test("memory-mcp skill documents native memory MCP availability", () => {
+	test("memory-mcp skill mounts memory MCPs on demand", () => {
 		const skills = createBuiltinSkills()
 		const memoryMcp = skills.find((s) => s.name === "memory-mcp")
 
 		expect(memoryMcp).toBeDefined()
-		expect(memoryMcp!.description).toContain("native always-on OMO MCPs")
-		expect(memoryMcp!.template).toContain("native always-on OMO MCPs")
-		expect(memoryMcp!.mcpConfig).toBeUndefined()
+		expect(memoryMcp!.description).toContain("On-demand")
+		expect(memoryMcp!.template).toContain('skill(name="memory-mcp")')
+		expect(memoryMcp!.mcpConfig).toBeDefined()
+		expect(memoryMcp!.mcpConfig).toHaveProperty("hindsight")
+		expect(memoryMcp!.mcpConfig).toHaveProperty("openmemory")
+	})
+
+	test("memory-mcp reads openmemory key from project .secrets when env is absent", () => {
+		const dir = mkdtempSync(join(tmpdir(), "omo-memory-"))
+		const previousCwd = process.cwd()
+		delete process.env.OPENMEMORY_API_KEY
+		writeFileSync(join(dir, ".secrets"), "OPENMEMORY_API_KEY=test-openmemory-key\n")
+
+		process.chdir(dir)
+		try {
+			const skills = createBuiltinSkills()
+			const memoryMcp = skills.find((s) => s.name === "memory-mcp")
+
+			expect(memoryMcp).toBeDefined()
+			expect(memoryMcp!.mcpConfig!.openmemory.headers).toEqual({ "x-api-key": "test-openmemory-key" })
+		} finally {
+			process.chdir(previousCwd)
+			rmSync(dir, { recursive: true, force: true })
+		}
 	})
 
 	test("should include memory automation skill set in builtin skills", () => {
@@ -283,6 +329,27 @@ describe("createBuiltinSkills", () => {
 
 			expect(websearchSkill).toBeDefined()
 			expect(websearchSkill!.mcpConfig!.websearch.headers).toEqual({ Authorization: "Bearer test-from-secrets" })
+		} finally {
+			process.chdir(previousCwd)
+			rmSync(dir, { recursive: true, force: true })
+		}
+	})
+
+	test("context7-mcp reads context7 api key from project .secrets when env is absent", () => {
+		const dir = mkdtempSync(join(tmpdir(), "omo-context7-skill-"))
+		const previousCwd = process.cwd()
+		delete process.env.CONTEXT7_API_KEY
+		writeFileSync(join(dir, ".secrets"), "CONTEXT7_API_KEY=test-context7-key\n")
+
+		process.chdir(dir)
+		try {
+			const skills = createBuiltinSkills()
+			const context7Skill = skills.find((s) => s.name === "context7-mcp")
+
+			expect(context7Skill).toBeDefined()
+			expect(context7Skill!.mcpConfig?.context7.headers).toEqual({
+				Authorization: "Bearer test-context7-key",
+			})
 		} finally {
 			process.chdir(previousCwd)
 			rmSync(dir, { recursive: true, force: true })

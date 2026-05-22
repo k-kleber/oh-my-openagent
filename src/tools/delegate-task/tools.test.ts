@@ -3849,6 +3849,22 @@ describe("sisyphus-task", () => {
       expect(result).toContain("Include a clear atomic commit strategy.")
     })
 
+    test("appends structured result contract for debugger subagent", () => {
+      // given
+      const { buildTaskPrompt } = require("./tools")
+      const prompt = "Diagnose this failure"
+
+      // when
+      const result = buildTaskPrompt(prompt, "debugger")
+
+      // then
+      expect(result).toContain(prompt)
+      expect(result).toContain("machine-parseable")
+      expect(result).toContain("<results>")
+      expect(result).toContain("<diagnosis>")
+      expect(result).toContain("<implementation_guidance>")
+    })
+
     test("does not append plan guidance for non-plan agents", () => {
       // given
       const { buildTaskPrompt } = require("./tools")

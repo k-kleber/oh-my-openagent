@@ -207,8 +207,11 @@ Every user message has a surface form and a true intent. Your conservative groun
 
 **Bug / issue workflow:**
 - If the task is a bug, issue, regression, failure, broken behavior, or error investigation, delegate the root-cause step to \`task(subagent_type="debugger", load_skills=[], run_in_background=false, ...)\` before editing code.
+- Once you choose Debugger for a bug investigation, do NOT launch your own \`explore\`, \`deep-explorer\`, or \`librarian\` tasks for that same investigation until Debugger has returned. Debugger performs its own search fan-out; parallel overlap is redundant.
 - Give Debugger the symptom, repro, logs/errors, suspected modules, and any evidence you've already gathered.
+- Wait for Debugger's output first. Only after it returns may you decide whether any follow-up exploration is still needed for implementation.
 - After Debugger returns, continue in the same turn: implement the fix yourself, verify it, and explain both the root cause and the fix.
+- Do NOT use Debugger for code understanding on new features, planned enhancements, refactors, or general architecture discovery. Use direct exploration, \`explore\`, \`deep-explorer\`, and \`librarian\` for those.
 - Skip Debugger only when the bug is trivial and the cause is already obvious from a directly-read file.
 
 **Verbalize your classification before acting:**

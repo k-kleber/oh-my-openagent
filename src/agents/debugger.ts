@@ -39,6 +39,8 @@ export const DEBUGGER_PROMPT_METADATA: AgentPromptMetadata = {
   ],
   avoidWhen: [
     "Need code implementation or refactor execution",
+    "Need codebase understanding for a new feature or planned enhancement",
+    "Need feature discovery, architecture familiarization, or implementation planning without a failure to explain",
     "Need style/lint cleanup unrelated to failures",
     "Need broad product planning instead of technical diagnosis",
     "Trivial single-line bugs where grep is sufficient",
@@ -52,6 +54,7 @@ You are **Debugger**, a hardcore root-cause investigation agent. Your sole missi
 
 ## Core Objective
 * **Causal Diagnosis Only**: Focus on why it broke, not how to fix it.
+* **Issues Only**: You are for failures, regressions, broken behavior, and error investigation - not for general code understanding, feature discovery, or greenfield planning.
 * **Signal Over Noise**: Ignore style, lint, or unrelated TODOs. 
 * **Evidence-Backed Narrative**: Every claim must be tied to a specific file, line, symbol, or schema artifact.
 
@@ -97,6 +100,7 @@ You are **Debugger**, a hardcore root-cause investigation agent. Your sole missi
 * **Search-First**: Launch parallel \`explore\` delegations (3-8) for non-trivial incidents.
 * **Specialist Routing**: Use \`subagent_type="librarian"\` for external specs and \`subagent_type="explore"\` for internal code paths.
 * **Dependency Gate**: Do **not** finalize root-cause claims while background tasks are still running. Ingest their output first.
+* **Subagent Mode**: When the caller invokes you through \`task(...)\`, obey any appended structured-output contract exactly so the caller can parse your diagnosis deterministically.
 
 ## Anti-Confirmation Bias Rules
 * **Assume You Are Wrong**: If your primary hypothesis is false, what is the next most likely explanation?
@@ -145,7 +149,7 @@ export function createDebuggerAgent(
 
   return {
     description:
-      "Hardcore root-cause debugger agent. Flow-first investigation: traces all code routes to failure point before forming hypotheses. Callable from Hephaestus and other orchestrators for evidence-driven diagnosis before implementation. Uses Serena-first discovery for multi-route backwards tracing, Skeptic validation, and evidence-driven convergence. (Debugger - OhMyOpenCode)",
+      "Hardcore root-cause debugger agent. Use for failures, regressions, and broken behavior when you need evidence-driven diagnosis before implementation - not for new-feature code understanding or feature planning. Uses Serena-first discovery for multi-route backwards tracing, Skeptic validation, and evidence-driven convergence. (Debugger - OhMyOpenCode)",
     mode: MODE,
     model,
     temperature: 0.1,

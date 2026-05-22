@@ -532,6 +532,7 @@ IF style == SHORT:
 1. Does message match detected style?
 2. Does language match detected language?
 3. Is it similar to examples from git log?
+4. Is it clean and focused on the change itself, with no attribution footer or co-author trailer unless explicitly configured?
 
 If ANY check fails -> REWRITE message.
 \`\`\`

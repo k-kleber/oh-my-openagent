@@ -27,9 +27,9 @@ Reducer candidates:
 
 Extract projectPath, projectName, scope (default: project), and allowed scopes. If reducer candidates are present, prioritize them over raw observations.
 
-### Step 1: Use native memory MCP tools
+### Step 1: Load the memory MCP skill
 
-Hindsight and OpenMemory are native always-on OMO MCPs. Call their tools directly.
+Use \`load_skills=["memory-mcp"]\` for delegated sessions, then call memory MCPs through \`skill_mcp\`.
 
 ### Step 2: Reduce observations into candidates
 
@@ -58,13 +58,15 @@ Before storing a candidate:
 For each observation:
 
 **Temporal → Hindsight:**
-Call native tool:
-- tool: \`hindsight_retain\`
+Call via \`skill_mcp\`:
+- mcp_name: \`hindsight\`
+- tool_name: \`retain\`
 - arguments: {"content": "[<type>] <insight>", "context": "<projectPath>", "tags": ["<projectName>", "<type>"], "bank_id": "default"}
 
 **Durable → OpenMemory:**
-Call native tool:
-- tool: \`openmemory_store\`
+Call via \`skill_mcp\`:
+- mcp_name: \`openmemory\`
+- tool_name: \`openmemory_store\`
 - arguments: {"content": "[approved] [<scope>] [<type>] <insight>", "tags": ["<projectName>", "scope:<scope>", "<type>"], "metadata": {"type": "<type>", "scope": "<scope>", "approvalState": "approved"}}
 
 ### Storage rules
@@ -78,7 +80,7 @@ Call native tool:
 
 ### Step 5: Pre-store conflict check
 
-Before storing any insight with code artifacts, verify against the current repo using the standard code-validation tools available in the session. Do not query Serena memory tools for recall or storage; the authoritative memory systems are native Hindsight and OpenMemory MCPs.
+Before storing any insight with code artifacts, verify against the current repo using the standard code-validation tools available in the session. Do not query Serena memory tools for recall or storage; the authoritative memory systems are the Hindsight and OpenMemory MCPs mounted by \`memory-mcp\`.
 
 - No conflict → store as planned
 - Conflict found → do NOT store. Surface: \`CONFLICT: memory says X but current code shows Y\`
@@ -89,11 +91,11 @@ Report what was stored (Hindsight / OpenMemory), what was deduped, any contradic
 
 export function createMemoryStoreAgent(model: string): AgentConfig {
   return {
-    description: "One-shot memory storage agent - persists project learnings to Hindsight and OpenMemory",
+    description: "One-shot memory storage agent - loads memory-mcp and persists project learnings to Hindsight/OpenMemory",
     mode: MODE,
     model,
     temperature: 0.1,
-    skills: [],
+    skills: ["memory-mcp"],
     prompt: MEMORY_STORE_PROMPT,
   }
 }

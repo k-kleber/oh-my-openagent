@@ -193,6 +193,8 @@ describe("createHephaestusAgent", () => {
     expect(config.prompt).toContain("Never chain together bash commands");
     expect(config.prompt).toContain("<tool_usage_rules>");
     expect(config.prompt).toContain("task(subagent_type=\"debugger\"");
+    expect(config.prompt).toContain("Do not use Debugger for code understanding on new features");
+    expect(config.prompt).toContain("do not launch your own `explore`, `deep-explorer`, or `librarian` tasks");
   });
 
   test("GPT 5.4 prompt lets project instructions override opener defaults", () => {
@@ -218,6 +220,8 @@ describe("createHephaestusAgent", () => {
     expect(config.prompt).toContain("Hard Constraints");
     expect(config.prompt).toContain("<tool_usage_rules>");
     expect(config.prompt).toContain("Delegate to debugger");
+    expect(config.prompt).toContain("Do NOT use Debugger for code understanding on new features");
+    expect(config.prompt).toContain("do NOT launch your own `explore`, `deep-explorer`, or `librarian` tasks");
   });
 
   test("generic GPT prompt routes bug work through debugger before fixing", () => {
@@ -230,6 +234,8 @@ describe("createHephaestusAgent", () => {
     // then
     expect(config.prompt).toContain("task(subagent_type=\"debugger\"");
     expect(config.prompt).toContain("implement the fix yourself");
+    expect(config.prompt).toContain("Do NOT use Debugger for code understanding on new features");
+    expect(config.prompt).toContain("Wait for Debugger's output first");
   });
 
   test("GPT 5.3-codex prompt lets project instructions override opener defaults", () => {

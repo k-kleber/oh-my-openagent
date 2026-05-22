@@ -7180,7 +7180,7 @@
       "type": "object",
       "properties": {
         "commit_footer": {
-          "default": true,
+          "default": false,
           "anyOf": [
             {
               "type": "boolean"
@@ -7191,7 +7191,7 @@
           ]
         },
         "include_co_authored_by": {
-          "default": true,
+          "default": false,
           "type": "boolean"
         },
         "git_env_prefix": {

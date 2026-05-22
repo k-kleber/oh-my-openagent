@@ -87,11 +87,13 @@ describe("#given git_env_prefix config", () => {
 	})
 
 	describe("#when no config provided", () => {
-		it("#then uses default GIT_MASTER=1 prefix", () => {
+		it("#then uses default GIT_MASTER=1 prefix and keeps commit messages clean", () => {
 			const result = injectGitMasterConfig(SAMPLE_TEMPLATE)
 
 			expect(result).toContain("GIT_MASTER=1 git status")
 			expect(result).toContain("## GIT COMMAND PREFIX (MANDATORY)")
+			expect(result).not.toContain("Ultraworked with [Sisyphus]")
+			expect(result).not.toContain("Co-authored-by: Sisyphus")
 		})
 	})
 })

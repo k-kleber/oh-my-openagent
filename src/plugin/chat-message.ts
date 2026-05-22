@@ -4,6 +4,7 @@ import { existsSync } from "node:fs"
 import { join } from "node:path"
 
 import { hasConnectedProvidersCache } from "../shared"
+import { isCompactionAgent } from "../shared/compaction-marker"
 import { getSessionModel, setSessionModel } from "../shared/session-model-state"
 import { getMainSessionID, setSessionAgent, subagentSessions } from "../features/claude-code-session-state"
 import { contextCollector, injectPendingContext } from "../features/context-injector"
@@ -149,7 +150,8 @@ export function createChatMessageHandler(args: {
       }
     }
 
-    if (input.agent) {
+    const isCompactionMessage = isCompactionAgent(input.agent)
+    if (input.agent && !isCompactionMessage) {
       setSessionAgent(input.sessionID, input.agent)
     }
 
@@ -173,6 +175,7 @@ export function createChatMessageHandler(args: {
     }
     const modelOverride = output.message["model"]
     if (
+      !isCompactionMessage &&
       modelOverride &&
       typeof modelOverride === "object" &&
       "providerID" in modelOverride &&
@@ -183,7 +186,7 @@ export function createChatMessageHandler(args: {
       if (typeof providerID === "string" && typeof modelID === "string") {
         setSessionModel(input.sessionID, { providerID, modelID })
       }
-    } else if (input.model) {
+    } else if (!isCompactionMessage && input.model) {
       setSessionModel(input.sessionID, input.model)
     }
     await hooks.stopContinuationGuard?.["chat.message"]?.(input)

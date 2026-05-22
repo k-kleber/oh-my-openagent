@@ -9,6 +9,12 @@ User explicitly reinforces a memory: "boost this", "this is important", "fix thi
 
 ## Workflow
 
+Load memory MCP access first:
+
+\`\`\`
+skill(name="memory-mcp")
+\`\`\`
+
 ### 1. Identify the record
 
 User must reference a specific memory from prior recall result or by content.
@@ -21,17 +27,17 @@ User must say "boost", "reinforce", "fix", "patch", "promote" explicitly. Do NOT
 
 **If reinforcing:**
 \`\`\`
-openmemory_reinforce({"id": "<id>", "boost": 0.1})
+skill_mcp(mcp_name="openmemory", tool_name="openmemory_reinforce", arguments={"id": "<id>", "boost": 0.1})
 \`\`\`
 
 **If patching/corrected version:**
 \`\`\`
-openmemory_store({... , "metadata": {"approvalState": "approved"}})
+skill_mcp(mcp_name="openmemory", tool_name="openmemory_store", arguments={... , "metadata": {"approvalState": "approved"}})
 \`\`\`
 
 **If promoting scope:**
 \`\`\`
-openmemory_store({... , "metadata": {"approvalState": "approved", "scope": "<new scope>", "promotedFrom": "project"}})
+skill_mcp(mcp_name="openmemory", tool_name="openmemory_store", arguments={... , "metadata": {"approvalState": "approved", "scope": "<new scope>", "promotedFrom": "project"}})
 \`\`\`
 
 ### 4. Confirm

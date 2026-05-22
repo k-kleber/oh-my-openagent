@@ -10,7 +10,7 @@ import {
   gitMasterSkill,
   devBrowserSkill,
   codeIntelligenceInitSkill,
-  memoryMcpSkill,
+  createMemoryMcpSkill,
   memoryCaptureSkill,
   memoryRecallAndVerifySkill,
   memoryAutoSkill,
@@ -24,7 +24,7 @@ import {
   toolDocRipgrepSkill,
   toolDocFdSkill,
   toolDocSdSkill,
-  context7McpSkill,
+  createContext7McpSkill,
   createWebsearchMcpSkill,
 } from "./skills/index"
 
@@ -56,7 +56,7 @@ export function createBuiltinSkills(options: CreateBuiltinSkillsOptions = {}): B
     frontendUiUxSkill,
     gitMasterSkill,
     devBrowserSkill,
-    memoryMcpSkill,
+    createMemoryMcpSkill(),
     memoryCaptureSkill,
     memoryRecallAndVerifySkill,
     memoryAutoSkill,
@@ -66,7 +66,7 @@ export function createBuiltinSkills(options: CreateBuiltinSkillsOptions = {}): B
     memoryPromoteSkill,
     memoryPreCompactionSkill,
     memoryObservationLedgerSkill,
-    context7McpSkill,
+    createContext7McpSkill(),
     createWebsearchMcpSkill(websearchConfig),
   ]
 

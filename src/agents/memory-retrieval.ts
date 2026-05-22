@@ -36,14 +36,21 @@ Infer missing fields if possible. If search intent is completely unclear, return
 
 ## Step 2: Query Memory Systems
 
-Use the native always-on memory MCP tools directly:
+Load the memory MCP skill first, then use skill_mcp:
+
+- \
+  \`skill(name="memory-mcp")\` in interactive sessions, or ensure delegated sessions use \`load_skills=["memory-mcp"]\`
 
 ### Query Hindsight:
-- tool: \`hindsight_recall\`
+- tool: \`skill_mcp\`
+- mcp_name: \`hindsight\`
+- tool_name: \`recall\`
 - arguments: {"query": "<search intent>", "bank_id": "default"}
 
 ### Query OpenMemory:
-- tool: \`openmemory_query\`
+- tool: \`skill_mcp\`
+- mcp_name: \`openmemory\`
+- tool_name: \`openmemory_query\`
 - arguments: {"query": "<search intent>", "type": "contextual", "k": 8, "user_id": "<projectName>"}
 
 If scope hint exists, prioritize entries tagged with:
@@ -122,11 +129,11 @@ Your response has FAILED if:
 
 export function createMemoryRetrievalAgent(model: string): AgentConfig {
   return {
-    description: "One-shot memory retrieval agent - queries Hindsight and OpenMemory for project context",
+    description: "One-shot memory retrieval agent - loads memory-mcp and queries Hindsight/OpenMemory for project context",
     mode: MODE,
     model,
     temperature: 0.1,
-    skills: [],
+    skills: ["memory-mcp"],
     prompt: MEMORY_RETRIEVAL_PROMPT,
   }
 }

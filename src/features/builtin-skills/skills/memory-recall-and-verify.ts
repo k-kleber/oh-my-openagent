@@ -22,23 +22,22 @@ task(
 
 ## Inline workflow
 
+Load memory MCP access first:
+
+\`\`\`
+skill(name="memory-mcp")
+\`\`\`
+
 ### 1. Query Hindsight
 
 \`\`\`
-hindsight_recall({
-  "query": "<query>",
-  "bank_id": "default"
-})
+skill_mcp(mcp_name="hindsight", tool_name="recall", arguments={"query": "<query>", "bank_id": "default"})
 \`\`\`
 
 ### 2. Query OpenMemory
 
 \`\`\`
-openmemory_query({
-  "query": "<query>",
-  "type": "contextual",
-  "k": 8
-})
+skill_mcp(mcp_name="openmemory", tool_name="openmemory_query", arguments={"query": "<query>", "type": "contextual", "k": 8})
 \`\`\`
 
 ### 3. Cross-check against current code

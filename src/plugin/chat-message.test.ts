@@ -292,4 +292,27 @@ describe("createChatMessageHandler - TUI variant passthrough", () => {
     expect(output.message["model"]).toBeUndefined()
     expect(getSessionModel("test-session")).toEqual(nextModel)
   })
+
+  test("does not overwrite the stored session model when chat.message comes from compaction", async () => {
+    //#given
+    setMainSession("test-session")
+    setSessionModel("test-session", { providerID: "openai", modelID: "gpt-5.4" })
+    const args = createMockHandlerArgs({ shouldOverride: false })
+    const handler = createChatMessageHandler(args)
+    const input = createMockInput("compaction", {
+      providerID: "anthropic",
+      modelID: "claude-opus-4-1",
+    })
+    const output = createMockOutput()
+
+    //#when
+    await handler(input, output)
+
+    //#then
+    expect(getSessionModel("test-session")).toEqual({
+      providerID: "openai",
+      modelID: "gpt-5.4",
+    })
+    expect(output.message["model"]).toBeUndefined()
+  })
 })

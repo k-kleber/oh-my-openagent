@@ -155,3 +155,11 @@ bunx oh-my-opencode run     # Non-interactive session
 - Test setup: `test-setup.ts` preloaded via bunfig.toml, mock-heavy tests run in isolation in CI
 - 98 barrel export files (index.ts) establish module boundaries
 - Architecture rules enforced via `.sisyphus/rules/modular-code-enforcement.md`
+
+## EXTERNAL DOC LOOKUP POLICY
+
+- For external libraries, frameworks, SDKs, and APIs, agents must prefer **current official docs** over model memory.
+- Default path: load `context7-mcp` and query Context7 first for up-to-date official documentation.
+- Use `websearch-mcp` after Context7 for broader corroboration, changelogs, issue context, and non-doc sources.
+- Treat trained knowledge as a fallback for orientation, not as the authority when live docs are available.
+- If `CONTEXT7_API_KEY` is provided, it may be resolved from `process.env`, project `.secrets` / `.env`, `~/.config/opencode/.secrets` / `.env`, or `~/.secrets` / `.env`.

@@ -5,8 +5,8 @@ const LEADING_GIT_COMMAND_PATTERN = /^([ \t]*(?:[A-Za-z_][A-Za-z0-9_]*=[^ \t]+\s
 const INLINE_GIT_COMMAND_PATTERN = /([;&|()][ \t]*)git(?=[ \t]|$)/g
 
 export function injectGitMasterConfig(template: string, config?: GitMasterConfig): string {
-	const commitFooter = config?.commit_footer ?? true
-	const includeCoAuthoredBy = config?.include_co_authored_by ?? true
+	const commitFooter = config?.commit_footer ?? false
+	const includeCoAuthoredBy = config?.include_co_authored_by ?? false
 	const gitEnvPrefix = assertValidGitEnvPrefix(config?.git_env_prefix ?? "GIT_MASTER=1")
 
 	let result = gitEnvPrefix ? injectGitEnvPrefix(template, gitEnvPrefix) : template

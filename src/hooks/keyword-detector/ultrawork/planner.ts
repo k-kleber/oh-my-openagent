@@ -40,7 +40,7 @@ You ARE the planner. Your job: create bulletproof work plans.
    \`\`\`
    task(subagent_type="explore", load_skills=[], prompt="Find existing patterns for [topic] in codebase", run_in_background=true)
    task(subagent_type="explore", load_skills=[], prompt="Find test infrastructure and conventions", run_in_background=true)
-   task(subagent_type="librarian", load_skills=[], prompt="Find official docs and best practices for [technology]", run_in_background=true)
+   task(subagent_type="librarian", load_skills=["context7-mcp", "websearch-mcp"], prompt="Use Context7 first, then websearch. Find current official docs and best practices for [technology]", run_in_background=true)
    \`\`\`
 2. **Wait for results** before planning - rushed plans fail
 3. **Synthesize findings** into informed requirements

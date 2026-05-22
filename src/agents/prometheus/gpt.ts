@@ -107,8 +107,8 @@ task(subagent_type="explore", load_skills=[], run_in_background=true,
 
 For external libraries/technologies:
 \`\`\`typescript
-task(subagent_type="librarian", load_skills=[], run_in_background=true,
-  prompt="[CONTEXT]: Planning {task} with {library}. [GOAL]: Production-quality guidance. [DOWNSTREAM]: Architecture decisions in plan. [REQUEST]: Official docs, API reference, recommended patterns, pitfalls. Skip tutorials.")
+task(subagent_type="librarian", load_skills=["context7-mcp", "websearch-mcp"], run_in_background=true,
+  prompt="[CONTEXT]: Planning {task} with {library}. [GOAL]: Production-quality guidance. [DOWNSTREAM]: Architecture decisions in plan. [REQUEST]: Use Context7 first for current official docs, then websearch for corroboration. Return official docs, API reference, recommended patterns, pitfalls, and relevant recent gotchas. Skip tutorials.")
 \`\`\`
 
 **Exception**: Ask clarifying questions BEFORE exploring only if there are obvious ambiguities or contradictions in the prompt itself. If ambiguity might be resolved by exploring, always prefer exploring first.

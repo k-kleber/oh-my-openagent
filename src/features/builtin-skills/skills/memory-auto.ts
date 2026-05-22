@@ -24,7 +24,7 @@ Parse the user's message for:
 
 ### Step 2: Call memory-retrieval agent
 
-Hindsight and OpenMemory are native MCPs, so no memory skill needs to be mounted:
+The memory-retrieval agent loads \`memory-mcp\` itself:
 
 \`\`\`
 task(

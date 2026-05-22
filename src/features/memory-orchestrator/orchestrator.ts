@@ -1,9 +1,9 @@
-import { hindsight, openmemory } from "../../mcp"
 import type { ClaudeCodeMcpServer } from "../claude-code-mcp-loader/types"
 import type { SkillMcpManager, SkillMcpClientInfo, SkillMcpServerContext } from "../skill-mcp-manager"
 import { runRg } from "../../tools/grep/cli"
 import { runRgFiles } from "../../tools/glob/cli"
 import { withLspClient } from "../../tools/lsp/lsp-client-wrapper"
+import { createMemoryMcpConfig } from "../../shared/memory-mcp-config"
 import type {
   MemoryObservationCandidate,
   MemoryRecallInput,
@@ -69,23 +69,14 @@ function buildClientInfo(sessionID: string, serverName: "hindsight" | "openmemor
   return {
     sessionID,
     serverName,
-    skillName: "builtin-memory",
+    skillName: "memory-mcp",
   }
 }
 
 function buildServerContext(serverName: "hindsight" | "openmemory"): SkillMcpServerContext {
-  const config: ClaudeCodeMcpServer = serverName === "hindsight"
-    ? {
-        type: "http",
-        url: hindsight.url,
-      }
-    : {
-        type: "http",
-        url: openmemory.url,
-        headers: openmemory.headers,
-      }
+  const config = createMemoryMcpConfig()[serverName] as ClaudeCodeMcpServer
   return {
-    skillName: "builtin-memory",
+    skillName: "memory-mcp",
     config,
   }
 }

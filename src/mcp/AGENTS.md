@@ -1,4 +1,4 @@
-# src/mcp/ — 6 Built-in Remote/Local MCPs
+# src/mcp/ — 4 Built-in Remote/Local MCPs
 
 **Generated:** 2026-03-06
 
@@ -14,8 +14,6 @@ Tier 1 of the three-tier MCP system. Native MCPs created via `createBuiltinMcps(
 | **websearch** | `mcp.exa.ai` (default) or `mcp.tavily.com` | `EXA_API_KEY` (optional), `TAVILY_API_KEY` (if tavily) | Web search |
 | **context7** | `mcp.context7.com/mcp` | `CONTEXT7_API_KEY` (optional) | Library documentation |
 | **grep_app** | `mcp.grep.app` | None | GitHub code search |
-| **hindsight** | `http://localhost:8888/mcp` | None | Temporal/project memory |
-| **openmemory** | `http://localhost:8080/mcp` | `OPENMEMORY_API_KEY` (optional, falls back to `local-dev-key`) | Durable/project memory |
 
 ## REGISTRATION PATTERN
 
@@ -46,7 +44,7 @@ export function createWebsearchConfig(config?: WebsearchConfig): RemoteMcpConfig
 
 | Tier | Source | Mechanism |
 |------|--------|-----------|
-| 1. Built-in | `src/mcp/` | 6 native MCPs, created by `createBuiltinMcps()` |
+| 1. Built-in | `src/mcp/` | 4 native MCPs, created by `createBuiltinMcps()` |
 | 2. Claude Code | `.mcp.json` | `${VAR}` expansion via `claude-code-mcp-loader` |
 | 3. Skill-embedded | SKILL.md YAML | Managed by `SkillMcpManager` (stdio + HTTP) |
 
@@ -59,8 +57,7 @@ export function createWebsearchConfig(config?: WebsearchConfig): RemoteMcpConfig
 | `websearch.ts` | Exa/Tavily provider with config |
 | `context7.ts` | Context7 with optional auth header |
 | `grep-app.ts` | Grep.app (no auth) |
-| `hindsight.ts` | Local Hindsight MCP |
-| `openmemory.ts` | Local OpenMemory MCP |
+| `../shared/memory-mcp-config.ts` | Shared memory MCP config for the hot-loaded `memory-mcp` skill |
 
 ## ROUTING GUIDE
 
@@ -70,8 +67,6 @@ These MCPs are built-in and must be called via their native tool names:
 
 | MCP | Native Tools | Use Instead of skill_mcp |
 |-----|-------------|--------------------------|
-| hindsight | `hindsight_recall`, `hindsight_retain` | Never use `skill_mcp(mcp_name="hindsight", ...)` |
-| openmemory | `openmemory_query`, `openmemory_store` | Never use `skill_mcp(mcp_name="openmemory", ...)` |
 | serena | `serena_*` tools | Never use `skill_mcp(mcp_name="serena", ...)` |
 
 ### Skill-Embedded MCPs (use skill_mcp)
@@ -82,13 +77,15 @@ These require `skill(name="...")` first, then `skill_mcp`:
 |-----|--------------|
 | context7 | `skill_mcp(mcp_name="context7", tool_name="resolve-library-id", ...)` |
 | websearch | `skill_mcp(mcp_name="websearch", tool_name="websearch_web_search_exa", ...)` |
+| hindsight | `skill(name="memory-mcp")` → `skill_mcp(mcp_name="hindsight", tool_name="recall", ...)` |
+| openmemory | `skill(name="memory-mcp")` → `skill_mcp(mcp_name="openmemory", tool_name="openmemory_query", ...)` |
 
 ### Why This Matters
 
 Using `skill_mcp` for native MCPs produces:
 ```
-"hindsight" is a builtin MCP, not a skill MCP.
-Use the native tools directly: hindsight_recall, hindsight_retain, ...
+"serena" is a builtin MCP, not a skill MCP.
+Use the native tools directly: serena_read_file, serena_find_symbol, ...
 ```
 
-The `skill_mcp` tool already detects this and provides helpful hints.
+Hindsight and OpenMemory are no longer in the builtin list. They are mounted on demand through `memory-mcp`.

@@ -1,10 +1,14 @@
 import type { BuiltinSkill } from "../types"
+import { getEnvOrSecretsValue } from "../../../shared/env-or-secrets"
 
-export const context7McpSkill: BuiltinSkill = {
-  name: "context7-mcp",
-  description:
-    "On-demand Context7 MCP access for official library/framework documentation lookup without always-on MCP mounting.",
-  template: `# Context7 MCP (On-Demand)
+export function createContext7McpSkill(): BuiltinSkill {
+  const context7ApiKey = getEnvOrSecretsValue("CONTEXT7_API_KEY")
+
+  return {
+    name: "context7-mcp",
+    description:
+      "On-demand Context7 MCP access for official library/framework documentation lookup without always-on MCP mounting.",
+    template: `# Context7 MCP (On-Demand)
 
 Use this skill when you need official library documentation and API examples.
 
@@ -24,13 +28,16 @@ Use this skill when you need official library documentation and API examples.
 - Prefer official docs over random blogs
 - Include concrete examples/snippets when relevant
 - Keep doc fetch targeted to the user task`,
-  mcpConfig: {
-    context7: {
-      type: "http",
-      url: "https://mcp.context7.com/mcp",
-      ...(process.env.CONTEXT7_API_KEY
-        ? { headers: { Authorization: `Bearer ${process.env.CONTEXT7_API_KEY}` } }
-        : {}),
+    mcpConfig: {
+      context7: {
+        type: "http",
+        url: "https://mcp.context7.com/mcp",
+        ...(context7ApiKey
+          ? { headers: { Authorization: `Bearer ${context7ApiKey}` } }
+          : {}),
+      },
     },
-  },
+  }
 }
+
+export const context7McpSkill = createContext7McpSkill()
